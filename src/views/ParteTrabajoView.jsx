@@ -530,9 +530,7 @@ export function ParteTrabajoView() {
         // No bloqueante: el parte ya se registró correctamente
       }
 
-      setMensaje(
-        `Parte registrado. Informe PDF disponible: ${informe.pdfUrl}`,
-      );
+      setMensaje('Parte registrado. Informe disponible.');
       setFormulario(FORM_INICIAL);
       setSeguimientoTiempo({
         inicioIso: null,

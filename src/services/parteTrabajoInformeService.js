@@ -1,5 +1,10 @@
 import { jsPDF } from 'jspdf';
+import logoCotepaUrl from '../assets/cotepa.jpg';
 import { obtenerClienteSupabase } from './supabaseClient';
+
+let logoEmpresaDataUrlCache = null;
+let logoEmpresaPromise = null;
+let logoCabeceraActual = null;
 
 export function obtenerUrlPublicaInformeParte(clienteId, parteId) {
   const cliente = valorTexto(clienteId, '').trim();
@@ -115,25 +120,42 @@ function dibujarCabeceraSimple(doc, estado) {
   doc.setFillColor(...PDF_ESTILO.colorPrimario);
   doc.roundedRect(PDF_ESTILO.margenX, estado.y, PDF_ESTILO.anchoContenido, 14, 2, 2, 'F');
 
+  const logoX = PDF_ESTILO.margenX + 4;
+  const logoY = estado.y + 2;
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(logoX, logoY, 10, 10, 1.5, 1.5, 'F');
+  if (logoCabeceraActual) {
+    try {
+      doc.addImage(logoCabeceraActual, 'JPEG', logoX + 0.8, logoY + 0.8, 8.4, 8.4);
+    } catch {
+      // Si falla el logo, mantenemos la cabecera funcional.
+    }
+  }
+
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text('INFORME SAT', PDF_ESTILO.margenX + 4, estado.y + 9);
+  doc.text('INFORME SAT', PDF_ESTILO.margenX + 18, estado.y + 9);
 
   doc.setTextColor(...PDF_ESTILO.colorTexto);
   estado.y += 20;
 }
 
-function dibujarCabeceraPrincipal(doc, estado, parteId) {
+function dibujarCabeceraPrincipal(doc, estado, referenciaInforme, logoEmpresaDataUrl) {
   doc.setFillColor(...PDF_ESTILO.colorPrimario);
   doc.roundedRect(PDF_ESTILO.margenX, estado.y, PDF_ESTILO.anchoContenido, 26, 3, 3, 'F');
 
   const logoX = PDF_ESTILO.margenX + 4;
   const logoY = estado.y + 4;
   doc.setFillColor(255, 255, 255);
-  doc.circle(logoX + 6, logoY + 6, 6, 'F');
-  doc.setFillColor(...PDF_ESTILO.colorAcento);
-  doc.circle(logoX + 6, logoY + 6, 3.2, 'F');
+  doc.roundedRect(logoX, logoY, 14, 14, 2, 2, 'F');
+  if (logoEmpresaDataUrl) {
+    try {
+      doc.addImage(logoEmpresaDataUrl, 'JPEG', logoX + 1, logoY + 1, 12, 12);
+    } catch {
+      // Si falla la carga del logo, mantenemos la caja en blanco para no romper el PDF.
+    }
+  }
 
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
@@ -143,7 +165,7 @@ function dibujarCabeceraPrincipal(doc, estado, parteId) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.text('SAT COTEPA · Servicio Tecnico', PDF_ESTILO.margenX + 20, estado.y + 16);
-  doc.text(`Ref. parte: ${valorTexto(parteId)}`, PDF_ESTILO.margenX + 20, estado.y + 22);
+  doc.text(`Re: parte ${valorTexto(referenciaInforme)}`, PDF_ESTILO.margenX + 20, estado.y + 22);
 
   doc.setTextColor(...PDF_ESTILO.colorTexto);
   estado.y += 32;
@@ -361,11 +383,11 @@ function dibujarPiePaginas(doc) {
   for (let pagina = 1; pagina <= totalPaginas; pagina += 1) {
     doc.setPage(pagina);
     doc.setDrawColor(...PDF_ESTILO.colorSecundario);
-    doc.line(15, 286, 195, 286);
+    doc.line(15, 281, 195, 281);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
-    doc.text(`SAT COTEPA · Documento generado automaticamente · Pagina ${pagina}/${totalPaginas}`, 15, 290);
+    doc.text(`SAT COTEPA · Documento generado automaticamente · Pagina ${pagina}/${totalPaginas}`, 15, 284.5);
   }
 }
 
@@ -385,6 +407,25 @@ async function urlADataUrl(url) {
   }
 }
 
+async function obtenerLogoEmpresaDataUrl() {
+  if (logoEmpresaDataUrlCache) {
+    return logoEmpresaDataUrlCache;
+  }
+
+  if (!logoEmpresaPromise) {
+    logoEmpresaPromise = urlADataUrl(logoCotepaUrl)
+      .then((dataUrl) => {
+        logoEmpresaDataUrlCache = dataUrl || null;
+        return logoEmpresaDataUrlCache;
+      })
+      .finally(() => {
+        logoEmpresaPromise = null;
+      });
+  }
+
+  return logoEmpresaPromise;
+}
+
 async function crearPdfInforme({
   parte,
   formulario,
@@ -401,9 +442,11 @@ async function crearPdfInforme({
   const materiales = materialesDesdeTexto(formulario.materialesTexto);
   const fechaInformeIso = new Date().toISOString();
   const referenciaInforme = crearReferenciaInforme(fechaInformeIso, secuencialDiario);
+  const logoEmpresaDataUrl = await obtenerLogoEmpresaDataUrl();
+  logoCabeceraActual = logoEmpresaDataUrl;
 
   iniciarPagina(doc, estado);
-  dibujarCabeceraPrincipal(doc, estado, parte.id);
+  dibujarCabeceraPrincipal(doc, estado, referenciaInforme, logoEmpresaDataUrl);
 
   dibujarBloqueDatos(doc, estado, [
     ['Nº informe', referenciaInforme],
