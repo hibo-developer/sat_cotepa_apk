@@ -404,5 +404,6 @@ join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public'
   and p.proname = 'fn_es_sesion_no_anon_sat';
 
--- Nota manual: activar "Leaked Password Protection"
+-- Nota manual: activar "Leaked Password Protection" (si el plan lo permite)
 -- Dashboard > Authentication > Settings.
+-- Si no esta disponible por plan, documentar excepcion de riesgo y aplicar mitigaciones operativas.

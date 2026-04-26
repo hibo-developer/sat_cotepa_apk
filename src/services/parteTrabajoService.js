@@ -235,6 +235,7 @@ export async function crearParteTrabajo(payload) {
   const equipoId = limpiarTexto(payload.equipo_id) || null;
   const tecnicoId = limpiarTexto(payload.tecnico_id);
   const descripcionProblema = validarTextoRequerido(payload.descripcion_problema, 'La descripción del problema', 8);
+  const nombreFirmante = validarTextoRequerido(payload.nombre_firmante, 'El nombre de la persona firmante', 3);
   const prioridad = validarPrioridad(payload.prioridad || 'media');
   const materialesManual = parsearMateriales(payload.materialesTexto || '');
   const materialesInventarioEntrada = Array.isArray(payload.materialesInventario) ? payload.materialesInventario : [];
@@ -415,6 +416,7 @@ export async function crearParteTrabajo(payload) {
   });
 
   const bloquesTareas = [resumenGeo || 'Parte registrado desde movilidad'];
+  bloquesTareas.push(`Firmado por: ${nombreFirmante}`);
   if (fotosIntervencionUrls.length > 0) {
     bloquesTareas.push(`Fotos intervención: ${fotosIntervencionUrls.join(' | ')}`);
   }
@@ -492,6 +494,7 @@ export async function crearParteTrabajo(payload) {
 
   return {
     ...orden,
+    nombre_firmante: nombreFirmante,
     fotos_intervencion_urls: fotosIntervencionUrls,
   };
 }

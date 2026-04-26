@@ -12,6 +12,11 @@ Usar despues de ejecutar [supabase/13_apply_and_verify_security.sql](../supabase
 ## 2. Configuracion Auth (manual)
 
 - [ ] Authentication > Settings > Leaked Password Protection: activado.
+- [ ] Si no esta disponible por plan (p. ej. Free), registrar excepcion de riesgo y aplicar mitigaciones:
+	- Politica de contrasena robusta (longitud minima y complejidad).
+	- Revisar y desactivar cuentas inactivas periodicamente.
+	- Rotacion de contrasenas para usuarios operativos cuando proceda.
+	- Monitoreo de intentos fallidos y respuesta ante incidentes.
 - [ ] Authentication > Providers: confirmar que no hay acceso anonimo habilitado para el entorno productivo.
 
 ## 3. Prueba funcional corta por rol
@@ -23,5 +28,5 @@ Usar despues de ejecutar [supabase/13_apply_and_verify_security.sql](../supabase
 ## 4. Criterio de cierre
 
 - [ ] No hay hallazgos en SQL (1-3 en cero) y funcion guardia presente (3.4 en uno).
-- [ ] Leaked Password Protection activado.
+- [ ] Leaked Password Protection activado, o excepcion aprobada con mitigaciones aplicadas cuando el plan no lo permita.
 - [ ] Flujo login/acceso por roles validado sin errores de permisos.

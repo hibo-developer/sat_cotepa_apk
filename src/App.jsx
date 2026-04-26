@@ -57,6 +57,7 @@ function obtenerVistaDesdeRuta(pathname) {
 
 export default function App() {
   const [rolUsuario, setRolUsuario] = useState(null);
+  const [nombreVisibleUsuario, setNombreVisibleUsuario] = useState('');
   const [verificandoRol, setVerificandoRol] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -92,7 +93,7 @@ export default function App() {
         const supabase = obtenerClienteSupabase();
         const { data, error: perfilError } = await supabase
           .from('usuarios_sat')
-          .select('rol')
+          .select('rol, nombre_visible')
           .eq('user_id', sesion.user.id)
           .maybeSingle();
 
@@ -102,10 +103,12 @@ export default function App() {
 
         if (!cancelado) {
           setRolUsuario(data?.rol || null);
+          setNombreVisibleUsuario(data?.nombre_visible || '');
         }
       } catch {
         if (!cancelado) {
           setRolUsuario(null);
+          setNombreVisibleUsuario('');
         }
       } finally {
         if (!cancelado) {
@@ -202,6 +205,16 @@ export default function App() {
               </button>
             )}
           </div>
+
+          {!accesoBloqueado && sesion && (
+            <div className="mt-2 rounded-xl border border-marca-100 bg-marca-50 px-3 py-2 text-xs text-marca-900">
+              <span className="font-semibold">Sesión:</span>{' '}
+              {nombreVisibleUsuario || sesion.user?.email || 'Usuario'}
+              {' · '}
+              <span className="font-semibold">Rol:</span>{' '}
+              {rolUsuario || 'sin rol'}
+            </div>
+          )}
 
           {!accesoBloqueado && (
             <div className="mt-4 hidden lg:block">

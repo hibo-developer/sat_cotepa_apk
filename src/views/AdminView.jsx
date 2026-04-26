@@ -263,12 +263,15 @@ export function AdminView() {
                 type="password"
                 value={formUsuario.password}
                 required={!usuarioEditandoId}
-                minLength={6}
+                minLength={12}
                 onChange={(evento) => setFormUsuario((previo) => ({ ...previo, password: evento.target.value }))}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 disabled={guardandoUsuario || !puedeAdministrar}
-                placeholder={usuarioEditandoId ? 'Dejar vacio para mantener la actual' : 'Minimo 6 caracteres'}
+                placeholder={usuarioEditandoId ? 'Dejar vacio para mantener la actual' : 'Minimo 12, con mayuscula, minuscula, numero y simbolo'}
               />
+              <span className="mt-1 block text-[11px] text-slate-500">
+                Requisito: minimo 12 caracteres con mayuscula, minuscula, numero y simbolo.
+              </span>
             </label>
 
             <label className="block">

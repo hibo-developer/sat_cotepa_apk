@@ -340,7 +340,7 @@ async function dibujarFotos(doc, estado, fotosIntervencionUrls) {
   }
 }
 
-async function dibujarFirma(doc, estado, firmaUrl) {
+async function dibujarFirma(doc, estado, firmaUrl, nombreFirmante) {
   reservarEspacio(doc, estado, 58);
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(...PDF_ESTILO.colorSecundario);
@@ -370,6 +370,10 @@ async function dibujarFirma(doc, estado, firmaUrl) {
 
   doc.setDrawColor(148, 163, 184);
   doc.line(PDF_ESTILO.margenX + 110, estado.y + 41, PDF_ESTILO.margenX + 175, estado.y + 41);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(...PDF_ESTILO.colorPrimario);
+  doc.text(valorTexto(nombreFirmante), PDF_ESTILO.margenX + 111, estado.y + 38.5);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
@@ -433,6 +437,7 @@ async function crearPdfInforme({
   clienteNombre,
   equipoNombre,
   tecnicoNombre,
+  nombreFirmante,
   firmaUrl,
   fotosIntervencionUrls,
   secuencialDiario,
@@ -478,7 +483,7 @@ async function crearPdfInforme({
   await dibujarFotos(doc, estado, fotosIntervencionUrls);
 
   dibujarTituloSeccion(doc, estado, 'Conformidad');
-  await dibujarFirma(doc, estado, firmaUrl);
+  await dibujarFirma(doc, estado, firmaUrl, nombreFirmante);
 
   dibujarPiePaginas(doc);
 
@@ -537,6 +542,7 @@ export async function generarYSubirInformeParte({
   clienteNombre,
   equipoNombre,
   tecnicoNombre,
+  nombreFirmante,
   firmaUrl,
   fotosIntervencionUrls,
 }) {
@@ -549,6 +555,7 @@ export async function generarYSubirInformeParte({
     clienteNombre,
     equipoNombre,
     tecnicoNombre,
+    nombreFirmante,
     firmaUrl,
     fotosIntervencionUrls,
     secuencialDiario,

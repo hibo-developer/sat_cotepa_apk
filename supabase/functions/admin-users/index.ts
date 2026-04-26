@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 type RolSat = 'admin' | 'oficina' | 'tecnico';
+const PASSWORD_MIN_LENGTH = 12;
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -29,6 +30,28 @@ function validarRol(valor: unknown): RolSat {
   }
 
   return rol;
+}
+
+function validarContrasenaSegura(password: string, contexto = 'La contrasena') {
+  if (!password || password.length < PASSWORD_MIN_LENGTH) {
+    throw new Error(`${contexto} debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`);
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    throw new Error(`${contexto} debe incluir al menos una letra mayuscula.`);
+  }
+
+  if (!/[a-z]/.test(password)) {
+    throw new Error(`${contexto} debe incluir al menos una letra minuscula.`);
+  }
+
+  if (!/\d/.test(password)) {
+    throw new Error(`${contexto} debe incluir al menos un numero.`);
+  }
+
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    throw new Error(`${contexto} debe incluir al menos un simbolo.`);
+  }
 }
 
 async function verificarAdmin(req: Request, supabaseUrl: string, supabaseAnonKey: string) {
@@ -130,9 +153,7 @@ async function crearUsuario(supabaseAdmin: ReturnType<typeof createClient>, payl
     throw new Error('El email es obligatorio.');
   }
 
-  if (!password || password.length < 6) {
-    throw new Error('La contrasena debe tener al menos 6 caracteres.');
-  }
+  validarContrasenaSegura(password);
 
   const { data: creado, error: crearError } = await supabaseAdmin.auth.admin.createUser({
     email,
@@ -186,8 +207,8 @@ async function actualizarUsuario(supabaseAdmin: ReturnType<typeof createClient>,
     throw new Error('El user_id es obligatorio.');
   }
 
-  if (password && password.length < 6) {
-    throw new Error('La nueva contrasena debe tener al menos 6 caracteres.');
+  if (password) {
+    validarContrasenaSegura(password, 'La nueva contrasena');
   }
 
   if (email || password) {

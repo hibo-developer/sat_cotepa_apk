@@ -10,7 +10,7 @@
     "build": "vite build",
     "build:pwsh": "powershell -ExecutionPolicy Bypass -File ./scripts/build.ps1",
     "preflight:prod:pwsh": "powershell -ExecutionPolicy Bypass -File ./scripts/preflight-production.ps1",
-    "release:check:pwsh": "npm run build:pwsh; npm run preflight:prod:pwsh",
+    "release:check:pwsh": "npm run build:pwsh && npm run preflight:prod:pwsh",
     "build:apk:pwsh": "powershell -ExecutionPolicy Bypass -File ./scripts/build-apk.ps1",
     "build:desktop:pwsh": "powershell -ExecutionPolicy Bypass -File ./scripts/build-desktop.ps1",
     "build:desktop:portable:pwsh": "powershell -ExecutionPolicy Bypass -File ./scripts/build-desktop.ps1 -Target portable",

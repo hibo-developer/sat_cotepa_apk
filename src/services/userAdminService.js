@@ -1,6 +1,13 @@
 import { obtenerClienteSupabase } from './supabaseClient';
 
 const ROLES_PERMITIDOS = new Set(['admin', 'oficina', 'tecnico']);
+const REGLAS_PASSWORD = {
+  minLength: 12,
+  upper: /[A-Z]/,
+  lower: /[a-z]/,
+  digit: /\d/,
+  symbol: /[^A-Za-z0-9]/,
+};
 
 function limpiarTexto(valor) {
   return typeof valor === 'string' ? valor.trim() : '';
@@ -14,6 +21,28 @@ function validarRol(rol) {
   }
 
   return rolLimpio;
+}
+
+function validarContrasenaSegura(password, contexto = 'La contrasena') {
+  if (!password || password.length < REGLAS_PASSWORD.minLength) {
+    throw new Error(`${contexto} debe tener al menos ${REGLAS_PASSWORD.minLength} caracteres.`);
+  }
+
+  if (!REGLAS_PASSWORD.upper.test(password)) {
+    throw new Error(`${contexto} debe incluir al menos una letra mayuscula.`);
+  }
+
+  if (!REGLAS_PASSWORD.lower.test(password)) {
+    throw new Error(`${contexto} debe incluir al menos una letra minuscula.`);
+  }
+
+  if (!REGLAS_PASSWORD.digit.test(password)) {
+    throw new Error(`${contexto} debe incluir al menos un numero.`);
+  }
+
+  if (!REGLAS_PASSWORD.symbol.test(password)) {
+    throw new Error(`${contexto} debe incluir al menos un simbolo.`);
+  }
 }
 
 async function construirMensajeErrorFuncion(error) {
@@ -86,9 +115,7 @@ export async function crearUsuarioSat(payload) {
     throw new Error('El email del usuario es obligatorio.');
   }
 
-  if (!password || password.length < 6) {
-    throw new Error('La contrasena inicial debe tener al menos 6 caracteres.');
-  }
+  validarContrasenaSegura(password, 'La contrasena inicial');
 
   const respuesta = await invocarAdminUsers('create', {
     email,
@@ -115,8 +142,8 @@ export async function actualizarUsuarioSat(userId, payload) {
     throw new Error('El usuario que intentas actualizar no es valido.');
   }
 
-  if (password && password.length < 6) {
-    throw new Error('La nueva contrasena debe tener al menos 6 caracteres.');
+  if (password) {
+    validarContrasenaSegura(password, 'La nueva contrasena');
   }
 
   const respuesta = await invocarAdminUsers('update', {

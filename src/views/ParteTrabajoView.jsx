@@ -125,6 +125,7 @@ const FORM_INICIAL = {
   cliente_id: '',
   equipo_id: '',
   tecnico_id: '',
+  nombre_firmante: '',
   descripcion_problema: '',
   materialesTexto: '',
   tiempo_empleado: '60',
@@ -476,6 +477,11 @@ export function ParteTrabajoView() {
       return;
     }
 
+    if (!(formulario.nombre_firmante || '').trim()) {
+      setError('Debes indicar el nombre de la persona que firma el parte.');
+      return;
+    }
+
     setGuardando(true);
 
     try {
@@ -520,6 +526,7 @@ export function ParteTrabajoView() {
         clienteNombre: clienteSeleccionado?.nombre || 'Cliente no identificado',
         equipoNombre: equipoSeleccionado?.nombre || 'Sin equipo',
         tecnicoNombre: tecnicoSeleccionado?.nombre || 'Tecnico no identificado',
+        nombreFirmante: formulario.nombre_firmante,
         firmaUrl: parte.firma_url || '',
         fotosIntervencionUrls: parte.fotos_intervencion_urls || [],
       });
@@ -881,6 +888,18 @@ export function ParteTrabajoView() {
         </div>
 
         <div className="rounded-xl border border-slate-300 bg-slate-50 p-3">
+          <label className="mb-3 block">
+            <span className="mb-1 block text-xs font-semibold text-slate-700">Nombre de quien firma *</span>
+            <input
+              required
+              type="text"
+              value={formulario.nombre_firmante}
+              onChange={(e) => setFormulario((prev) => ({ ...prev, nombre_firmante: e.target.value }))}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+              placeholder="Nombre y apellidos"
+              maxLength={120}
+            />
+          </label>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-700">Firma del cliente *</span>
             <button
@@ -909,7 +928,14 @@ export function ParteTrabajoView() {
 
         <button
           type="submit"
-          disabled={guardando || cargando || !seguimientoTiempo.inicioIso || !seguimientoTiempo.finIso || !firmaClienteDataUrl}
+          disabled={
+            guardando
+            || cargando
+            || !seguimientoTiempo.inicioIso
+            || !seguimientoTiempo.finIso
+            || !firmaClienteDataUrl
+            || !(formulario.nombre_firmante || '').trim()
+          }
           className="w-full rounded-2xl bg-cotepa-rojo-500 px-4 py-4 text-sm font-bold text-white disabled:opacity-60 lg:col-span-2"
         >
           {guardando ? 'Guardando parte...' : 'Registrar parte de trabajo'}

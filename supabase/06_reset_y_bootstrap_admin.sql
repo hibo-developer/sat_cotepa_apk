@@ -20,6 +20,7 @@ delete from auth.users;
 do $$
 declare
   v_user_id uuid := gen_random_uuid();
+  v_admin_password text := 'Adm!' || replace(gen_random_uuid()::text, '-', '') || '#9a';
 begin
   -- 3a. Insertar en auth.users con password hasheado (bcrypt)
   insert into auth.users (
@@ -44,7 +45,7 @@ begin
     'authenticated',
     'authenticated',
     'jesus@cotepa.com',
-    crypt('207414', gen_salt('bf')),
+    crypt(v_admin_password, gen_salt('bf')),
     now(),
     '{"provider": "email", "providers": ["email"]}',
     '{}',
@@ -80,6 +81,8 @@ begin
   values (v_user_id, 'admin', 'Jesus - Admin');
 
   raise notice 'Admin creado: jesus@cotepa.com (uuid: %)', v_user_id;
+  raise notice 'Contrasena temporal generada: %', v_admin_password;
+  raise notice 'Recomendacion: cambia la contrasena despues del primer acceso.';
 end;
 $$;
 

@@ -8,6 +8,7 @@
 - [ ] `supabase/11_block_anonymous_sessions.sql` aplicado en entorno objetivo.
 - [ ] `supabase/12_verify_no_anonymous_policies.sql` ejecutado sin hallazgos (bloques 1-3 en 0 filas).
 - [ ] Alternativa: `supabase/13_apply_and_verify_security.sql` ejecutado completo en una sola pasada.
+- [ ] Leaked Password Protection activado, o excepcion aprobada con mitigaciones si el plan de Supabase no lo incluye.
 - [ ] Usuarios reales creados en Auth y asignados en `public.usuarios_sat`.
 - [ ] Tecnicos vinculados correctamente en `public.tecnicos.user_id`.
 - [ ] Sin acceso anonimo a datos de negocio.
