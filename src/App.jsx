@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { NavbarInferior } from './components/NavbarInferior';
+import { IndicadorSync } from './components/IndicadorSync';
 import { useAuthSession } from './hooks/useAuthSession';
 import { obtenerClienteSupabase, tieneConfiguracionSupabase } from './services/supabaseClient';
 import logoCotepa from './assets/cotepa.jpg';
@@ -246,6 +247,11 @@ export default function App() {
       </header>
 
       <main className="lg:rounded-2xl lg:border lg:border-marca-100 lg:bg-white lg:p-5 lg:shadow-tarjeta">
+        {!accesoBloqueado && !verificandoRol && (
+          <div className="mb-3">
+            <IndicadorSync />
+          </div>
+        )}
         {accesoBloqueado || verificandoRol ? (
           <AccesoView onLogin={login} cargandoSesion={cargando} errorSesion={error} />
         ) : (

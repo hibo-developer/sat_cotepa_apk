@@ -2,14 +2,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { obtenerOrdenes } from '../services/ordenesService';
 
 import {
-  actualizarOrdenTrabajo,
   actualizarValoracionOrdenFinalizada,
   crearOrdenTrabajo,
-  eliminarOrdenTrabajo,
   finalizarOrdenTrabajo,
   obtenerOrdenesTrabajo,
 } from '../services/workOrderService';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
+import {
+  estaOnline,
+  intentarActualizarOrden,
+  intentarEliminarOrden,
+  obtenerOrdenesCacheadas,
+  procesarCola,
+  reemplazarCacheOrdenes,
+} from '../services/offlineSyncService';
 
 function estadoBackendAUi(estado) {
   const mapa = {
@@ -137,8 +143,29 @@ export function useOrdenes() {
 
     try {
       if (tieneConfiguracionSupabase()) {
-        const datos = await obtenerOrdenesTrabajo();
-        setOrdenes(datos.map(adaptarOrdenSupabase));
+        // 1) Pinta inmediatamente desde la caché local si existe.
+        if (!estaOnline()) {
+          const cache = await obtenerOrdenesCacheadas();
+          setOrdenes(cache.map(adaptarOrdenSupabase));
+          setError('Sin conexión: mostrando datos guardados localmente.');
+          return;
+        }
+
+        try {
+          const datos = await obtenerOrdenesTrabajo();
+          setOrdenes(datos.map(adaptarOrdenSupabase));
+          // Refresca la caché para futuras sesiones offline.
+          reemplazarCacheOrdenes(datos).catch(() => { /* noop */ });
+        } catch (errRed) {
+          // Si la red falla a pesar de navigator.onLine, fallback a caché.
+          const cache = await obtenerOrdenesCacheadas();
+          if (cache.length) {
+            setOrdenes(cache.map(adaptarOrdenSupabase));
+            setError('Conexión inestable: mostrando datos guardados localmente.');
+          } else {
+            throw errRed;
+          }
+        }
       } else {
         const datos = await obtenerOrdenes();
         setOrdenes(datos);
@@ -152,6 +179,16 @@ export function useOrdenes() {
 
   useEffect(() => {
     cargarOrdenes();
+
+    // Cuando se recupera la conexión, drenamos la cola y recargamos datos.
+    function alRecuperarConexion() {
+      procesarCola()
+        .catch(() => { /* noop */ })
+        .finally(() => { cargarOrdenes(); });
+    }
+
+    window.addEventListener('online', alRecuperarConexion);
+    return () => { window.removeEventListener('online', alRecuperarConexion); };
   }, []);
 
   async function crearOrdenDesdeFormulario(datosOrden) {
@@ -189,7 +226,10 @@ export function useOrdenes() {
     setError('');
 
     try {
-      await actualizarOrdenTrabajo(idOrden, datosOrden);
+      const resultado = await intentarActualizarOrden(idOrden, datosOrden);
+      if (resultado.offline) {
+        setError('Sin conexión: cambios encolados, se sincronizarán al reconectar.');
+      }
       await cargarOrdenes();
     } catch (err) {
       setError(err.message || 'No se pudo actualizar la orden.');
@@ -219,7 +259,10 @@ export function useOrdenes() {
     setError('');
 
     try {
-      await eliminarOrdenTrabajo(idOrden);
+      const resultado = await intentarEliminarOrden(idOrden);
+      if (resultado.offline) {
+        setError('Sin conexión: eliminación encolada, se aplicará al reconectar.');
+      }
       await cargarOrdenes();
     } catch (err) {
       setError(err.message || 'No se pudo eliminar la orden.');
