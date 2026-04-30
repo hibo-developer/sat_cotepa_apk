@@ -8,6 +8,7 @@ import {
   validarUrlOpcional,
 } from './satValidation';
 import { generarYSubirInformeParte } from './parteTrabajoInformeService';
+import { subirFotosIntervencionStorage } from './parteTrabajoService';
 
 const ESTADOS_EDITABLES = new Set(['pendiente', 'en_proceso', 'pausado']);
 
@@ -311,6 +312,7 @@ export async function obtenerOrdenesTrabajo() {
       informe_pdf_url,
       fecha_inicio,
       fecha_fin,
+      fotos_intervencion_urls,
       clientes ( id, nombre ),
       equipos ( id, nombre, marca, modelo ),
       tecnicos ( id, nombre ),
@@ -807,5 +809,282 @@ export async function actualizarValoracionOrdenFinalizada(ordenId, payload) {
     costeManoObraTotal,
     costeDesplazamientoTotal,
     costeTotal,
+  };
+}
+
+// =====================================================================
+// Edición completa de un parte ya finalizado (rol admin)
+// =====================================================================
+
+function reemplazarBloqueTareasRealizadas(tareasRealizadas, { descripcionLibre, fotosUrls }) {
+  const partes = String(tareasRealizadas || '')
+    .split('|')
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  // El primer bloque es el resumen/descripción libre. Lo reemplazamos si llega.
+  if (descripcionLibre !== undefined) {
+    const nuevaDesc = String(descripcionLibre || '').trim() || 'Parte registrado desde movilidad';
+    if (partes.length === 0) {
+      partes.push(nuevaDesc);
+    } else {
+      partes[0] = nuevaDesc;
+    }
+  } else if (partes.length === 0) {
+    partes.push('Parte registrado desde movilidad');
+  }
+
+  // Quitamos el bloque "Fotos intervención: ..." si existe
+  const sinFotos = partes.filter((bloque) => !/^Fotos intervención:/i.test(bloque));
+
+  // Reañadimos al final si hay fotos
+  if (Array.isArray(fotosUrls) && fotosUrls.length > 0) {
+    sinFotos.push(`Fotos intervención: ${fotosUrls.join(' | ')}`);
+  }
+
+  return sinFotos.join(' | ');
+}
+
+export async function editarParteFinalizado(ordenId, payload) {
+  const supabase = obtenerClienteSupabase();
+  const contextoUsuario = await obtenerContextoUsuarioSat(supabase);
+  const id = limpiarTexto(ordenId);
+
+  if (!id) {
+    throw new Error('ID de orden requerido para editar el parte.');
+  }
+
+  if (contextoUsuario.rol !== 'admin') {
+    throw new Error('Solo el rol admin puede editar un parte finalizado.');
+  }
+
+  const { data: ordenActual, error: ordenError } = await supabase
+    .from('ordenes_trabajo')
+    .select(`
+      id,
+      cliente_id,
+      tecnico_id,
+      descripcion_averia,
+      tareas_realizadas,
+      fotos_intervencion_urls,
+      foto_url,
+      firma_url,
+      tiempo_empleado_minutos,
+      prioridad,
+      estado,
+      fecha_inicio,
+      fecha_fin,
+      coste_materiales_editable,
+      tarifa_mano_obra_hora,
+      horas_mano_obra,
+      tarifa_desplazamiento_km,
+      km_desplazamiento_facturables,
+      recargo_festivo_pct,
+      recargo_fuera_horario_pct,
+      aplica_recargo_festivo,
+      aplica_recargo_fuera_horario,
+      porcentaje_recargo_mano_obra,
+      coste_mano_obra_base,
+      coste_mano_obra_total,
+      coste_desplazamiento_total,
+      coste_total,
+      clientes ( id, nombre ),
+      equipos ( id, nombre ),
+      tecnicos ( id, nombre ),
+      materiales_orden ( id, nombre_material, cantidad, precio_unitario )
+    `)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (ordenError) {
+    throw new Error(`No se pudo cargar la orden para editar: ${ordenError.message}`);
+  }
+
+  if (!ordenActual) {
+    throw new Error('La orden no existe o fue eliminada.');
+  }
+
+  if (ordenActual.estado !== 'finalizado') {
+    throw new Error('Solo se puede editar un parte finalizado. Para cambios en órdenes abiertas usa el editor estándar.');
+  }
+
+  // Resolver descripción avería
+  const descripcionAveria = payload.descripcion_averia !== undefined
+    ? validarTextoRequerido(payload.descripcion_averia, 'Descripción de la avería')
+    : ordenActual.descripcion_averia;
+
+  // Resolver descripción libre del parte (primer bloque de tareas_realizadas)
+  const descripcionLibreParte = payload.tareas_realizadas_libre !== undefined
+    ? String(payload.tareas_realizadas_libre || '').trim()
+    : undefined;
+
+  // Fotos: partir de las actuales, eliminar las marcadas y subir nuevas
+  const fotosActuales = Array.isArray(ordenActual.fotos_intervencion_urls)
+    ? ordenActual.fotos_intervencion_urls
+    : [];
+  const fotosAEliminar = Array.isArray(payload.fotos_a_eliminar)
+    ? payload.fotos_a_eliminar.map((u) => String(u || '').trim()).filter(Boolean)
+    : [];
+  const fotosConservadas = fotosActuales.filter((u) => !fotosAEliminar.includes(u));
+
+  let fotosNuevasUrls = [];
+  const fotosNuevas = Array.isArray(payload.fotos_nuevas) ? payload.fotos_nuevas : [];
+  if (fotosNuevas.length > 0) {
+    fotosNuevasUrls = await subirFotosIntervencionStorage(supabase, {
+      fotos: fotosNuevas,
+      clienteId: ordenActual.cliente_id,
+      tecnicoId: ordenActual.tecnico_id,
+      ordenId: ordenActual.id,
+    });
+  }
+
+  const fotosFinales = [...fotosConservadas, ...fotosNuevasUrls];
+
+  // Reconstruir tareas_realizadas
+  const nuevasTareasRealizadas = reemplazarBloqueTareasRealizadas(ordenActual.tareas_realizadas, {
+    descripcionLibre: descripcionLibreParte,
+    fotosUrls: fotosFinales,
+  });
+
+  // Materiales: si llegan, reemplazamos toda la lista (sin tocar stock de inventario)
+  const materialesEntrada = Array.isArray(payload.materiales) ? payload.materiales : null;
+  let materialesNormalizados = null;
+  if (materialesEntrada) {
+    materialesNormalizados = materialesEntrada
+      .map((m) => {
+        const nombre = String(m?.nombre_material || m?.nombre || '').trim();
+        const cantidad = Number.parseInt(m?.cantidad, 10);
+        const precio = Number.parseFloat(String(m?.precio_unitario ?? m?.precio ?? 0).replace(',', '.'));
+        if (!nombre || !Number.isFinite(cantidad) || cantidad <= 0) {
+          return null;
+        }
+        return {
+          orden_id: id,
+          nombre_material: nombre,
+          cantidad,
+          precio_unitario: Number.isFinite(precio) ? Number(precio.toFixed(2)) : 0,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  // Update orden
+  const updatePayload = {
+    descripcion_averia: descripcionAveria,
+    tareas_realizadas: nuevasTareasRealizadas,
+    fotos_intervencion_urls: fotosFinales,
+    foto_url: fotosFinales[0] || null,
+  };
+
+  const { error: updateError } = await supabase
+    .from('ordenes_trabajo')
+    .update(updatePayload)
+    .eq('id', id);
+
+  if (updateError) {
+    throw new Error(`No se pudo actualizar el parte: ${updateError.message}`);
+  }
+
+  // Reemplazar materiales_orden si vinieron
+  if (materialesNormalizados) {
+    const { error: errorDelete } = await supabase
+      .from('materiales_orden')
+      .delete()
+      .eq('orden_id', id);
+    if (errorDelete) {
+      throw new Error(`No se pudo limpiar el detalle de materiales anterior: ${errorDelete.message}`);
+    }
+    if (materialesNormalizados.length > 0) {
+      const { error: errorInsert } = await supabase
+        .from('materiales_orden')
+        .insert(materialesNormalizados);
+      if (errorInsert) {
+        throw new Error(`No se pudo guardar el nuevo detalle de materiales: ${errorInsert.message}`);
+      }
+    }
+
+    // Recalcular coste_materiales_editable si no está fijado manualmente
+    const costeMatCalc = materialesNormalizados.reduce(
+      (acc, m) => acc + Number(m.cantidad) * Number(m.precio_unitario),
+      0,
+    );
+    await supabase
+      .from('ordenes_trabajo')
+      .update({ coste_materiales_editable: Number(costeMatCalc.toFixed(2)) })
+      .eq('id', id);
+  }
+
+  // Regenerar PDF (mantiene la valoración económica actual)
+  const materialesParaTexto = materialesNormalizados
+    || (Array.isArray(ordenActual.materiales_orden) ? ordenActual.materiales_orden : []);
+  const materialesTexto = materialesParaTexto
+    .map((m) => {
+      const nombre = m.nombre_material || 'Material';
+      const cantidad = Number.parseInt(m.cantidad, 10);
+      const precio = Number.parseFloat(String(m.precio_unitario ?? 0).replace(',', '.'));
+      if (!Number.isFinite(cantidad) || cantidad <= 0) return null;
+      return `${nombre};${cantidad};${Number.isFinite(precio) ? precio : 0}`;
+    })
+    .filter(Boolean)
+    .join('\n');
+
+  const desplazamiento = {
+    inicioIso: ordenActual.fecha_inicio,
+    finIso: ordenActual.fecha_fin,
+    distanciaMetros: Number.isFinite(Number(ordenActual.km_desplazamiento_facturables))
+      ? Math.round(Number(ordenActual.km_desplazamiento_facturables) * 1000)
+      : null,
+  };
+
+  const valoracionEconomica = {
+    costeMaterialesEditable: materialesNormalizados
+      ? Number(materialesNormalizados.reduce((a, m) => a + m.cantidad * m.precio_unitario, 0).toFixed(2))
+      : Number(ordenActual.coste_materiales_editable || 0),
+    tarifaManoObraHora: Number(ordenActual.tarifa_mano_obra_hora || 50),
+    horasManoObra: Number(ordenActual.horas_mano_obra || 0),
+    recargoFestivoPct: Number(ordenActual.recargo_festivo_pct || 0),
+    recargoFueraHorarioPct: Number(ordenActual.recargo_fuera_horario_pct || 0),
+    aplicaRecargoFestivo: Boolean(ordenActual.aplica_recargo_festivo),
+    aplicaRecargoFueraHorario: Boolean(ordenActual.aplica_recargo_fuera_horario),
+    porcentajeRecargoManoObra: Number(ordenActual.porcentaje_recargo_mano_obra || 0),
+    costeManoObraBase: Number(ordenActual.coste_mano_obra_base || 0),
+    costeManoObraTotal: Number(ordenActual.coste_mano_obra_total || 0),
+    tarifaDesplazamientoKm: Number(ordenActual.tarifa_desplazamiento_km || 0),
+    kmDesplazamientoFacturables: Number(ordenActual.km_desplazamiento_facturables || 0),
+    costeDesplazamientoTotal: Number(ordenActual.coste_desplazamiento_total || 0),
+    costeTotal: Number(ordenActual.coste_total || 0),
+  };
+
+  const informe = await generarYSubirInformeParte({
+    parte: { id: ordenActual.id },
+    formulario: {
+      cliente_id: ordenActual.cliente_id,
+      prioridad: ordenActual.prioridad || 'media',
+      tiempo_empleado: String(ordenActual.tiempo_empleado_minutos || 0),
+      descripcion_problema: descripcionAveria || 'Sin descripción',
+      materialesTexto,
+    },
+    desplazamiento,
+    intervension: {
+      inicioIso: ordenActual.fecha_inicio,
+      finIso: ordenActual.fecha_fin,
+    },
+    clienteNombre: ordenActual.clientes?.nombre || 'Cliente no identificado',
+    equipoNombre: ordenActual.equipos?.nombre || 'Sin equipo',
+    tecnicoNombre: ordenActual.tecnicos?.nombre || 'Tecnico no identificado',
+    nombreFirmante: extraerNombreFirmanteDesdeTareas(nuevasTareasRealizadas),
+    firmaUrl: ordenActual.firma_url || '',
+    fotosIntervencionUrls: fotosFinales,
+    valoracionEconomica,
+  });
+
+  await guardarInformePdfUrl(id, informe.pdfUrl);
+
+  return {
+    pdfUrl: informe.pdfUrl,
+    fotosIntervencionUrls: fotosFinales,
+    descripcionAveria,
+    tareasRealizadas: nuevasTareasRealizadas,
+    materiales: materialesNormalizados || ordenActual.materiales_orden || [],
   };
 }

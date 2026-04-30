@@ -614,6 +614,266 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
   );
 }
 
+function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto, onNotificar }) {
+  const [abierto, setAbierto] = useState(false);
+  const [descripcionAveria, setDescripcionAveria] = useState(orden.descripcion || '');
+  const [tareasLibre, setTareasLibre] = useState('');
+  const [materiales, setMateriales] = useState(() =>
+    (Array.isArray(orden.materiales) ? orden.materiales : []).map((m) => ({
+      nombre_material: m.nombre_material || m.nombre || '',
+      cantidad: String(m.cantidad ?? 1),
+      precio_unitario: String(m.precio_unitario ?? 0),
+    })),
+  );
+  const [fotosActuales, setFotosActuales] = useState(() =>
+    Array.isArray(orden.fotosIntervencionUrls) ? [...orden.fotosIntervencionUrls] : [],
+  );
+  const [fotosAEliminar, setFotosAEliminar] = useState([]);
+  const [fotosNuevas, setFotosNuevas] = useState([]);
+  const [mensaje, setMensaje] = useState('');
+
+  useEffect(() => {
+    if (!abierto) return;
+    setDescripcionAveria(orden.descripcion || '');
+    setTareasLibre('');
+    setMateriales(
+      (Array.isArray(orden.materiales) ? orden.materiales : []).map((m) => ({
+        nombre_material: m.nombre_material || m.nombre || '',
+        cantidad: String(m.cantidad ?? 1),
+        precio_unitario: String(m.precio_unitario ?? 0),
+      })),
+    );
+    setFotosActuales(Array.isArray(orden.fotosIntervencionUrls) ? [...orden.fotosIntervencionUrls] : []);
+    setFotosAEliminar([]);
+    setFotosNuevas([]);
+    setMensaje('');
+  }, [abierto, orden.descripcion, orden.materiales, orden.fotosIntervencionUrls]);
+
+  function alternarEliminarFoto(url) {
+    setFotosAEliminar((prev) =>
+      prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url],
+    );
+  }
+
+  function actualizarMaterial(indice, campo, valor) {
+    setMateriales((prev) => prev.map((m, i) => (i === indice ? { ...m, [campo]: valor } : m)));
+  }
+
+  function eliminarMaterial(indice) {
+    setMateriales((prev) => prev.filter((_, i) => i !== indice));
+  }
+
+  function agregarMaterial() {
+    setMateriales((prev) => [...prev, { nombre_material: '', cantidad: '1', precio_unitario: '0' }]);
+  }
+
+  function aceptarFotosNuevas(evento) {
+    const archivos = Array.from(evento.target.files || []);
+    setFotosNuevas((prev) => [...prev, ...archivos]);
+    evento.target.value = '';
+  }
+
+  function quitarFotoNueva(indice) {
+    setFotosNuevas((prev) => prev.filter((_, i) => i !== indice));
+  }
+
+  async function guardar(evento) {
+    evento.preventDefault();
+    setMensaje('');
+    try {
+      await onEditarParteCompleto(orden.id, {
+        descripcion_averia: descripcionAveria,
+        tareas_realizadas_libre: tareasLibre,
+        materiales: materiales.map((m) => ({
+          nombre_material: m.nombre_material,
+          cantidad: m.cantidad,
+          precio_unitario: m.precio_unitario,
+        })),
+        fotos_a_eliminar: fotosAEliminar,
+        fotos_nuevas: fotosNuevas,
+      });
+      setAbierto(false);
+      setMensaje('Parte editado e informe regenerado.');
+      onNotificar?.({
+        tipo: 'exito',
+        titulo: 'Parte actualizado',
+        descripcion: 'Se guardaron los cambios y se regeneró el PDF del informe.',
+      });
+    } catch (err) {
+      setMensaje(err.message || 'No se pudo editar el parte.');
+      onNotificar?.({
+        tipo: 'error',
+        titulo: 'No se pudo editar el parte',
+        descripcion: err.message || 'Revisa los cambios y vuelve a intentarlo.',
+      });
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setAbierto((p) => !p)}
+        className="w-full rounded-lg border border-sky-300 bg-white px-3 py-2 text-xs font-bold text-sky-800"
+      >
+        {abierto ? 'Cancelar edición del parte' : 'Editar parte completo (admin)'}
+      </button>
+
+      {abierto && (
+        <form onSubmit={guardar} className="space-y-3 rounded-xl border border-sky-200 bg-white p-3">
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-slate-700">Descripción de la avería</span>
+            <textarea
+              rows={2}
+              value={descripcionAveria}
+              onChange={(e) => setDescripcionAveria(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-slate-700">
+              Tareas realizadas (texto libre, sustituye el resumen del parte)
+            </span>
+            <textarea
+              rows={3}
+              value={tareasLibre}
+              onChange={(e) => setTareasLibre(e.target.value)}
+              placeholder="Déjalo vacío para conservar el texto actual del parte."
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+            <span className="mt-1 block text-[10px] text-slate-500">
+              Solo se reemplaza si escribes algo. Los marcadores técnicos (firma, fotos…) se conservan.
+            </span>
+          </label>
+
+          <fieldset className="space-y-2 rounded-lg border border-slate-200 p-2">
+            <legend className="px-1 text-xs font-bold text-slate-700">Materiales</legend>
+            {materiales.length === 0 && (
+              <p className="text-xs text-slate-500">Sin materiales asociados.</p>
+            )}
+            {materiales.map((m, i) => (
+              <div key={i} className="grid grid-cols-12 gap-1">
+                <input
+                  type="text"
+                  value={m.nombre_material}
+                  onChange={(e) => actualizarMaterial(i, 'nombre_material', e.target.value)}
+                  placeholder="Nombre"
+                  className="col-span-6 rounded border border-slate-300 px-2 py-1 text-xs"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={m.cantidad}
+                  onChange={(e) => actualizarMaterial(i, 'cantidad', e.target.value)}
+                  placeholder="Cant."
+                  className="col-span-2 rounded border border-slate-300 px-2 py-1 text-xs"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={m.precio_unitario}
+                  onChange={(e) => actualizarMaterial(i, 'precio_unitario', e.target.value)}
+                  placeholder="€/u"
+                  className="col-span-3 rounded border border-slate-300 px-2 py-1 text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => eliminarMaterial(i)}
+                  className="col-span-1 rounded bg-red-100 px-1 text-xs font-bold text-red-700"
+                  title="Eliminar"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={agregarMaterial}
+              className="w-full rounded-lg border border-dashed border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700"
+            >
+              + Añadir material
+            </button>
+            <p className="text-[10px] text-slate-500">
+              No se ajusta el stock de inventario al editar; solo cambia el detalle del informe.
+            </p>
+          </fieldset>
+
+          <fieldset className="space-y-2 rounded-lg border border-slate-200 p-2">
+            <legend className="px-1 text-xs font-bold text-slate-700">Fotos del parte</legend>
+            {fotosActuales.length === 0 && (
+              <p className="text-xs text-slate-500">Sin fotos en el parte original.</p>
+            )}
+            <div className="grid grid-cols-3 gap-2">
+              {fotosActuales.map((url) => {
+                const marcada = fotosAEliminar.includes(url);
+                return (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() => alternarEliminarFoto(url)}
+                    className={`relative overflow-hidden rounded border-2 ${marcada ? 'border-red-500 opacity-50' : 'border-slate-200'}`}
+                  >
+                    <img src={url} alt="Foto" className="h-20 w-full object-cover" />
+                    {marcada && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-red-500/40 text-xs font-bold text-white">
+                        Eliminar
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {fotosAEliminar.length > 0 && (
+              <p className="text-[11px] font-semibold text-red-700">
+                {fotosAEliminar.length} foto(s) marcadas para eliminar.
+              </p>
+            )}
+            <div className="border-t border-slate-200 pt-2">
+              <span className="mb-1 block text-xs font-semibold text-slate-700">Añadir fotos nuevas</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={aceptarFotosNuevas}
+                className="block w-full text-xs"
+              />
+              {fotosNuevas.length > 0 && (
+                <ul className="mt-2 space-y-1 text-xs text-slate-700">
+                  {fotosNuevas.map((f, i) => (
+                    <li key={i} className="flex items-center justify-between rounded bg-slate-100 px-2 py-1">
+                      <span className="truncate">{f.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => quitarFotoNueva(i)}
+                        className="ml-2 rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700"
+                      >
+                        Quitar
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </fieldset>
+
+          <button
+            type="submit"
+            disabled={accionEnCurso}
+            className="w-full rounded-xl bg-sky-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+          >
+            {accionEnCurso ? 'Guardando y regenerando PDF...' : 'Guardar parte y regenerar informe'}
+          </button>
+
+          {mensaje && <p className="text-xs font-semibold text-slate-600">{mensaje}</p>}
+        </form>
+      )}
+    </>
+  );
+}
+
 function TarjetaOrden({
   orden,
   tecnicosActivos,
@@ -621,6 +881,7 @@ function TarjetaOrden({
   onFinalizar,
   onActualizar,
   onValorarFinalizada,
+  onEditarParteCompleto,
   onEliminar,
   onNotificar,
   onIrAParte,
@@ -1003,6 +1264,15 @@ function TarjetaOrden({
             </>
           )}
 
+          {puedeValorarFinalizada && (
+            <BloqueEditarParteCompleto
+              orden={orden}
+              accionEnCurso={accionEnCurso}
+              onEditarParteCompleto={onEditarParteCompleto}
+              onNotificar={onNotificar}
+            />
+          )}
+
           {puedeEliminarOrden && (
             <BloqueEliminarOrden
               orden={orden}
@@ -1229,6 +1499,7 @@ export function ListaOrdenesView({ rolUsuario }) {
     finalizarOrden,
     actualizarOrden,
     actualizarValoracionFinalizada,
+    editarParteCompleto,
     eliminarOrden,
   } = useOrdenes();
 
@@ -1708,6 +1979,7 @@ export function ListaOrdenesView({ rolUsuario }) {
               onFinalizar={finalizarOrden}
               onActualizar={actualizarOrden}
               onValorarFinalizada={actualizarValoracionFinalizada}
+              onEditarParteCompleto={editarParteCompleto}
               onEliminar={eliminarOrden}
               onNotificar={notificar}
               onIrAParte={irAParteDesdeOrden}

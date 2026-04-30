@@ -372,7 +372,7 @@ async function subirFirmaClienteStorage(supabase, { firmaDataUrl, clienteId, tec
   return data?.publicUrl || null;
 }
 
-async function subirFotosIntervencionStorage(supabase, { fotos, clienteId, tecnicoId, ordenId }) {
+export async function subirFotosIntervencionStorage(supabase, { fotos, clienteId, tecnicoId, ordenId }) {
   const listaFotos = Array.isArray(fotos) ? fotos : [];
   if (listaFotos.length === 0) {
     return [];

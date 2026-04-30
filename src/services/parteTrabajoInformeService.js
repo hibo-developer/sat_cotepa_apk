@@ -454,9 +454,11 @@ function dibujarValoracionEconomica(doc, estado, val) {
   if (pctRecargoMO > 0) {
     filas.push([`Recargo mano de obra`, `+${pctRecargoMO.toFixed(2)} %`, moTotal - moBase]);
   }
+  const kmFact = num(val.kmDesplazamientoFacturables) ?? 0;
+  const kmIda = kmFact > 0 ? (kmFact / 2).toFixed(2) : '0';
   filas.push([
     'Desplazamiento',
-    `${num(val.kmDesplazamientoFacturables) ?? 0} km × ${eur(val.tarifaDesplazamientoKm)}`,
+    `${kmIda} km ida × 2 = ${kmFact} km × ${eur(val.tarifaDesplazamientoKm)}`,
     desplTotal,
   ]);
 
@@ -690,7 +692,6 @@ function construirFilasControlTiempos({ desplazamiento, intervension, seguimient
   const inicioInt = inter.inicioIso;
   const finInt = inter.finIso;
   const lugarInt = inter.ubicacionInicio?.nombreLugarCompleto || inter.ubicacionInicio?.nombreLugar;
-  const horasInt = (inicioInt || finInt) ? calcularHorasIntervencionMinimoUno(inter) : null;
 
   // Desplazamiento
   if (inicioDesp) filas.push(['Inicio desplazamiento', formatearFechaCorta(inicioDesp)]);
@@ -698,17 +699,40 @@ function construirFilasControlTiempos({ desplazamiento, intervension, seguimient
   if (lugarFinDesp) filas.push(['Lugar destino', lugarFinDesp]);
   if (km != null) filas.push(['Distancia recorrida', `${km} km (ida) · ${(km * 2).toFixed(2)} km facturables`]);
 
-  // Intervención
+  // Intervención (mostrar bruto y descuento de pausas)
+  const pausas = Array.isArray(inter.pausasComida) ? inter.pausasComida : [];
+  const minutosBrutoIntervencion = (inicioInt || finInt) ? (resolverMinutosFase(inter) || 0) : 0;
+  const minutosPausas = pausas.reduce((a, p) => a + (resolverMinutosFase(p) || 0), 0);
+  const minutosEfectivos = Math.max(0, minutosBrutoIntervencion - minutosPausas);
+
   if (inicioInt) filas.push(['Inicio intervención', formatearFechaCorta(inicioInt)]);
   if (finInt) filas.push(['Fin intervención', formatearFechaCorta(finInt)]);
   if (lugarInt) filas.push(['Lugar intervención', lugarInt]);
-  if (horasInt != null) filas.push(['Tiempo intervención', `${horasInt} h`]);
 
-  // Pausas
-  const pausas = Array.isArray(inter.pausasComida) ? inter.pausasComida : [];
-  if (pausas.length) {
-    const total = pausas.reduce((a, p) => a + (resolverMinutosFase(p) || 0), 0);
-    filas.push(['Pausas registradas', `${pausas.length} (${total} min)`]);
+  // Pausas: siempre se muestran (Sin pausas si no hay)
+  if (pausas.length === 0) {
+    if (inicioInt || finInt) {
+      filas.push(['Pausas', 'Sin pausas']);
+    }
+  } else {
+    const detallePausas = pausas
+      .map((p) => {
+        const m = resolverMinutosFase(p) || 0;
+        return `${m} min`;
+      })
+      .join(' + ');
+    filas.push([`Pausas (${pausas.length})`, `${detallePausas} = ${minutosPausas} min`]);
+  }
+
+  // Tiempo efectivo
+  if (inicioInt || finInt) {
+    if (minutosPausas > 0) {
+      filas.push(['Tiempo bruto intervención', `${(minutosBrutoIntervencion / 60).toFixed(2)} h (${minutosBrutoIntervencion} min)`]);
+      filas.push(['Tiempo intervención efectivo', `${(minutosEfectivos / 60).toFixed(2)} h (${minutosEfectivos} min · descontadas pausas)`]);
+    } else {
+      const horasEfectivas = Math.max(1 / 60, minutosBrutoIntervencion / 60);
+      filas.push(['Tiempo intervención', `${horasEfectivas.toFixed(2)} h`]);
+    }
   }
 
   return filas;

@@ -4,6 +4,7 @@ import { obtenerOrdenes } from '../services/ordenesService';
 import {
   actualizarValoracionOrdenFinalizada,
   crearOrdenTrabajo,
+  editarParteFinalizado,
   finalizarOrdenTrabajo,
   obtenerOrdenesTrabajo,
 } from '../services/workOrderService';
@@ -127,6 +128,9 @@ function adaptarOrdenSupabase(orden) {
     estado: estadoBackendAUi(orden.estado),
     prioridad: orden.prioridad,
     fecha: new Date(orden.fecha_inicio).toLocaleDateString('es-ES'),
+    fotosIntervencionUrls: Array.isArray(orden.fotos_intervencion_urls)
+      ? orden.fotos_intervencion_urls
+      : [],
   };
 }
 
@@ -254,6 +258,21 @@ export function useOrdenes() {
     }
   }
 
+  async function editarParteCompleto(idOrden, payloadEdicion) {
+    setAccionEnCurso(true);
+    setError('');
+
+    try {
+      await editarParteFinalizado(idOrden, payloadEdicion);
+      await cargarOrdenes();
+    } catch (err) {
+      setError(err.message || 'No se pudo editar el parte y regenerar el informe.');
+      throw err;
+    } finally {
+      setAccionEnCurso(false);
+    }
+  }
+
   async function eliminarOrden(idOrden) {
     setAccionEnCurso(true);
     setError('');
@@ -303,6 +322,7 @@ export function useOrdenes() {
     finalizarOrden,
     actualizarOrden,
     actualizarValoracionFinalizada,
+    editarParteCompleto,
     eliminarOrden,
   };
 }
