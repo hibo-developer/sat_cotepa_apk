@@ -858,12 +858,15 @@ async function subirPdfInforme({ pdfBlob, nombreArchivo, clienteId }) {
   const ruta = `${clienteId}/${nombreArchivo}`;
   const { error } = await supabase.storage
     .from('informes-partes')
-    .upload(ruta, pdfBlob, { upsert: true, contentType: 'application/pdf', cacheControl: '3600' });
+    .upload(ruta, pdfBlob, { upsert: true, contentType: 'application/pdf', cacheControl: '0' });
   if (error) {
     throw new Error(`No se pudo subir el PDF a Storage: ${error.message}`);
   }
   const { data } = supabase.storage.from('informes-partes').getPublicUrl(ruta);
-  return data?.publicUrl || null;
+  if (!data?.publicUrl) return null;
+  // Cache-buster para evitar que el navegador/CDN sirva el PDF anterior con el mismo nombre.
+  const sep = data.publicUrl.includes('?') ? '&' : '?';
+  return `${data.publicUrl}${sep}v=${Date.now()}`;
 }
 
 async function obtenerSecuencialDiario() {
