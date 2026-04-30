@@ -1,19 +1,33 @@
 import { useEffect, useState } from 'react';
 import {
+  contarPartesPendientes,
   contarPendientes,
   estaOnline,
   procesarCola,
+  procesarColaPartes,
   suscribirseEstadoSync,
 } from '../services/offlineSyncService';
 
 export function IndicadorSync() {
-  const [estado, setEstado] = useState({ online: estaOnline(), pendientes: 0 });
+  const [estado, setEstado] = useState({
+    online: estaOnline(),
+    pendientes: 0,
+    pendientesAcciones: 0,
+    pendientesPartes: 0,
+  });
   const [sincronizando, setSincronizando] = useState(false);
 
   useEffect(() => {
     let activo = true;
-    contarPendientes().then((n) => {
-      if (activo) setEstado((s) => ({ ...s, pendientes: n }));
+    Promise.all([contarPendientes(), contarPartesPendientes()]).then(([acciones, partes]) => {
+      if (activo) {
+        setEstado((s) => ({
+          ...s,
+          pendientesAcciones: acciones,
+          pendientesPartes: partes,
+          pendientes: acciones + partes,
+        }));
+      }
     });
 
     const desuscribir = suscribirseEstadoSync((nuevo) => {
@@ -37,7 +51,7 @@ export function IndicadorSync() {
     if (sincronizando || !estado.online) return;
     setSincronizando(true);
     try {
-      await procesarCola();
+      await Promise.all([procesarCola(), procesarColaPartes()]);
     } finally {
       setSincronizando(false);
     }
@@ -52,6 +66,10 @@ export function IndicadorSync() {
   const colorBase = offline
     ? 'bg-amber-50 border-amber-300 text-amber-900'
     : 'bg-sky-50 border-sky-300 text-sky-900';
+
+  const detallePartes = estado.pendientesPartes > 0
+    ? ` · ${estado.pendientesPartes} parte${estado.pendientesPartes > 1 ? 's' : ''} por enviar`
+    : '';
 
   return (
     <div
@@ -70,6 +88,7 @@ export function IndicadorSync() {
               {estado.pendientes}
             </span>
           )}
+          {detallePartes}
         </span>
       </div>
       {!offline && estado.pendientes > 0 && (

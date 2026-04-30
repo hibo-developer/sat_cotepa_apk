@@ -20,17 +20,30 @@ import db from './offlineDb';
 import {
   actualizarOrdenTrabajo,
   eliminarOrdenTrabajo,
+  guardarInformePdfUrl,
 } from './workOrderService';
+import { crearParteTrabajo } from './parteTrabajoService';
+import { generarYSubirInformeParte } from './parteTrabajoInformeService';
 
 const ACCIONES_SOPORTADAS = new Set(['actualizar', 'eliminar']);
 
 const oyentes = new Set();
 
 function notificar() {
-  contarPendientes()
-    .then((n) => oyentes.forEach((cb) => {
-      try { cb({ pendientes: n, online: estaOnline() }); } catch { /* noop */ }
-    }))
+  Promise.all([contarPendientes(), contarPartesPendientes()])
+    .then(([acciones, partes]) => {
+      const total = acciones + partes;
+      oyentes.forEach((cb) => {
+        try {
+          cb({
+            pendientes: total,
+            pendientesAcciones: acciones,
+            pendientesPartes: partes,
+            online: estaOnline(),
+          });
+        } catch { /* noop */ }
+      });
+    })
     .catch(() => { /* noop */ });
 }
 
@@ -208,6 +221,130 @@ function esErrorRed(err) {
   );
 }
 
+// =====================================================================
+// Cola de partes finalizados completos
+// =====================================================================
+//
+// Un parte finalizado offline guarda en IndexedDB:
+//  - payload del formulario (texto/IDs)
+//  - desplazamiento, intervension (objetos JSON)
+//  - materialesSeleccionados (array)
+//  - fotos (array de Blobs)
+//  - firmaDataUrl (string base64)
+//  - contexto: nombres de cliente/equipo/técnico para regenerar el informe
+//
+// Al sincronizar se reproduce el flujo: crearParteTrabajo →
+// generarYSubirInformeParte → guardarInformePdfUrl.
+//
+// Las acciones que soporten subir Blobs requieren que IndexedDB pueda
+// almacenarlos: Dexie/IDB lo soportan de forma nativa.
+
+export async function encolarParteFinalizado(parteCompleto) {
+  if (!parteCompleto || typeof parteCompleto !== 'object') {
+    throw new Error('Parte inválido para encolar.');
+  }
+  await db.pending_partes.add({
+    payload: parteCompleto.payload,
+    desplazamiento: parteCompleto.desplazamiento || null,
+    intervension: parteCompleto.intervension || null,
+    materialesSeleccionados: parteCompleto.materialesSeleccionados || [],
+    materialesTextoInforme: parteCompleto.materialesTextoInforme || '',
+    fotos: parteCompleto.fotos || [],
+    firmaDataUrl: parteCompleto.firmaDataUrl || '',
+    contexto: parteCompleto.contexto || {},
+    createdAt: new Date().toISOString(),
+    intentos: 0,
+    ultimoError: null,
+  });
+  notificar();
+}
+
+export async function contarPartesPendientes() {
+  try {
+    return await db.pending_partes.count();
+  } catch {
+    return 0;
+  }
+}
+
+export async function listarPartesPendientes() {
+  try {
+    return await db.pending_partes.orderBy('id').toArray();
+  } catch {
+    return [];
+  }
+}
+
+let procesandoPartes = false;
+
+async function ejecutarParteRemoto(item) {
+  // Reproducir el flujo completo del enviarParte de ParteTrabajoView.
+  const parte = await crearParteTrabajo({
+    ...item.payload,
+    materialesInventario: item.materialesSeleccionados,
+    fotos_intervencion: item.fotos,
+    desplazamiento: item.desplazamiento,
+    intervension: item.intervension,
+    firma_url: item.firmaDataUrl,
+  });
+
+  const informe = await generarYSubirInformeParte({
+    parte,
+    formulario: {
+      ...item.payload,
+      materialesTexto: item.materialesTextoInforme || '',
+    },
+    desplazamiento: item.desplazamiento,
+    intervension: item.intervension,
+    clienteNombre: item.contexto?.clienteNombre || 'Cliente',
+    equipoNombre: item.contexto?.equipoNombre || 'Equipo',
+    tecnicoNombre: item.contexto?.tecnicoNombre || 'Técnico',
+    nombreFirmante: item.payload?.nombre_firmante || 'Cliente',
+    firmaUrl: parte.firma_url || '',
+    fotosIntervencionUrls: parte.fotos_intervencion_urls || [],
+  });
+
+  try {
+    await guardarInformePdfUrl(parte.id, informe.pdfUrl);
+  } catch {
+    // No bloqueante: el parte ya quedó registrado.
+  }
+}
+
+export async function procesarColaPartes() {
+  if (procesandoPartes || !estaOnline()) {
+    return { procesados: 0, restantes: await contarPartesPendientes() };
+  }
+  procesandoPartes = true;
+  let procesados = 0;
+
+  try {
+    const pendientes = await listarPartesPendientes();
+    for (const item of pendientes) {
+      try {
+        await ejecutarParteRemoto(item);
+        await db.pending_partes.delete(item.id);
+        procesados += 1;
+      } catch (err) {
+        // Marcamos error y reintentamos en el siguiente ciclo.
+        await db.pending_partes.update(item.id, {
+          intentos: (item.intentos || 0) + 1,
+          ultimoError: String(err?.message || err),
+        });
+        // Si es error de red, paramos para no consumir intentos en cadena.
+        if (esErrorRed(err)) break;
+        // Si es error de validación (cliente borrado, stock, etc.), seguimos
+        // con el siguiente para no bloquear toda la cola.
+      }
+    }
+  } finally {
+    procesandoPartes = false;
+    notificar();
+  }
+
+  return { procesados, restantes: await contarPartesPendientes() };
+}
+
 // ---------------------------------------------------------------------
 // Listener global: al recuperar conexión, drenamos la cola.
 // ---------------------------------------------------------------------
@@ -215,6 +352,7 @@ function esErrorRed(err) {
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     procesarCola().catch(() => { /* noop */ });
+    procesarColaPartes().catch(() => { /* noop */ });
     notificar();
   });
   window.addEventListener('offline', () => {

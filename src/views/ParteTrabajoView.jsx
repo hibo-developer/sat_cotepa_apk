@@ -8,6 +8,7 @@ import {
 import { listarMaterialesInventario } from '../services/inventarioMaterialesService';
 import { crearParteTrabajo, obtenerOrdenesAbiertasParaParte } from '../services/parteTrabajoService';
 import { generarYSubirInformeParte } from '../services/parteTrabajoInformeService';
+import { encolarParteFinalizado, estaOnline } from '../services/offlineSyncService';
 import { guardarInformePdfUrl } from '../services/workOrderService';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
 
@@ -871,42 +872,100 @@ export function ParteTrabajoView() {
 
     setGuardando(true);
 
+    const clienteSeleccionado = clientes.find((c) => c.id === formulario.cliente_id);
+    const equipoSeleccionado = equipos.find((e) => e.id === formulario.equipo_id);
+    const tecnicoSeleccionado = tecnicos.find((t) => t.id === formulario.tecnico_id);
+    const clienteNombreInforme = clienteSeleccionado?.nombre || (formulario.cliente_nombre || '').trim() || 'Cliente no identificado';
+    const equipoNombreInforme = equipoSeleccionado?.nombre || (formulario.equipo_nombre || '').trim() || 'Sin equipo';
+    const materialesInventarioTexto = materialesSeleccionados
+      .map((uso) => {
+        const material = materialesInventario.find((m) => m.id === uso.material_id);
+        if (!material) {
+          return null;
+        }
+        const precio = material.precio_ref ?? 'N/D';
+        return `${material.nombre};${uso.cantidad};${precio}`;
+      })
+      .filter(Boolean)
+      .join('\n');
+
+    const materialesTextoInforme = [materialesInventarioTexto, formulario.materialesTexto]
+      .filter((bloque) => (bloque || '').trim())
+      .join('\n');
+
+    const payloadParte = {
+      ...formulario,
+      orden_id: formulario.orden_id,
+      cliente_nombre: formulario.cliente_nombre,
+      equipo_id: formulario.equipo_id || null,
+      equipo_nombre: formulario.equipo_nombre,
+      tecnico_id: formulario.tecnico_id || null,
+    };
+
+    function resetearFormulario() {
+      setFormulario(FORM_INICIAL);
+      setDesplazamiento({
+        inicioIso: null, finIso: null, ubicacionInicio: null, ubicacionFin: null,
+        distanciaMetros: null, minutosGeo: null,
+      });
+      setIntervension({
+        inicioIso: null, finIso: null, ubicacionInicio: null, ubicacionFin: null,
+        distanciaMetros: null, minutosGeo: null, pausasComida: [], pausaComidaActiva: null,
+      });
+      setPendienteGeoIntervension(false);
+      setSeguimientoTiempo({
+        inicioIso: null, finIso: null, ubicacionInicio: null, ubicacionFin: null,
+        distanciaMetros: null, minutosGeo: null,
+      });
+      limpiarFirma();
+      setEquipos([]);
+      setOrdenesAbiertas([]);
+      setMaterialesSeleccionados([]);
+      setMaterialSeleccionadoId('');
+      setMaterialSeleccionadoCantidad('1');
+      setFotosIntervencion([]);
+    }
+
+    async function encolarOffline(motivo) {
+      await encolarParteFinalizado({
+        payload: payloadParte,
+        desplazamiento,
+        intervension,
+        materialesSeleccionados,
+        materialesTextoInforme,
+        fotos: fotosIntervencion,
+        firmaDataUrl: firmaClienteDataUrl,
+        contexto: {
+          clienteNombre: clienteNombreInforme,
+          equipoNombre: equipoNombreInforme,
+          tecnicoNombre: tecnicoSeleccionado?.nombre || 'Tecnico no identificado',
+        },
+      });
+      setMensaje(`Parte guardado localmente${motivo ? ` (${motivo})` : ''}. Se enviará automáticamente al recuperar conexión.`);
+      resetearFormulario();
+    }
+
+    // Si ya estamos offline, encolamos directamente sin tocar la red.
+    if (!estaOnline()) {
+      try {
+        await encolarOffline('sin conexión');
+      } catch (err) {
+        setError(err.message || 'No se pudo guardar el parte localmente.');
+      } finally {
+        setGuardando(false);
+      }
+      return;
+    }
+
     try {
       const parte = await crearParteTrabajo({
-        ...formulario,
-        orden_id: formulario.orden_id,
-        cliente_nombre: formulario.cliente_nombre,
-        equipo_id: formulario.equipo_id || null,
-        equipo_nombre: formulario.equipo_nombre,
-        tecnico_id: formulario.tecnico_id || null,
+        ...payloadParte,
         materialesInventario: materialesSeleccionados,
         fotos_intervencion: fotosIntervencion,
         desplazamiento,
         intervension,
         firma_url: firmaClienteDataUrl,
       });
-
-      const clienteSeleccionado = clientes.find((c) => c.id === formulario.cliente_id);
-      const equipoSeleccionado = equipos.find((e) => e.id === formulario.equipo_id);
-      const tecnicoSeleccionado = tecnicos.find((t) => t.id === formulario.tecnico_id);
-      const clienteNombreInforme = clienteSeleccionado?.nombre || (formulario.cliente_nombre || '').trim() || 'Cliente no identificado';
-      const equipoNombreInforme = equipoSeleccionado?.nombre || (formulario.equipo_nombre || '').trim() || 'Sin equipo';
-      const materialesInventarioTexto = materialesSeleccionados
-        .map((uso) => {
-          const material = materialesInventario.find((m) => m.id === uso.material_id);
-          if (!material) {
-            return null;
-          }
-
-          const precio = material.precio_ref ?? 'N/D';
-          return `${material.nombre};${uso.cantidad};${precio}`;
-        })
-        .filter(Boolean)
-        .join('\n');
-
-      const materialesTextoInforme = [materialesInventarioTexto, formulario.materialesTexto]
-        .filter((bloque) => (bloque || '').trim())
-        .join('\n');
 
       const informe = await generarYSubirInformeParte({
         parte,
@@ -931,43 +990,25 @@ export function ParteTrabajoView() {
       }
 
       setMensaje('Parte registrado. Informe disponible.');
-      setFormulario(FORM_INICIAL);
-      setDesplazamiento({
-        inicioIso: null,
-        finIso: null,
-        ubicacionInicio: null,
-        ubicacionFin: null,
-        distanciaMetros: null,
-        minutosGeo: null,
-      });
-      setIntervension({
-        inicioIso: null,
-        finIso: null,
-        ubicacionInicio: null,
-        ubicacionFin: null,
-        distanciaMetros: null,
-        minutosGeo: null,
-        pausasComida: [],
-        pausaComidaActiva: null,
-      });
-      setPendienteGeoIntervension(false);
-      setSeguimientoTiempo({
-        inicioIso: null,
-        finIso: null,
-        ubicacionInicio: null,
-        ubicacionFin: null,
-        distanciaMetros: null,
-        minutosGeo: null,
-      });
-      limpiarFirma();
-      setEquipos([]);
-      setOrdenesAbiertas([]);
-      setMaterialesSeleccionados([]);
-      setMaterialSeleccionadoId('');
-      setMaterialSeleccionadoCantidad('1');
-      setFotosIntervencion([]);
+      resetearFormulario();
     } catch (err) {
-      setError(err.message || 'No se pudo registrar el parte de trabajo.');
+      const mensaje = String(err?.message || err).toLowerCase();
+      const esRed = mensaje.includes('failed to fetch')
+        || mensaje.includes('networkerror')
+        || mensaje.includes('network error')
+        || mensaje.includes('load failed')
+        || mensaje.includes('fetch failed')
+        || mensaje.includes('timeout')
+        || mensaje.includes('offline');
+      if (esRed) {
+        try {
+          await encolarOffline('conexión perdida durante el envío');
+        } catch (errEncolar) {
+          setError(errEncolar.message || 'No se pudo guardar el parte localmente.');
+        }
+      } else {
+        setError(err.message || 'No se pudo registrar el parte de trabajo.');
+      }
     } finally {
       setGuardando(false);
     }
