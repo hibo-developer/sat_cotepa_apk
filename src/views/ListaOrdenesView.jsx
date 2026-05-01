@@ -11,7 +11,7 @@ import {
   obtenerEquiposPorCliente,
   obtenerTecnicosActivos,
 } from '../services/catalogosService';
-import { tieneConfiguracionSupabase } from '../services/supabaseClient';
+import { tieneConfiguracionSupabase, obtenerUrlFirmadaStorage } from '../services/supabaseClient';
 
 const estilosEstado = {
   Pendiente: {
@@ -628,6 +628,7 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
   const [fotosActuales, setFotosActuales] = useState(() =>
     Array.isArray(orden.fotosIntervencionUrls) ? [...orden.fotosIntervencionUrls] : [],
   );
+  const [mapaFotosVista, setMapaFotosVista] = useState({});
   const [fotosAEliminar, setFotosAEliminar] = useState([]);
   const [fotosNuevas, setFotosNuevas] = useState([]);
   const [mensaje, setMensaje] = useState('');
@@ -643,10 +644,20 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
         precio_unitario: String(m.precio_unitario ?? 0),
       })),
     );
-    setFotosActuales(Array.isArray(orden.fotosIntervencionUrls) ? [...orden.fotosIntervencionUrls] : []);
+    const refs = Array.isArray(orden.fotosIntervencionUrls) ? [...orden.fotosIntervencionUrls] : [];
+    setFotosActuales(refs);
     setFotosAEliminar([]);
     setFotosNuevas([]);
     setMensaje('');
+    setMapaFotosVista({});
+    Promise.all(
+      refs.map(async (ref) => {
+        const url = await obtenerUrlFirmadaStorage(ref, { expiresIn: 900 });
+        return [ref, url];
+      }),
+    ).then((pares) => {
+      setMapaFotosVista(Object.fromEntries(pares.filter(([k]) => k)));
+    }).catch(() => {});
   }, [abierto, orden.descripcion, orden.materiales, orden.fotosIntervencionUrls]);
 
   function alternarEliminarFoto(url) {
@@ -816,7 +827,7 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
                     onClick={() => alternarEliminarFoto(url)}
                     className={`relative overflow-hidden rounded border-2 ${marcada ? 'border-red-500 opacity-50' : 'border-slate-200'}`}
                   >
-                    <img src={url} alt="Foto" className="h-20 w-full object-cover" />
+                    <img src={mapaFotosVista[url] || ''} alt="Foto" className="h-20 w-full object-cover" />
                     {marcada && (
                       <span className="absolute inset-0 flex items-center justify-center bg-red-500/40 text-xs font-bold text-white">
                         Eliminar
@@ -898,6 +909,7 @@ function TarjetaOrden({
   const [mensajeEdicion, setMensajeEdicion] = useState('');
   const [mensajeValoracion, setMensajeValoracion] = useState('');
   const [mensajeEliminacion, setMensajeEliminacion] = useState('');
+  const [descargandoInforme, setDescargandoInforme] = useState(false);
   const aplicaRecargoFestivoPorDefecto = typeof orden.aplicaRecargoFestivo === 'boolean'
     ? orden.aplicaRecargoFestivo
     : esFinDeSemana(orden.fechaInicioIso);
@@ -1026,6 +1038,35 @@ function TarjetaOrden({
     URL.revokeObjectURL(url);
   }
 
+  async function descargarInformePdf() {
+    if (!orden.informePdfUrl || descargandoInforme) {
+      return;
+    }
+    setDescargandoInforme(true);
+    try {
+      const url = await obtenerUrlFirmadaStorage(orden.informePdfUrl, { expiresIn: 900 });
+      if (!url) {
+        throw new Error('No se pudo obtener el enlace del informe.');
+      }
+      const enlace = document.createElement('a');
+      enlace.href = url;
+      enlace.target = '_blank';
+      enlace.rel = 'noreferrer';
+      enlace.download = `informe-${orden.numero_ticket || orden.id}.pdf`;
+      document.body.appendChild(enlace);
+      enlace.click();
+      document.body.removeChild(enlace);
+    } catch (err) {
+      onNotificar?.({
+        tipo: 'error',
+        titulo: 'No se pudo descargar el informe',
+        descripcion: err?.message || 'Inténtalo de nuevo en unos segundos.',
+      });
+    } finally {
+      setDescargandoInforme(false);
+    }
+  }
+
   async function confirmarEliminacion() {
     setMensajeEliminacion('');
     try {
@@ -1108,13 +1149,14 @@ function TarjetaOrden({
       {orden.estado === 'Finalizado' && (
         <div className="mt-3 space-y-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
           {orden.informePdfUrl && (
-            <a
-              href={orden.informePdfUrl}
-              download={`informe-${orden.numero_ticket || orden.id}.pdf`}
-              className="inline-flex rounded-lg bg-marca-900 px-3 py-2 text-xs font-bold text-white"
+            <button
+              type="button"
+              onClick={descargarInformePdf}
+              disabled={descargandoInforme}
+              className="inline-flex rounded-lg bg-marca-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-60"
             >
-              Descargar informe PDF
-            </a>
+              {descargandoInforme ? 'Generando enlace...' : 'Descargar informe PDF'}
+            </button>
           )}
           {!orden.informePdfUrl && (
             <p className="text-xs font-semibold text-emerald-800">
@@ -1399,6 +1441,7 @@ function TarjetaOrden({
               mensajeEliminacion={mensajeEliminacion}
               onAlternarEliminar={alternarEliminar}
               onDescargarCopiaJsonOrden={descargarCopiaJsonOrden}
+              onDescargarInformePdf={descargarInformePdf}
               onCambiarCopiaGuardada={setCopiaGuardada}
               onConfirmarEliminacion={confirmarEliminacion}
               claseBotonToggle="w-full rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 active:scale-95"
@@ -1419,6 +1462,7 @@ function BloqueEliminarOrden({
   mensajeEliminacion,
   onAlternarEliminar,
   onDescargarCopiaJsonOrden,
+  onDescargarInformePdf,
   onCambiarCopiaGuardada,
   onConfirmarEliminacion,
   claseBotonToggle,
@@ -1444,18 +1488,14 @@ function BloqueEliminarOrden({
             >
               Descargar copia JSON
             </button>
-            <a
-              href={orden.informePdfUrl || '#'}
-              download={`informe-${orden.numero_ticket || orden.id}.pdf`}
-              onClick={(evento) => {
-                if (!orden.informePdfUrl) {
-                  evento.preventDefault();
-                }
-              }}
+            <button
+              type="button"
+              onClick={onDescargarInformePdf}
+              disabled={!orden.informePdfUrl || accionEnCurso}
               className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 font-bold ${orden.informePdfUrl ? 'border-rose-300 bg-white text-rose-700' : 'border-slate-300 bg-slate-100 text-slate-400 pointer-events-none'}`}
             >
               Descargar informe PDF
-            </a>
+            </button>
           </div>
           <label className="flex items-center gap-2 rounded-lg border border-rose-200 bg-white px-3 py-2 font-semibold text-rose-800">
             <input
@@ -1754,7 +1794,11 @@ export function ListaOrdenesView({ rolUsuario }) {
 
       for (const orden of informes) {
         try {
-          const respuesta = await fetch(orden.informePdfUrl);
+          const urlInforme = await obtenerUrlFirmadaStorage(orden.informePdfUrl, { expiresIn: 900 });
+          if (!urlInforme) {
+            continue;
+          }
+          const respuesta = await fetch(urlInforme);
           if (!respuesta.ok) {
             continue;
           }

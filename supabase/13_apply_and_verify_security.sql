@@ -22,6 +22,10 @@ alter table public.materiales_orden  enable row level security;
 alter table public.usuarios_sat      enable row level security;
 
 -- Storage: eliminar SELECT y dejar escritura solo para authenticated
+update storage.buckets
+set public = false
+where id in ('firmas-clientes', 'fotos-intervenciones', 'informes-partes');
+
 -- firmas-clientes
 drop policy if exists "dev_public_read_firmas_clientes" on storage.objects;
 drop policy if exists "auth_read_firmas_clientes"       on storage.objects;

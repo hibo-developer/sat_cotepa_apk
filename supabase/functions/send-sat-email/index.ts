@@ -107,6 +107,10 @@ async function verificarSesionYRol(
 
 Deno.serve(async (req) => {
   const cors = buildCorsHeaders(req);
+  const origin = req.headers.get('Origin');
+  if (origin && !getAllowedOrigins().includes(origin)) {
+    return jsonResponse({ error: 'Origen no permitido' }, 403, {});
+  }
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: cors });
@@ -135,13 +139,32 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'JSON invalido' }, 400, cors);
   }
 
-  const destino = (body.to || Deno.env.get('SAT_TO_EMAIL') || 'sat@cotepa.com').trim();
+  const destinoBase = (Deno.env.get('SAT_TO_EMAIL') || 'sat@cotepa.com').trim();
+  const destinoSolicitado = (body.to || '').trim();
+  const allowedRecipients = (Deno.env.get('SAT_ALLOWED_EMAIL_RECIPIENTS') || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const destino = allowedRecipients.length > 0
+    ? (allowedRecipients.includes(destinoSolicitado.toLowerCase())
+      ? destinoSolicitado
+      : (allowedRecipients.includes(destinoBase.toLowerCase()) ? destinoBase : allowedRecipients[0]))
+    : destinoBase;
   const asunto = (body.subject || 'Informe SAT').trim();
   const texto = (body.text || '').trim();
   const pdfUrl = (body.pdfUrl || '').trim();
 
   if (!destino || !asunto || !texto || !pdfUrl) {
     return jsonResponse({ error: 'Campos requeridos faltantes' }, 400, cors);
+  }
+
+  try {
+    const u = new URL(pdfUrl);
+    if (u.protocol !== 'https:') {
+      return jsonResponse({ error: 'pdfUrl debe ser https' }, 400, cors);
+    }
+  } catch {
+    return jsonResponse({ error: 'pdfUrl no valida' }, 400, cors);
   }
 
   const resendApiKey = Deno.env.get('RESEND_API_KEY');

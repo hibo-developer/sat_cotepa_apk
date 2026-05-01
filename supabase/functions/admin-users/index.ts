@@ -306,6 +306,10 @@ async function eliminarUsuario(
 
 Deno.serve(async (req) => {
   const cors = buildCorsHeaders(req);
+  const origin = req.headers.get('Origin');
+  if (origin && !getAllowedOrigins().includes(origin)) {
+    return jsonResponse({ error: 'Origen no permitido' }, 403, {});
+  }
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: cors });

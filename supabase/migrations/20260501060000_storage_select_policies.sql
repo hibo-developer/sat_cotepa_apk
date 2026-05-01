@@ -19,29 +19,15 @@
 --   directo a storage.objects; los buckets son `public:true` por lo
 --   que la URL publica via CDN sigue funcionando para descargas).
 
+update storage.buckets
+set public = false
+where id in ('firmas-clientes', 'fotos-intervenciones', 'informes-partes');
+
 -- firmas-clientes
 drop policy if exists "auth_select_firmas_clientes" on storage.objects;
-create policy "auth_select_firmas_clientes"
-on storage.objects for select to authenticated
-using (
-  bucket_id = 'firmas-clientes'
-  and coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false
-);
 
 -- fotos-intervenciones
 drop policy if exists "auth_select_fotos_intervenciones" on storage.objects;
-create policy "auth_select_fotos_intervenciones"
-on storage.objects for select to authenticated
-using (
-  bucket_id = 'fotos-intervenciones'
-  and coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false
-);
 
 -- informes-partes
 drop policy if exists "auth_select_informes_partes" on storage.objects;
-create policy "auth_select_informes_partes"
-on storage.objects for select to authenticated
-using (
-  bucket_id = 'informes-partes'
-  and coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false
-);

@@ -37,6 +37,10 @@ alter table public.usuarios_sat      enable row level security;
 --    restringidas a authenticated.
 -- ---------------------------------------------------------------
 
+update storage.buckets
+set public = false
+where id in ('firmas-clientes', 'fotos-intervenciones', 'informes-partes');
+
 -- firmas-clientes
 drop policy if exists "dev_public_read_firmas_clientes" on storage.objects;
 drop policy if exists "auth_read_firmas_clientes"       on storage.objects;

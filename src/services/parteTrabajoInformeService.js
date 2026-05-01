@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import logoCotepaUrl from '../assets/cotepa.jpg';
-import { obtenerClienteSupabase } from './supabaseClient';
+import { obtenerClienteSupabase, obtenerUrlFirmadaStorage } from './supabaseClient';
 
 // =====================================================================
 // Constantes de diseño - paleta corporativa COTEPA
@@ -891,26 +891,20 @@ export function obtenerUrlPublicaInformeParte(clienteId, parteId) {
   const cliente = txt(clienteId, '').trim();
   const parte = txt(parteId, '').trim();
   if (!cliente || !parte) return '';
-  const supabase = obtenerClienteSupabase();
   const ruta = `${cliente}/informe-parte-${parte}.pdf`;
-  const { data } = supabase.storage.from('informes-partes').getPublicUrl(ruta);
-  return data?.publicUrl || '';
+  return `sb://informes-partes/${ruta}`;
 }
 
-async function subirPdfInforme({ pdfBlob, nombreArchivo, clienteId }) {
+async function subirPdfInforme({ pdfBlob, nombreArchivo, clienteId, tecnicoId, ordenId }) {
   const supabase = obtenerClienteSupabase();
-  const ruta = `${clienteId}/${nombreArchivo}`;
+  const ruta = `${clienteId}/${tecnicoId}/${ordenId}/${nombreArchivo}`;
   const { error } = await supabase.storage
     .from('informes-partes')
-    .upload(ruta, pdfBlob, { upsert: true, contentType: 'application/pdf', cacheControl: '0' });
+    .upload(ruta, pdfBlob, { upsert: false, contentType: 'application/pdf', cacheControl: '0' });
   if (error) {
     throw new Error(`No se pudo subir el PDF a Storage: ${error.message}`);
   }
-  const { data } = supabase.storage.from('informes-partes').getPublicUrl(ruta);
-  if (!data?.publicUrl) return null;
-  // Cache-buster para evitar que el navegador/CDN sirva el PDF anterior con el mismo nombre.
-  const sep = data.publicUrl.includes('?') ? '&' : '?';
-  return `${data.publicUrl}${sep}v=${Date.now()}`;
+  return `sb://informes-partes/${ruta}`;
 }
 
 async function obtenerSecuencialDiario() {
@@ -946,6 +940,15 @@ export async function generarYSubirInformeParte({
   fotosIntervencionUrls,
 }) {
   const secuencialDiario = await obtenerSecuencialDiario();
+
+  const firmaAccesible = firmaUrl
+    ? await obtenerUrlFirmadaStorage(firmaUrl, { expiresIn: 900 })
+    : '';
+  const fotosAccesibles = await Promise.all(
+    (Array.isArray(fotosIntervencionUrls) ? fotosIntervencionUrls : [])
+      .map((u) => obtenerUrlFirmadaStorage(u, { expiresIn: 900 })),
+  );
+
   const { pdfBlob, nombreArchivo } = await crearPdfInforme({
     parte,
     formulario,
@@ -957,11 +960,17 @@ export async function generarYSubirInformeParte({
     equipoNombre,
     tecnicoNombre,
     nombreFirmante,
-    firmaUrl,
-    fotosIntervencionUrls,
+    firmaUrl: firmaAccesible,
+    fotosIntervencionUrls: fotosAccesibles,
     secuencialDiario,
   });
-  const pdfUrl = await subirPdfInforme({ pdfBlob, nombreArchivo, clienteId: formulario.cliente_id });
+  const pdfUrl = await subirPdfInforme({
+    pdfBlob,
+    nombreArchivo,
+    clienteId: formulario.cliente_id,
+    tecnicoId: formulario.tecnico_id,
+    ordenId: formulario.orden_id || parte?.id,
+  });
   if (!pdfUrl) throw new Error('No se pudo obtener la URL pública del informe PDF.');
   return { pdfUrl, nombreArchivo };
 }

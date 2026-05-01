@@ -366,8 +366,7 @@ async function subirFirmaClienteStorage(supabase, { firmaDataUrl, clienteId, tec
     );
   }
 
-  const { data } = supabase.storage.from('firmas-clientes').getPublicUrl(rutaArchivo);
-  return data?.publicUrl || null;
+  return `sb://firmas-clientes/${rutaArchivo}`;
 }
 
 export async function subirFotosIntervencionStorage(supabase, { fotos, clienteId, tecnicoId, ordenId }) {
@@ -403,10 +402,7 @@ export async function subirFotosIntervencionStorage(supabase, { fotos, clienteId
       throw new Error(`No se pudo subir la foto ${indice + 1} de la intervención: ${errorSubida.message}`);
     }
 
-    const { data } = supabase.storage.from('fotos-intervenciones').getPublicUrl(rutaArchivo);
-    if (data?.publicUrl) {
-      urls.push(data.publicUrl);
-    }
+    urls.push(`sb://fotos-intervenciones/${rutaArchivo}`);
   }
 
   return urls;

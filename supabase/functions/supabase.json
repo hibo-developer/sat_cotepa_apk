@@ -7,6 +7,10 @@
     {
       "name": "send-sat-email",
       "excludeAuthentication": false
+    },
+    {
+      "name": "storage-signed-url",
+      "excludeAuthentication": false
     }
   ]
 }

@@ -806,6 +806,8 @@ export async function actualizarValoracionOrdenFinalizada(ordenId, payload) {
     parte: { id: ordenActual.id },
     formulario: {
       cliente_id: ordenActual.cliente_id,
+      tecnico_id: ordenActual.tecnico_id,
+      orden_id: ordenActual.id,
       prioridad: ordenActual.prioridad || 'media',
       tiempo_empleado: String(ordenActual.tiempo_empleado_minutos || 0),
       descripcion_problema: ordenActual.descripcion_averia || 'Sin descripción',
@@ -1108,6 +1110,8 @@ export async function editarParteFinalizado(ordenId, payload) {
     parte: { id: ordenActual.id },
     formulario: {
       cliente_id: ordenActual.cliente_id,
+      tecnico_id: ordenActual.tecnico_id,
+      orden_id: ordenActual.id,
       prioridad: ordenActual.prioridad || 'media',
       tiempo_empleado: String(ordenActual.tiempo_empleado_minutos || 0),
       descripcion_problema: descripcionAveria || 'Sin descripción',
