@@ -5,6 +5,7 @@ import { IndicadorSync } from './components/IndicadorSync';
 import { CambiarPasswordModal } from './components/CambiarPasswordModal';
 import { useAuthSession } from './hooks/useAuthSession';
 import { precargarCatalogosOffline } from './services/catalogosService';
+import { estaOnline } from './services/offlineSyncService';
 import { obtenerClienteSupabase, tieneConfiguracionSupabase } from './services/supabaseClient';
 import logoCotepa from './assets/cotepa.jpg';
 import { AdminView } from './views/AdminView';
@@ -37,6 +38,35 @@ const RUTA_POR_VISTA = {
   inventario: '/inventario',
   admin: '/admin',
 };
+
+const CACHE_KEY_USUARIO_SAT = 'sat_cache_usuario_sat_v1';
+
+function leerPerfilUsuarioCacheado(userId) {
+  if (!userId) return null;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY_USUARIO_SAT);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (!parsed || parsed.userId !== userId) return null;
+    return {
+      rol: parsed.rol || null,
+      nombre_visible: parsed.nombre_visible || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
+function guardarPerfilUsuarioCacheado(userId, perfil) {
+  if (!userId) return;
+  try {
+    localStorage.setItem(CACHE_KEY_USUARIO_SAT, JSON.stringify({
+      userId,
+      rol: perfil?.rol || null,
+      nombre_visible: perfil?.nombre_visible || '',
+      updatedAt: Date.now(),
+    }));
+  } catch {}
+}
 
 function obtenerVistaDesdeRuta(pathname) {
   if (pathname.startsWith('/parte')) {
@@ -73,7 +103,7 @@ export default function App() {
   const puedeVerClientes = rolUsuario !== 'tecnico';
   const puedeVerInventario = rolUsuario !== 'tecnico';
   const vistaActiva = obtenerVistaDesdeRuta(location.pathname);
-  const tituloActual = accesoBloqueado || verificandoRol
+  const tituloActual = accesoBloqueado
     ? 'Acceso'
     : esTecnico && vistaActiva === 'clientes'
       ? TITULOS.ordenes
@@ -87,6 +117,20 @@ export default function App() {
     async function cargarRolUsuario() {
       if (!requiereLogin || !sesion?.user?.id) {
         setRolUsuario(null);
+        setNombreVisibleUsuario('');
+        setVerificandoRol(false);
+        return;
+      }
+
+      const perfilCacheado = leerPerfilUsuarioCacheado(sesion.user.id);
+      if (perfilCacheado) {
+        setRolUsuario(perfilCacheado.rol || 'tecnico');
+        setNombreVisibleUsuario(perfilCacheado.nombre_visible || '');
+      } else {
+        setRolUsuario((previo) => previo || 'tecnico');
+      }
+
+      if (!estaOnline()) {
         setVerificandoRol(false);
         return;
       }
@@ -106,13 +150,13 @@ export default function App() {
         }
 
         if (!cancelado) {
-          setRolUsuario(data?.rol || null);
+          setRolUsuario(data?.rol || 'tecnico');
           setNombreVisibleUsuario(data?.nombre_visible || '');
+          guardarPerfilUsuarioCacheado(sesion.user.id, data);
         }
       } catch {
         if (!cancelado) {
-          setRolUsuario(null);
-          setNombreVisibleUsuario('');
+          setRolUsuario((previo) => previo || 'tecnico');
         }
       } finally {
         if (!cancelado) {
@@ -276,12 +320,12 @@ export default function App() {
       </header>
 
       <main className="lg:rounded-2xl lg:border lg:border-marca-100 lg:bg-white lg:p-5 lg:shadow-tarjeta">
-        {!accesoBloqueado && !verificandoRol && (
+        {!accesoBloqueado && (
           <div className="mb-3">
             <IndicadorSync />
           </div>
         )}
-        {accesoBloqueado || verificandoRol ? (
+        {accesoBloqueado ? (
           <AccesoView onLogin={login} cargandoSesion={cargando} errorSesion={error} />
         ) : (
           <Routes>
