@@ -1,13 +1,7 @@
 import { obtenerClienteSupabase } from './supabaseClient';
+import { asegurarPasswordSegura } from './passwordSecurity';
 
 const ROLES_PERMITIDOS = new Set(['admin', 'oficina', 'tecnico']);
-const REGLAS_PASSWORD = {
-  minLength: 12,
-  upper: /[A-Z]/,
-  lower: /[a-z]/,
-  digit: /\d/,
-  symbol: /[^A-Za-z0-9]/,
-};
 
 function limpiarTexto(valor) {
   return typeof valor === 'string' ? valor.trim() : '';
@@ -21,28 +15,6 @@ function validarRol(rol) {
   }
 
   return rolLimpio;
-}
-
-function validarContrasenaSegura(password, contexto = 'La contrasena') {
-  if (!password || password.length < REGLAS_PASSWORD.minLength) {
-    throw new Error(`${contexto} debe tener al menos ${REGLAS_PASSWORD.minLength} caracteres.`);
-  }
-
-  if (!REGLAS_PASSWORD.upper.test(password)) {
-    throw new Error(`${contexto} debe incluir al menos una letra mayuscula.`);
-  }
-
-  if (!REGLAS_PASSWORD.lower.test(password)) {
-    throw new Error(`${contexto} debe incluir al menos una letra minuscula.`);
-  }
-
-  if (!REGLAS_PASSWORD.digit.test(password)) {
-    throw new Error(`${contexto} debe incluir al menos un numero.`);
-  }
-
-  if (!REGLAS_PASSWORD.symbol.test(password)) {
-    throw new Error(`${contexto} debe incluir al menos un simbolo.`);
-  }
 }
 
 async function construirMensajeErrorFuncion(error) {
@@ -115,7 +87,11 @@ export async function crearUsuarioSat(payload) {
     throw new Error('El email del usuario es obligatorio.');
   }
 
-  validarContrasenaSegura(password, 'La contrasena inicial');
+  if (!password) {
+    throw new Error('La contrasena inicial es obligatoria.');
+  }
+
+  await asegurarPasswordSegura(password);
 
   const respuesta = await invocarAdminUsers('create', {
     email,
@@ -143,7 +119,7 @@ export async function actualizarUsuarioSat(userId, payload) {
   }
 
   if (password) {
-    validarContrasenaSegura(password, 'La nueva contrasena');
+    await asegurarPasswordSegura(password);
   }
 
   const respuesta = await invocarAdminUsers('update', {

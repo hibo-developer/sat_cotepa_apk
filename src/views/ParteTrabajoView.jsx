@@ -7,9 +7,7 @@ import {
 } from '../services/catalogosService';
 import { listarMaterialesInventario } from '../services/inventarioMaterialesService';
 import { crearParteTrabajo, obtenerOrdenesAbiertasParaParte } from '../services/parteTrabajoService';
-import { generarYSubirInformeParte } from '../services/parteTrabajoInformeService';
 import { encolarParteFinalizado, estaOnline } from '../services/offlineSyncService';
-import { guardarInformePdfUrl } from '../services/workOrderService';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
 
 function obtenerUbicacionActual() {
@@ -78,6 +76,16 @@ async function resolverNombreLugar(latitud, longitud) {
   }
 }
 
+// Dirección fiscal de Cotepa S.L. (Paiporta, Valencia). Se utiliza como
+// origen FIJO del desplazamiento del técnico, sin importar dónde se
+// encuentre cuando pulse "Inicio Desplazamiento".
+const UBICACION_COTEPA = {
+  latitud: 39.4415,
+  longitud: -0.3820,
+  nombreLugar: 'Cotepa S.L., Paiporta',
+  nombreLugarCompleto: 'Pol. Industrial La Pasqualeta, Calle Sequía de Rascanya, 46200 Paiporta, Valencia',
+};
+
 function calcularDistanciaMetros(origen, destino) {
   if (!origen || !destino) {
     return null;
@@ -95,6 +103,46 @@ function calcularDistanciaMetros(origen, destino) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   return Math.round(radioTierra * c);
+}
+
+// Distancia por carretera entre dos puntos (en metros). Usa el servicio
+// público OSRM (Open Source Routing Machine) que devuelve la ruta real
+// en coche. Si falla (sin conexión, time-out, error CORS, etc.) cae a
+// la distancia en línea recta multiplicada por 1.3, que es el factor de
+// rodeo medio de una red de carreteras secundarias en España.
+async function calcularDistanciaCarreteraMetros(origen, destino) {
+  if (!origen || !destino) {
+    return null;
+  }
+
+  const haversine = calcularDistanciaMetros(origen, destino);
+
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${origen.longitud},${origen.latitud};${destino.longitud},${destino.latitud}?overview=false&alternatives=false&steps=false`;
+    const controlador = new AbortController();
+    const tiempoLimite = setTimeout(() => controlador.abort(), 8000);
+    const respuesta = await fetch(url, { signal: controlador.signal, headers: { Accept: 'application/json' } });
+    clearTimeout(tiempoLimite);
+
+    if (!respuesta.ok) {
+      throw new Error(`OSRM HTTP ${respuesta.status}`);
+    }
+
+    const data = await respuesta.json();
+    const ruta = Array.isArray(data?.routes) ? data.routes[0] : null;
+    const metrosRuta = ruta && Number.isFinite(Number(ruta.distance)) ? Math.round(Number(ruta.distance)) : null;
+
+    if (metrosRuta && metrosRuta > 0) {
+      return metrosRuta;
+    }
+  } catch {
+    // se usa el fallback Haversine × 1.3
+  }
+
+  if (Number.isFinite(haversine)) {
+    return Math.round(haversine * 1.3);
+  }
+  return null;
 }
 
 function redondearMinutos(inicioIso, finIso) {
@@ -561,15 +609,19 @@ export function ParteTrabajoView() {
     setCapturandoDesplazamiento(true);
 
     try {
+      // Origen siempre fijo en la sede fiscal de Cotepa, esté donde esté
+      // el técnico. Así evitamos errores si olvida pulsar Inicio in situ:
+      // los kilómetros se calcularán desde Cotepa hasta el cliente al
+      // pulsar Fin Desplazamiento.
       setDesplazamiento({
         inicioIso: new Date().toISOString(),
         finIso: null,
-        ubicacionInicio: null,
+        ubicacionInicio: UBICACION_COTEPA,
         ubicacionFin: null,
         distanciaMetros: null,
         minutosGeo: null,
       });
-      setMensaje('Desplazamiento iniciado (desde Cotepa fiscal).');
+      setMensaje('Desplazamiento iniciado (origen fijo: Cotepa S.L., Paiporta).');
     } finally {
       setCapturandoDesplazamiento(false);
     }
@@ -581,6 +633,12 @@ export function ParteTrabajoView() {
       return;
     }
 
+    if (desplazamiento.finIso || intervension.inicioIso) {
+      // El desplazamiento ya quedó cerrado (manualmente o al iniciar
+      // intervención). No reabrimos para no recalcular kilometraje.
+      return;
+    }
+
     setMensaje('');
     setError('');
     setCapturandoDesplazamiento(true);
@@ -589,36 +647,28 @@ export function ParteTrabajoView() {
       const ubicacionCliente = await obtenerUbicacionActual();
       const lugarResuelto = await resolverNombreLugar(ubicacionCliente.latitud, ubicacionCliente.longitud);
       const finIso = new Date().toISOString();
-      const minutosCalculados = redondearMinutos(desplazamiento.inicioIso, finIso);
-
-      const ubicacionCotepa = {
-        latitud: 39.4415,
-        longitud: -0.3820,
-        nombreLugar: 'Cotepa S.L., Paiporta',
-      };
-      const distanciaMetros = calcularDistanciaMetros(ubicacionCotepa, ubicacionCliente);
+      const distanciaMetros = await calcularDistanciaCarreteraMetros(UBICACION_COTEPA, ubicacionCliente);
 
       setDesplazamiento({
         inicioIso: desplazamiento.inicioIso,
         finIso,
-        ubicacionInicio: ubicacionCotepa,
+        ubicacionInicio: UBICACION_COTEPA,
         ubicacionFin: {
           ...ubicacionCliente,
           nombreLugar: lugarResuelto?.nombreLugar || null,
           nombreLugarCompleto: lugarResuelto?.nombreLugarCompleto || null,
         },
         distanciaMetros,
-        minutosGeo: minutosCalculados,
+        minutosGeo: null,
       });
       setMensaje('Desplazamiento finalizado. Distancia calculada (se facturará el doble: ida+vuelta).');
     } catch (err) {
       const finIso = new Date().toISOString();
-      const minutosCalculados = redondearMinutos(desplazamiento.inicioIso, finIso);
 
       setDesplazamiento((prev) => ({
         ...prev,
         finIso,
-        minutosGeo: minutosCalculados,
+        minutosGeo: null,
       }));
       setError('No se pudo capturar ubicación del cliente.');
     } finally {
@@ -627,6 +677,11 @@ export function ParteTrabajoView() {
   }
 
   async function iniciarIntervension() {
+    if (!desplazamiento.inicioIso) {
+      setError('Primero debes pulsar Inicio Desplazamiento.');
+      return;
+    }
+
     setMensaje('');
     setError('');
     setCapturandoIntervension(true);
@@ -634,14 +689,32 @@ export function ParteTrabajoView() {
     try {
       const ubicacion = await obtenerUbicacionActual();
       const lugarResuelto = await resolverNombreLugar(ubicacion.latitud, ubicacion.longitud);
+      const ubicacionConLugar = {
+        ...ubicacion,
+        nombreLugar: lugarResuelto?.nombreLugar || null,
+        nombreLugarCompleto: lugarResuelto?.nombreLugarCompleto || null,
+      };
+      const inicioIntervIso = new Date().toISOString();
+
+      // Pulsar Inicio Intervención cierra automáticamente el desplazamiento
+      // si seguía abierto: el técnico ya está en cliente, así que aquí
+      // calculamos los kilómetros desde Cotepa hasta esta ubicación.
+      if (!desplazamiento.finIso) {
+        const distanciaDesplazamiento = await calcularDistanciaCarreteraMetros(UBICACION_COTEPA, ubicacionConLugar);
+        setDesplazamiento((prev) => ({
+          ...prev,
+          finIso: inicioIntervIso,
+          ubicacionInicio: prev.ubicacionInicio || UBICACION_COTEPA,
+          ubicacionFin: ubicacionConLugar,
+          distanciaMetros: distanciaDesplazamiento,
+          minutosGeo: null,
+        }));
+      }
+
       setIntervension({
-        inicioIso: new Date().toISOString(),
+        inicioIso: inicioIntervIso,
         finIso: null,
-        ubicacionInicio: {
-          ...ubicacion,
-          nombreLugar: lugarResuelto?.nombreLugar || null,
-          nombreLugarCompleto: lugarResuelto?.nombreLugarCompleto || null,
-        },
+        ubicacionInicio: ubicacionConLugar,
         ubicacionFin: null,
         distanciaMetros: null,
         minutosGeo: null,
@@ -649,11 +722,23 @@ export function ParteTrabajoView() {
         pausaComidaActiva: null,
       });
       setPendienteGeoIntervension(false);
-      setMensaje('Intervención iniciada con geolocalización en cliente.');
+      setMensaje('Intervención iniciada con geolocalización en cliente. Desplazamiento cerrado automáticamente.');
     } catch (err) {
       const sinConexion = navigator.onLine === false;
+      const inicioIntervIso = new Date().toISOString();
+
+      // Sin geolocalización no podemos calcular km, pero igualmente
+      // cerramos el desplazamiento para que el técnico pueda continuar.
+      if (!desplazamiento.finIso) {
+        setDesplazamiento((prev) => ({
+          ...prev,
+          finIso: inicioIntervIso,
+          minutosGeo: null,
+        }));
+      }
+
       setIntervension({
-        inicioIso: new Date().toISOString(),
+        inicioIso: inicioIntervIso,
         finIso: null,
         ubicacionInicio: null,
         ubicacionFin: null,
@@ -958,7 +1043,7 @@ export function ParteTrabajoView() {
     }
 
     try {
-      const parte = await crearParteTrabajo({
+      await crearParteTrabajo({
         ...payloadParte,
         materialesInventario: materialesSeleccionados,
         fotos_intervencion: fotosIntervencion,
@@ -967,29 +1052,11 @@ export function ParteTrabajoView() {
         firma_url: firmaClienteDataUrl,
       });
 
-      const informe = await generarYSubirInformeParte({
-        parte,
-        formulario: {
-          ...formulario,
-          materialesTexto: materialesTextoInforme,
-        },
-        desplazamiento,
-        intervension,
-        clienteNombre: clienteNombreInforme,
-        equipoNombre: equipoNombreInforme,
-        tecnicoNombre: tecnicoSeleccionado?.nombre || 'Tecnico no identificado',
-        nombreFirmante: formulario.nombre_firmante,
-        firmaUrl: parte.firma_url || '',
-        fotosIntervencionUrls: parte.fotos_intervencion_urls || [],
-      });
-
-      try {
-        await guardarInformePdfUrl(parte.id, informe.pdfUrl);
-      } catch {
-        // No bloqueante: el parte ya se registró correctamente
-      }
-
-      setMensaje('Parte registrado. Informe disponible.');
+      // El informe PDF se genera cuando el administrador completa la
+      // valoración económica desde el panel SAT. Esto evita que el técnico
+      // descargue una versión "preliminar" sin importes y que más tarde
+      // aparezca otra distinta tras la valoración.
+      setMensaje('Parte registrado. El informe PDF estará disponible cuando el administrador valore la orden.');
       resetearFormulario();
     } catch (err) {
       const mensaje = String(err?.message || err).toLowerCase();
@@ -1130,7 +1197,7 @@ export function ParteTrabajoView() {
             <button
               type="button"
               onClick={finalizarDesplazamiento}
-              disabled={capturandoDesplazamiento || guardando || !desplazamiento.inicioIso || desplazamiento.finIso}
+              disabled={capturandoDesplazamiento || guardando || !desplazamiento.inicioIso || desplazamiento.finIso || intervension.inicioIso}
               className="rounded-xl border border-blue-400 bg-blue-100 px-3 py-2 text-xs font-semibold text-blue-900 disabled:opacity-60"
             >
               Fin Desplazamiento
@@ -1149,16 +1216,12 @@ export function ParteTrabajoView() {
             Destino: {desplazamiento.ubicacionFin ? formatearLugar(desplazamiento.ubicacionFin) : 'No disponible'}
           </p>
           <p className="text-xs text-slate-700">
-            Distancia: {Number.isFinite(desplazamiento.distanciaMetros)
-              ? `${(desplazamiento.distanciaMetros / 1000).toFixed(2)} km (facturación: ${((desplazamiento.distanciaMetros * 2) / 1000).toFixed(2)} km)`
+            Distancia por carretera: {Number.isFinite(desplazamiento.distanciaMetros)
+              ? `${(desplazamiento.distanciaMetros / 1000).toFixed(2)} km (facturación ida + vuelta: ${((desplazamiento.distanciaMetros * 2) / 1000).toFixed(2)} km)`
               : 'No calculada'}
           </p>
-          <p className="text-xs text-slate-700">
-            Tiempo desplazamiento: {Number.isFinite(desplazamiento.minutosGeo)
-              ? `${desplazamiento.minutosGeo} min (facturación: ${desplazamiento.minutosGeo * 2} min)`
-              : (desplazamiento.inicioIso && desplazamiento.finIso)
-                ? `${redondearMinutos(desplazamiento.inicioIso, desplazamiento.finIso)} min (facturación: ${redondearMinutos(desplazamiento.inicioIso, desplazamiento.finIso) * 2} min)`
-                : 'Pendiente'}
+          <p className="text-[11px] italic text-slate-500">
+            El tiempo de desplazamiento no se contabiliza: estos botones solo se utilizan para calcular el kilometraje por carretera desde Cotepa hasta el cliente (ida + vuelta).
           </p>
 
           <p className="mt-4 text-xs font-semibold text-marca-900">Fase 2: Intervención (en cliente por geolocalización)</p>
@@ -1166,7 +1229,7 @@ export function ParteTrabajoView() {
             <button
               type="button"
               onClick={iniciarIntervension}
-              disabled={capturandoIntervension || guardando || !desplazamiento.finIso || intervension.inicioIso}
+              disabled={capturandoIntervension || guardando || !desplazamiento.inicioIso || intervension.inicioIso}
               className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 disabled:opacity-60"
             >
               Inicio Intervención
@@ -1480,7 +1543,7 @@ export function ParteTrabajoView() {
         <label className="block lg:col-span-2">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Informe PDF</span>
           <p className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-            Al guardar, el informe en PDF se subirá automáticamente al almacenamiento. El administrador podrá descargarlo desde el panel SAT.
+            Al guardar, el parte queda registrado y el administrador podrá generar el informe PDF definitivo desde el panel SAT tras completar la valoración económica.
           </p>
         </label>
 

@@ -20,10 +20,8 @@ import db from './offlineDb';
 import {
   actualizarOrdenTrabajo,
   eliminarOrdenTrabajo,
-  guardarInformePdfUrl,
 } from './workOrderService';
 import { crearParteTrabajo } from './parteTrabajoService';
-import { generarYSubirInformeParte } from './parteTrabajoInformeService';
 
 const ACCIONES_SOPORTADAS = new Set(['actualizar', 'eliminar']);
 
@@ -278,8 +276,11 @@ export async function listarPartesPendientes() {
 let procesandoPartes = false;
 
 async function ejecutarParteRemoto(item) {
-  // Reproducir el flujo completo del enviarParte de ParteTrabajoView.
-  const parte = await crearParteTrabajo({
+  // Reproducir el flujo del enviarParte de ParteTrabajoView.
+  // El informe PDF se genera más tarde, cuando el administrador valore
+  // económicamente la orden, para evitar que existan PDFs "preliminares"
+  // distintos del definitivo.
+  await crearParteTrabajo({
     ...item.payload,
     materialesInventario: item.materialesSeleccionados,
     fotos_intervencion: item.fotos,
@@ -287,28 +288,6 @@ async function ejecutarParteRemoto(item) {
     intervension: item.intervension,
     firma_url: item.firmaDataUrl,
   });
-
-  const informe = await generarYSubirInformeParte({
-    parte,
-    formulario: {
-      ...item.payload,
-      materialesTexto: item.materialesTextoInforme || '',
-    },
-    desplazamiento: item.desplazamiento,
-    intervension: item.intervension,
-    clienteNombre: item.contexto?.clienteNombre || 'Cliente',
-    equipoNombre: item.contexto?.equipoNombre || 'Equipo',
-    tecnicoNombre: item.contexto?.tecnicoNombre || 'Técnico',
-    nombreFirmante: item.payload?.nombre_firmante || 'Cliente',
-    firmaUrl: parte.firma_url || '',
-    fotosIntervencionUrls: parte.fotos_intervencion_urls || [],
-  });
-
-  try {
-    await guardarInformePdfUrl(parte.id, informe.pdfUrl);
-  } catch {
-    // No bloqueante: el parte ya quedó registrado.
-  }
 }
 
 export async function procesarColaPartes() {

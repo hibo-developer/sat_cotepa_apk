@@ -35,6 +35,15 @@ export async function cerrarSesion() {
   }
 }
 
+export async function actualizarPasswordUsuarioActual(nuevaPassword) {
+  const supabase = obtenerClienteSupabase();
+  const { error } = await supabase.auth.updateUser({ password: nuevaPassword });
+
+  if (error) {
+    throw new Error(`No se pudo actualizar la contrasena: ${error.message}`);
+  }
+}
+
 export function escucharCambiosSesion(onCambio) {
   if (!tieneConfiguracionSupabase()) {
     return () => {};

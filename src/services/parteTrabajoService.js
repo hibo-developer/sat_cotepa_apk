@@ -668,6 +668,17 @@ export async function crearParteTrabajo(payload) {
     fecha_fin: fechaFin,
   };
 
+  // Kilometraje facturable (ida + vuelta) calculado desde la sede de
+  // Cotepa hasta la ubicación del cliente al pulsar Inicio Intervención
+  // o Fin Desplazamiento. Si la fase de desplazamiento no aportó
+  // distancia (p. ej. sin geolocalización), el campo se deja sin tocar
+  // para que el administrador pueda introducirlo manualmente desde el
+  // panel de valoración.
+  const distanciaDesplazamientoMetros = Number(payload?.desplazamiento?.distanciaMetros);
+  if (Number.isFinite(distanciaDesplazamientoMetros) && distanciaDesplazamientoMetros > 0) {
+    ordenPayload.km_desplazamiento_facturables = Number(((distanciaDesplazamientoMetros * 2) / 1000).toFixed(2));
+  }
+
   const { data: orden, error: errorOrden } = await supabase
     .from('ordenes_trabajo')
     .update(ordenPayload)

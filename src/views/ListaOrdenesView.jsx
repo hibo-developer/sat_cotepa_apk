@@ -1117,7 +1117,9 @@ function TarjetaOrden({
             </a>
           )}
           {!orden.informePdfUrl && (
-            <p className="text-xs font-semibold text-emerald-800">Informe PDF no disponible.</p>
+            <p className="text-xs font-semibold text-emerald-800">
+              Informe PDF pendiente: el administrador debe completar la valoración económica para generarlo.
+            </p>
           )}
 
           {puedeValorarFinalizada && (

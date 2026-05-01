@@ -1,22 +1,19 @@
 import { useEffect, useState } from 'react';
-import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { NavbarInferior } from './components/NavbarInferior';
-import { IndicadorSync } from './components/IndicadorSync';
+import { CambiarPasswordModal } from './components/CambiarPasswordModal';
 import { useAuthSession } from './hooks/useAuthSession';
 import { obtenerClienteSupabase, tieneConfiguracionSupabase } from './services/supabaseClient';
 import logoCotepa from './assets/cotepa.jpg';
 import { AdminView } from './views/AdminView';
 import { AccesoView } from './views/AccesoView';
 import { ClientesView } from './views/ClientesView';
-import { InventarioView } from './views/InventarioView';
 import { ListaOrdenesView } from './views/ListaOrdenesView';
 import { ParteTrabajoView } from './views/ParteTrabajoView';
 
 const TITULOS = {
   ordenes: 'Panel SAT',
   parte: 'Nuevo Parte',
-  clientes: 'Clientes y Equipos',
-  inventario: 'Inventario de Materiales',
+  clientes: 'Clientes',
   admin: 'Administración',
 };
 
@@ -24,56 +21,20 @@ const NAV_ITEMS = [
   { key: 'ordenes', label: 'Órdenes' },
   { key: 'parte', label: 'Parte' },
   { key: 'clientes', label: 'Clientes' },
-  { key: 'inventario', label: 'Inventario' },
   { key: 'admin', label: 'Admin' },
 ];
 
-const RUTA_POR_VISTA = {
-  ordenes: '/ordenes',
-  parte: '/parte',
-  clientes: '/clientes',
-  inventario: '/inventario',
-  admin: '/admin',
-};
-
-function obtenerVistaDesdeRuta(pathname) {
-  if (pathname.startsWith('/parte')) {
-    return 'parte';
-  }
-
-  if (pathname.startsWith('/clientes')) {
-    return 'clientes';
-  }
-
-  if (pathname.startsWith('/inventario')) {
-    return 'inventario';
-  }
-
-  if (pathname.startsWith('/admin')) {
-    return 'admin';
-  }
-
-  return 'ordenes';
-}
-
 export default function App() {
+  const [vistaActiva, setVistaActiva] = useState('ordenes');
   const [rolUsuario, setRolUsuario] = useState(null);
-  const [nombreVisibleUsuario, setNombreVisibleUsuario] = useState('');
   const [verificandoRol, setVerificandoRol] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
+  const [mostrarCambiarPassword, setMostrarCambiarPassword] = useState(false);
   const { sesion, cargando, error, login, logout } = useAuthSession();
   const requiereLogin = tieneConfiguracionSupabase();
   const accesoBloqueado = requiereLogin && !sesion;
   const esAdmin = rolUsuario === 'admin';
-  const esTecnico = rolUsuario === 'tecnico';
-  const puedeVerClientes = rolUsuario !== 'tecnico';
-  const puedeVerInventario = rolUsuario !== 'tecnico';
-  const vistaActiva = obtenerVistaDesdeRuta(location.pathname);
-  const tituloActual = accesoBloqueado || verificandoRol
+  const tituloActual = accesoBloqueado
     ? 'Acceso'
-    : esTecnico && vistaActiva === 'clientes'
-      ? TITULOS.ordenes
     : !esAdmin && vistaActiva === 'admin'
       ? TITULOS.ordenes
       : TITULOS[vistaActiva] || TITULOS.ordenes;
@@ -94,7 +55,7 @@ export default function App() {
         const supabase = obtenerClienteSupabase();
         const { data, error: perfilError } = await supabase
           .from('usuarios_sat')
-          .select('rol, nombre_visible')
+          .select('rol')
           .eq('user_id', sesion.user.id)
           .maybeSingle();
 
@@ -104,12 +65,10 @@ export default function App() {
 
         if (!cancelado) {
           setRolUsuario(data?.rol || null);
-          setNombreVisibleUsuario(data?.nombre_visible || '');
         }
       } catch {
         if (!cancelado) {
           setRolUsuario(null);
-          setNombreVisibleUsuario('');
         }
       } finally {
         if (!cancelado) {
@@ -127,53 +86,21 @@ export default function App() {
 
   useEffect(() => {
     if (!accesoBloqueado && !verificandoRol && vistaActiva === 'admin' && !esAdmin) {
-      navigate('/ordenes', { replace: true });
+      setVistaActiva('ordenes');
     }
-  }, [accesoBloqueado, esAdmin, navigate, verificandoRol, vistaActiva]);
-
-  useEffect(() => {
-    if (!accesoBloqueado && !verificandoRol && vistaActiva === 'clientes' && !puedeVerClientes) {
-      navigate('/ordenes', { replace: true });
-    }
-  }, [accesoBloqueado, navigate, puedeVerClientes, verificandoRol, vistaActiva]);
-
-  useEffect(() => {
-    if (!accesoBloqueado && !verificandoRol && vistaActiva === 'inventario' && !puedeVerInventario) {
-      navigate('/ordenes', { replace: true });
-    }
-  }, [accesoBloqueado, navigate, puedeVerInventario, verificandoRol, vistaActiva]);
+  }, [accesoBloqueado, esAdmin, verificandoRol, vistaActiva]);
 
   function cambiarVistaSegura(siguienteVista) {
     if (siguienteVista === 'admin' && !esAdmin) {
       return;
     }
 
-    if (siguienteVista === 'clientes' && !puedeVerClientes) {
-      return;
-    }
-
-    if (siguienteVista === 'inventario' && !puedeVerInventario) {
-      return;
-    }
-
-    navigate(RUTA_POR_VISTA[siguienteVista] || '/ordenes');
+    setVistaActiva(siguienteVista);
   }
 
-  const navItemsVisibles = NAV_ITEMS.filter((item) => {
-    if (item.key === 'admin') {
-      return esAdmin;
-    }
-
-    if (item.key === 'clientes') {
-      return puedeVerClientes;
-    }
-
-    if (item.key === 'inventario') {
-      return puedeVerInventario;
-    }
-
-    return true;
-  });
+  const navItemsVisibles = esAdmin
+    ? NAV_ITEMS
+    : NAV_ITEMS.filter((item) => item.key !== 'admin');
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-md px-4 pb-24 pt-5 lg:max-w-6xl lg:px-6 lg:pb-8">
@@ -197,25 +124,24 @@ export default function App() {
               {tituloActual}
             </h1>
             {requiereLogin && sesion && (
-              <button
-                type="button"
-                onClick={() => logout()}
-                className="rounded-xl border border-marca-100 bg-marca-50 px-3 py-2 text-xs font-bold text-marca-700"
-              >
-                Cerrar sesion
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMostrarCambiarPassword(true)}
+                  className="rounded-xl border border-marca-100 bg-white px-3 py-2 text-xs font-bold text-marca-700"
+                >
+                  Contrasena
+                </button>
+                <button
+                  type="button"
+                  onClick={() => logout()}
+                  className="rounded-xl border border-marca-100 bg-marca-50 px-3 py-2 text-xs font-bold text-marca-700"
+                >
+                  Cerrar sesion
+                </button>
+              </div>
             )}
           </div>
-
-          {!accesoBloqueado && sesion && (
-            <div className="mt-2 rounded-xl border border-marca-100 bg-marca-50 px-3 py-2 text-xs text-marca-900">
-              <span className="font-semibold">Sesión:</span>{' '}
-              {nombreVisibleUsuario || sesion.user?.email || 'Usuario'}
-              {' · '}
-              <span className="font-semibold">Rol:</span>{' '}
-              {rolUsuario || 'sin rol'}
-            </div>
-          )}
 
           {!accesoBloqueado && (
             <div className="mt-4 hidden lg:block">
@@ -247,41 +173,26 @@ export default function App() {
       </header>
 
       <main className="lg:rounded-2xl lg:border lg:border-marca-100 lg:bg-white lg:p-5 lg:shadow-tarjeta">
-        {!accesoBloqueado && !verificandoRol && (
-          <div className="mb-3">
-            <IndicadorSync />
-          </div>
-        )}
-        {accesoBloqueado || verificandoRol ? (
+        {accesoBloqueado ? (
           <AccesoView onLogin={login} cargandoSesion={cargando} errorSesion={error} />
         ) : (
-          <Routes>
-            <Route path="/" element={<Navigate to="/ordenes" replace />} />
-            <Route path="/ordenes" element={<ListaOrdenesView rolUsuario={rolUsuario} />} />
-            <Route path="/parte" element={<ParteTrabajoView rolUsuario={rolUsuario} />} />
-            <Route
-              path="/clientes"
-              element={puedeVerClientes ? <ClientesView rolUsuario={rolUsuario} /> : <Navigate to="/ordenes" replace />}
-            />
-            <Route
-              path="/inventario"
-              element={puedeVerInventario ? <InventarioView rolUsuario={rolUsuario} /> : <Navigate to="/ordenes" replace />}
-            />
-            <Route path="/admin" element={esAdmin ? <AdminView /> : <Navigate to="/ordenes" replace />} />
-            <Route path="*" element={<Navigate to="/ordenes" replace />} />
-          </Routes>
+          <>
+            {vistaActiva === 'ordenes' && <ListaOrdenesView />}
+            {vistaActiva === 'parte' && <ParteTrabajoView />}
+            {vistaActiva === 'clientes' && <ClientesView />}
+            {vistaActiva === 'admin' && esAdmin && <AdminView />}
+          </>
         )}
       </main>
 
       {!accesoBloqueado && (
-        <NavbarInferior
-          vistaActiva={vistaActiva}
-          onCambiarVista={cambiarVistaSegura}
-          mostrarAdmin={esAdmin}
-          mostrarClientes={puedeVerClientes}
-          mostrarInventario={puedeVerInventario}
-        />
+        <NavbarInferior vistaActiva={vistaActiva} onCambiarVista={cambiarVistaSegura} mostrarAdmin={esAdmin} />
       )}
+
+      <CambiarPasswordModal
+        abierto={mostrarCambiarPassword}
+        onCerrar={() => setMostrarCambiarPassword(false)}
+      />
     </div>
   );
 }
