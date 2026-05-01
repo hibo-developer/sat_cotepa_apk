@@ -1,5 +1,44 @@
 import { obtenerClienteSupabase } from './supabaseClient';
 
+// ---------------------------------------------------------------------------
+// Caché localStorage para catálogos de referencia (técnicos, clientes).
+// Se usa como fallback cuando no hay conexión a Supabase.
+// Solo se cachea la primera página sin filtro (lista completa inicial).
+// ---------------------------------------------------------------------------
+const CACHE_KEY_TECNICOS = 'sat_cache_tecnicos_v1';
+const CACHE_KEY_CLIENTES = 'sat_cache_clientes_v1';
+
+function guardarEnCache(clave, items) {
+  try {
+    localStorage.setItem(clave, JSON.stringify(items));
+  } catch { /* noop — storage lleno o no disponible */ }
+}
+
+function leerDeCache(clave) {
+  try {
+    const raw = localStorage.getItem(clave);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function aplicarFiltroYPaginacion(items, busqueda, limite, pagina) {
+  const filtro = (busqueda || '').trim().toLowerCase();
+  const filtrados = filtro
+    ? items.filter((i) =>
+        Object.values(i).some((v) => String(v ?? '').toLowerCase().includes(filtro))
+      )
+    : items;
+  const desde = (pagina - 1) * limite;
+  const slice = filtrados.slice(desde, desde + limite);
+  return {
+    items: slice,
+    total: filtrados.length,
+    hayMas: desde + limite < filtrados.length,
+  };
+}
+
 function normalizarBusquedaParaOr(valor) {
   return (valor || '')
     .trim()
@@ -74,14 +113,26 @@ export async function obtenerClientes(opciones = {}) {
   const { data, error, count } = await consulta;
 
   if (error) {
+    // Fallback offline: devolver datos cacheados filtrados
+    const cacheados = leerDeCache(CACHE_KEY_CLIENTES);
+    if (cacheados.length > 0) {
+      return aplicarFiltroYPaginacion(cacheados, busqueda, limite, pagina);
+    }
     throw new Error(`No se pudieron obtener los clientes: ${error.message}`);
   }
 
-  return {
+  const resultado = {
     items: data || [],
     total: count || 0,
     hayMas: Boolean(count && hasta + 1 < count),
   };
+
+  // Actualizar caché con la lista completa cuando no hay filtro activo
+  if (!busqueda.trim() && pagina === 1 && resultado.items.length > 0) {
+    guardarEnCache(CACHE_KEY_CLIENTES, resultado.items);
+  }
+
+  return resultado;
 }
 
 export async function obtenerTecnicosActivos(opciones = {}) {
@@ -108,14 +159,26 @@ export async function obtenerTecnicosActivos(opciones = {}) {
   const { data, error, count } = await consulta;
 
   if (error) {
+    // Fallback offline: devolver datos cacheados filtrados
+    const cacheados = leerDeCache(CACHE_KEY_TECNICOS);
+    if (cacheados.length > 0) {
+      return aplicarFiltroYPaginacion(cacheados, busqueda, limite, pagina);
+    }
     throw new Error(`No se pudieron obtener los técnicos: ${error.message}`);
   }
 
-  return {
+  const resultado = {
     items: data || [],
     total: count || 0,
     hayMas: Boolean(count && hasta + 1 < count),
   };
+
+  // Actualizar caché con la lista completa cuando no hay filtro activo
+  if (!busqueda.trim() && pagina === 1 && resultado.items.length > 0) {
+    guardarEnCache(CACHE_KEY_TECNICOS, resultado.items);
+  }
+
+  return resultado;
 }
 
 export async function obtenerEquiposPorCliente(clienteId, opciones = {}) {
