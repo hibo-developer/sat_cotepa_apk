@@ -279,8 +279,8 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
 
         setClientes((previo) => (paginaClientes === 1 ? respuesta.items : [...previo, ...respuesta.items]));
         setHayMasClientes(respuesta.hayMas);
-      } catch {
-        setMensaje('No se pudieron cargar los clientes.');
+      } catch (err) {
+        setMensaje(err.message || 'No se pudieron cargar los clientes.');
       } finally {
         setCargandoClientes(false);
       }
@@ -306,8 +306,8 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
 
         setTecnicos((previo) => (paginaTecnicos === 1 ? respuesta.items : [...previo, ...respuesta.items]));
         setHayMasTecnicos(respuesta.hayMas);
-      } catch {
-        setMensaje('No se pudieron cargar los técnicos.');
+      } catch (err) {
+        setMensaje(err.message || 'No se pudieron cargar los técnicos.');
       } finally {
         setCargandoTecnicos(false);
       }
@@ -337,9 +337,9 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
 
         setEquipos((previo) => (paginaEquipos === 1 ? respuesta.items : [...previo, ...respuesta.items]));
         setHayMasEquipos(respuesta.hayMas);
-      } catch {
+      } catch (err) {
         setEquipos([]);
-        setMensaje('No se pudieron cargar los equipos del cliente seleccionado.');
+        setMensaje(err.message || 'No se pudieron cargar los equipos del cliente seleccionado.');
       } finally {
         setCargandoEquipos(false);
       }

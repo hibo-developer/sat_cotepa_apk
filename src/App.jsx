@@ -4,6 +4,7 @@ import { NavbarInferior } from './components/NavbarInferior';
 import { IndicadorSync } from './components/IndicadorSync';
 import { CambiarPasswordModal } from './components/CambiarPasswordModal';
 import { useAuthSession } from './hooks/useAuthSession';
+import { precargarCatalogosOffline } from './services/catalogosService';
 import { obtenerClienteSupabase, tieneConfiguracionSupabase } from './services/supabaseClient';
 import logoCotepa from './assets/cotepa.jpg';
 import { AdminView } from './views/AdminView';
@@ -144,6 +145,23 @@ export default function App() {
       navigate('/ordenes', { replace: true });
     }
   }, [accesoBloqueado, navigate, puedeVerInventario, verificandoRol, vistaActiva]);
+
+  useEffect(() => {
+    if (!requiereLogin || !sesion?.user?.id) {
+      return undefined;
+    }
+
+    precargarCatalogosOffline().catch(() => { /* noop */ });
+
+    function refrescarCatalogosOffline() {
+      precargarCatalogosOffline().catch(() => { /* noop */ });
+    }
+
+    window.addEventListener('online', refrescarCatalogosOffline);
+    return () => {
+      window.removeEventListener('online', refrescarCatalogosOffline);
+    };
+  }, [requiereLogin, sesion?.user?.id]);
 
   function cambiarVistaSegura(siguienteVista) {
     if (siguienteVista === 'admin' && !esAdmin) {

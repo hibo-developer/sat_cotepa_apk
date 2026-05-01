@@ -1,12 +1,18 @@
 import { obtenerClienteSupabase } from './supabaseClient';
 
 // ---------------------------------------------------------------------------
-// Caché localStorage para catálogos de referencia (técnicos, clientes).
+// Caché localStorage para catálogos de referencia (técnicos, clientes, equipos).
 // Se usa como fallback cuando no hay conexión a Supabase.
-// Solo se cachea la primera página sin filtro (lista completa inicial).
+// Se precalienta en background para disponer de la lista completa offline.
 // ---------------------------------------------------------------------------
 const CACHE_KEY_TECNICOS = 'sat_cache_tecnicos_v1';
 const CACHE_KEY_CLIENTES = 'sat_cache_clientes_v1';
+const CACHE_KEY_EQUIPOS = 'sat_cache_equipos_v1';
+const TAMANO_LOTE_CACHE = 500;
+
+let precargaClientesEnCurso = null;
+let precargaTecnicosEnCurso = null;
+let precargaEquiposEnCurso = null;
 
 function guardarEnCache(clave, items) {
   try {
@@ -45,6 +51,107 @@ function normalizarBusquedaParaOr(valor) {
     // Evita que caracteres reservados rompan la expresion or(...) de PostgREST
     .replace(/[(),]/g, ' ')
     .replace(/\s+/g, ' ');
+}
+
+function crearErrorCatalogoSinCache(etiqueta, errorOriginal) {
+  const detalle = errorOriginal?.message ? ` ${errorOriginal.message}` : '';
+  return new Error(
+    `No se pudieron obtener los ${etiqueta} y no hay caché offline disponible.${detalle}`,
+  );
+}
+
+async function cargarCatalogoCompleto({
+  supabase,
+  tabla,
+  columnas,
+  cacheKey,
+  orderBy,
+  filtros,
+}) {
+  const acumulado = [];
+  let desde = 0;
+
+  while (true) {
+    let consulta = supabase
+      .from(tabla)
+      .select(columnas)
+      .order(orderBy, { ascending: true })
+      .range(desde, desde + TAMANO_LOTE_CACHE - 1);
+
+    if (typeof filtros === 'function') {
+      consulta = filtros(consulta);
+    }
+
+    const { data, error } = await consulta;
+
+    if (error) {
+      throw error;
+    }
+
+    const items = data || [];
+    acumulado.push(...items);
+
+    if (items.length < TAMANO_LOTE_CACHE) {
+      break;
+    }
+
+    desde += TAMANO_LOTE_CACHE;
+  }
+
+  if (acumulado.length > 0) {
+    guardarEnCache(cacheKey, acumulado);
+  }
+
+  return acumulado;
+}
+
+async function precargarClientesEnBackground(supabase) {
+  if (!precargaClientesEnCurso) {
+    precargaClientesEnCurso = cargarCatalogoCompleto({
+      supabase,
+      tabla: 'clientes',
+      columnas: 'id, nombre',
+      cacheKey: CACHE_KEY_CLIENTES,
+      orderBy: 'nombre',
+    }).finally(() => {
+      precargaClientesEnCurso = null;
+    });
+  }
+
+  return precargaClientesEnCurso;
+}
+
+async function precargarTecnicosEnBackground(supabase) {
+  if (!precargaTecnicosEnCurso) {
+    precargaTecnicosEnCurso = cargarCatalogoCompleto({
+      supabase,
+      tabla: 'tecnicos',
+      columnas: 'id, nombre, especialidad',
+      cacheKey: CACHE_KEY_TECNICOS,
+      orderBy: 'nombre',
+      filtros: (consulta) => consulta.eq('activo', true),
+    }).finally(() => {
+      precargaTecnicosEnCurso = null;
+    });
+  }
+
+  return precargaTecnicosEnCurso;
+}
+
+async function precargarEquiposEnBackground(supabase) {
+  if (!precargaEquiposEnCurso) {
+    precargaEquiposEnCurso = cargarCatalogoCompleto({
+      supabase,
+      tabla: 'equipos',
+      columnas: 'id, cliente_id, nombre, marca, modelo',
+      cacheKey: CACHE_KEY_EQUIPOS,
+      orderBy: 'nombre',
+    }).finally(() => {
+      precargaEquiposEnCurso = null;
+    });
+  }
+
+  return precargaEquiposEnCurso;
 }
 
 async function asegurarRegistroTecnicoParaAdminActual(supabase) {
@@ -118,7 +225,7 @@ export async function obtenerClientes(opciones = {}) {
     if (cacheados.length > 0) {
       return aplicarFiltroYPaginacion(cacheados, busqueda, limite, pagina);
     }
-    throw new Error(`No se pudieron obtener los clientes: ${error.message}`);
+    throw crearErrorCatalogoSinCache('clientes', error);
   }
 
   const resultado = {
@@ -127,9 +234,15 @@ export async function obtenerClientes(opciones = {}) {
     hayMas: Boolean(count && hasta + 1 < count),
   };
 
-  // Actualizar caché con la lista completa cuando no hay filtro activo
+  // Mantiene una versión completa del catálogo para uso offline.
   if (!busqueda.trim() && pagina === 1 && resultado.items.length > 0) {
-    guardarEnCache(CACHE_KEY_CLIENTES, resultado.items);
+    if (resultado.total > resultado.items.length) {
+      precargarClientesEnBackground(supabase).catch(() => {
+        guardarEnCache(CACHE_KEY_CLIENTES, resultado.items);
+      });
+    } else {
+      guardarEnCache(CACHE_KEY_CLIENTES, resultado.items);
+    }
   }
 
   return resultado;
@@ -164,7 +277,7 @@ export async function obtenerTecnicosActivos(opciones = {}) {
     if (cacheados.length > 0) {
       return aplicarFiltroYPaginacion(cacheados, busqueda, limite, pagina);
     }
-    throw new Error(`No se pudieron obtener los técnicos: ${error.message}`);
+    throw crearErrorCatalogoSinCache('técnicos', error);
   }
 
   const resultado = {
@@ -173,9 +286,15 @@ export async function obtenerTecnicosActivos(opciones = {}) {
     hayMas: Boolean(count && hasta + 1 < count),
   };
 
-  // Actualizar caché con la lista completa cuando no hay filtro activo
+  // Mantiene una versión completa del catálogo para uso offline.
   if (!busqueda.trim() && pagina === 1 && resultado.items.length > 0) {
-    guardarEnCache(CACHE_KEY_TECNICOS, resultado.items);
+    if (resultado.total > resultado.items.length) {
+      precargarTecnicosEnBackground(supabase).catch(() => {
+        guardarEnCache(CACHE_KEY_TECNICOS, resultado.items);
+      });
+    } else {
+      guardarEnCache(CACHE_KEY_TECNICOS, resultado.items);
+    }
   }
 
   return resultado;
@@ -193,7 +312,7 @@ export async function obtenerEquiposPorCliente(clienteId, opciones = {}) {
 
   let consulta = supabase
     .from('equipos')
-    .select('id, nombre, marca, modelo', { count: 'exact' })
+    .select('id, cliente_id, nombre, marca, modelo', { count: 'exact' })
     .eq('cliente_id', clienteId)
     .order('nombre', { ascending: true })
     .range(desde, hasta);
@@ -208,12 +327,39 @@ export async function obtenerEquiposPorCliente(clienteId, opciones = {}) {
   const { data, error, count } = await consulta;
 
   if (error) {
-    throw new Error(`No se pudieron obtener los equipos: ${error.message}`);
+    const cacheados = leerDeCache(CACHE_KEY_EQUIPOS);
+    const equiposCliente = cacheados.filter((equipo) => equipo.cliente_id === clienteId);
+    if (equiposCliente.length > 0) {
+      return aplicarFiltroYPaginacion(equiposCliente, busqueda, limite, pagina);
+    }
+    throw crearErrorCatalogoSinCache('equipos', error);
   }
 
-  return {
+  const resultado = {
     items: data || [],
     total: count || 0,
     hayMas: Boolean(count && hasta + 1 < count),
   };
+
+  if (pagina === 1 && resultado.items.length > 0) {
+    if (resultado.total > resultado.items.length) {
+      precargarEquiposEnBackground(supabase).catch(() => {
+        guardarEnCache(CACHE_KEY_EQUIPOS, resultado.items);
+      });
+    } else {
+      guardarEnCache(CACHE_KEY_EQUIPOS, resultado.items);
+    }
+  }
+
+  return resultado;
+}
+
+export async function precargarCatalogosOffline() {
+  const supabase = obtenerClienteSupabase();
+
+  await Promise.allSettled([
+    precargarClientesEnBackground(supabase),
+    precargarTecnicosEnBackground(supabase),
+    precargarEquiposEnBackground(supabase),
+  ]);
 }
