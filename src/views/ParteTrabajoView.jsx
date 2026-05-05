@@ -678,14 +678,11 @@ export function ParteTrabajoView() {
   }
 
   async function iniciarIntervension() {
-    if (!desplazamiento.inicioIso) {
-      setError('Primero debes pulsar Inicio Desplazamiento.');
-      return;
-    }
-
     setMensaje('');
     setError('');
     setCapturandoIntervension(true);
+
+    const inicioIntervIso = new Date().toISOString();
 
     try {
       const ubicacion = await obtenerUbicacionActual();
@@ -695,7 +692,17 @@ export function ParteTrabajoView() {
         nombreLugar: lugarResuelto?.nombreLugar || null,
         nombreLugarCompleto: lugarResuelto?.nombreLugarCompleto || null,
       };
-      const inicioIntervIso = new Date().toISOString();
+
+      if (!desplazamiento.inicioIso) {
+        setDesplazamiento({
+          inicioIso: inicioIntervIso,
+          finIso: null,
+          ubicacionInicio: UBICACION_COTEPA,
+          ubicacionFin: null,
+          distanciaMetros: null,
+          minutosGeo: null,
+        });
+      }
 
       // Pulsar Inicio Intervención cierra automáticamente el desplazamiento
       // si seguía abierto: el técnico ya está en cliente, así que aquí
@@ -704,6 +711,7 @@ export function ParteTrabajoView() {
         const distanciaDesplazamiento = await calcularDistanciaCarreteraMetros(UBICACION_COTEPA, ubicacionConLugar);
         setDesplazamiento((prev) => ({
           ...prev,
+          inicioIso: prev?.inicioIso || inicioIntervIso,
           finIso: inicioIntervIso,
           ubicacionInicio: prev.ubicacionInicio || UBICACION_COTEPA,
           ubicacionFin: ubicacionConLugar,
@@ -723,16 +731,16 @@ export function ParteTrabajoView() {
         pausaComidaActiva: null,
       });
       setPendienteGeoIntervension(false);
-      setMensaje('Intervención iniciada con geolocalización en cliente. Desplazamiento cerrado automáticamente.');
+      setMensaje('Intervención iniciada con geolocalización en cliente.');
     } catch (err) {
       const sinConexion = navigator.onLine === false;
-      const inicioIntervIso = new Date().toISOString();
 
       // Sin geolocalización no podemos calcular km, pero igualmente
       // cerramos el desplazamiento para que el técnico pueda continuar.
       if (!desplazamiento.finIso) {
         setDesplazamiento((prev) => ({
           ...prev,
+          inicioIso: prev?.inicioIso || inicioIntervIso,
           finIso: inicioIntervIso,
           minutosGeo: null,
         }));
@@ -1185,52 +1193,12 @@ export function ParteTrabajoView() {
         </p>
 
         <div className="rounded-xl border border-marca-200 bg-marca-50 p-3 lg:col-span-2">
-          <p className="text-xs font-semibold text-marca-900">Fase 1: Desplazamiento (desde Cotepa)</p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={iniciarDesplazamiento}
-              disabled={capturandoDesplazamiento || guardando || desplazamiento.inicioIso}
-              className="rounded-xl border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800 disabled:opacity-60"
-            >
-              Inicio Desplazamiento
-            </button>
-            <button
-              type="button"
-              onClick={finalizarDesplazamiento}
-              disabled={capturandoDesplazamiento || guardando || !desplazamiento.inicioIso || desplazamiento.finIso || intervension.inicioIso}
-              className="rounded-xl border border-blue-400 bg-blue-100 px-3 py-2 text-xs font-semibold text-blue-900 disabled:opacity-60"
-            >
-              Fin Desplazamiento
-            </button>
-          </div>
-          <p className="mt-2 text-xs text-slate-700">
-            Inicio: {desplazamiento.inicioIso ? new Date(desplazamiento.inicioIso).toLocaleString('es-ES') : 'No iniciado'}
-          </p>
-          <p className="text-xs text-slate-700">
-            Fin: {desplazamiento.finIso ? new Date(desplazamiento.finIso).toLocaleString('es-ES') : 'No finalizado'}
-          </p>
-          <p className="text-xs text-slate-700">
-            Origen: {desplazamiento.ubicacionInicio ? `${desplazamiento.ubicacionInicio.nombreLugar}` : 'Cotepa S.L., Paiporta, Valencia (pendiente)'}
-          </p>
-          <p className="text-xs text-slate-700">
-            Destino: {desplazamiento.ubicacionFin ? formatearLugar(desplazamiento.ubicacionFin) : 'No disponible'}
-          </p>
-          <p className="text-xs text-slate-700">
-            Distancia por carretera: {Number.isFinite(desplazamiento.distanciaMetros)
-              ? `${(desplazamiento.distanciaMetros / 1000).toFixed(2)} km (facturación ida + vuelta: ${((desplazamiento.distanciaMetros * 2) / 1000).toFixed(2)} km)`
-              : 'No calculada'}
-          </p>
-          <p className="text-[11px] italic text-slate-500">
-            El tiempo de desplazamiento no se contabiliza: estos botones solo se utilizan para calcular el kilometraje por carretera desde Cotepa hasta el cliente (ida + vuelta).
-          </p>
-
-          <p className="mt-4 text-xs font-semibold text-marca-900">Fase 2: Intervención (en cliente por geolocalización)</p>
+          <p className="text-xs font-semibold text-marca-900">Intervención (en cliente por geolocalización)</p>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={iniciarIntervension}
-              disabled={capturandoIntervension || guardando || !desplazamiento.inicioIso || intervension.inicioIso}
+              disabled={capturandoIntervension || guardando || intervension.inicioIso}
               className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 disabled:opacity-60"
             >
               Inicio Intervención

@@ -71,6 +71,16 @@ function createWindow() {
 app.whenReady().then(() => {
   app.setAppUserModelId('com.cotepa.sat.desktop');
   logLinea('app-ready', { version: app.getVersion(), electron: process.versions.electron });
+
+  try {
+    const { session } = require('electron');
+    session.defaultSession
+      .clearStorageData({ storages: ['serviceworkers', 'cachestorage'] })
+      .catch((err) => logLinea('clearStorageData-error', err));
+  } catch (err) {
+    logLinea('clearStorageData-throw', err);
+  }
+
   createWindow();
 
   app.on('activate', () => {

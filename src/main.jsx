@@ -10,16 +10,23 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
     generarInformeDemo: generarInformeParteDemoLocal,
   };
 
-  // Alias para evitar errores por variaciones/typos al invocarlo desde consola.
   window.__satPdfPreview = satPdfPreviewApi;
   window._satPdfPreview = satPdfPreviewApi;
   window._satPdfPrewiew = satPdfPreviewApi;
 }
 
-if (import.meta.env.PROD && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  });
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  const esHttp = window.location.protocol === 'http:' || window.location.protocol === 'https:';
+  if (import.meta.env.PROD && esHttp) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  } else {
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((regs) => regs.forEach((reg) => reg.unregister().catch(() => {})))
+      .catch(() => {});
+  }
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
