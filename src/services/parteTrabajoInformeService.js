@@ -86,6 +86,26 @@ function formatearFechaSolo(valor) {
   }).format(f);
 }
 
+function resolverFechaInformeIso({ parte, formulario, seguimientoTiempo, intervension }) {
+  const candidatos = [
+    intervension?.inicioIso,
+    intervension?.finIso,
+    parte?.fecha_inicio,
+    parte?.fecha_fin,
+    seguimientoTiempo?.inicioIso,
+    seguimientoTiempo?.finIso,
+    formulario?.fecha_inicio,
+    formulario?.fecha_fin,
+  ];
+
+  for (const c of candidatos) {
+    const f = new Date(c);
+    if (Number.isFinite(f.getTime())) return f.toISOString();
+  }
+
+  return new Date().toISOString();
+}
+
 function crearReferenciaInforme(fechaIso, secuencial) {
   const f = new Date(fechaIso);
   const ahora = Number.isFinite(f.getTime()) ? f : new Date();
@@ -835,15 +855,23 @@ async function crearPdfInforme({
   firmaUrl,
   fotosIntervencionUrls,
   secuencialDiario,
+  fechaInformeIso,
 }) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
-  const fechaInformeIso = new Date().toISOString();
-  const referencia = crearReferenciaInforme(fechaInformeIso, secuencialDiario);
+  const fechaBaseIso = resolverFechaInformeIso({ parte, formulario, seguimientoTiempo, intervension });
+  let fechaEmisionIso = fechaBaseIso;
+  if (fechaInformeIso) {
+    const f = new Date(fechaInformeIso);
+    if (Number.isFinite(f.getTime())) {
+      fechaEmisionIso = f.toISOString();
+    }
+  }
+  const referencia = crearReferenciaInforme(fechaEmisionIso, secuencialDiario);
   const logoDataUrl = await obtenerLogoEmpresa();
 
   metaInforme = {
     referencia,
-    fechaEmision: formatearFechaSolo(fechaInformeIso),
+    fechaEmision: formatearFechaSolo(fechaEmisionIso),
   };
 
   const estado = { y: 32, logoDataUrl };
@@ -863,7 +891,7 @@ async function crearPdfInforme({
   dibujarTituloSeccion(doc, estado, 'Identificación');
   dibujarTablaInfo(doc, estado, [
     ['Nº de informe', referencia],
-    ['Fecha de emisión', metaInforme.fechaEmision],
+    ['Fecha intervención', metaInforme.fechaEmision],
     ['Prioridad', prioridad],
   ]);
 
@@ -951,12 +979,13 @@ async function subirPdfInforme({ pdfBlob, nombreArchivo, clienteId, tecnicoId, o
   return `sb://informes-partes/${ruta}`;
 }
 
-async function obtenerSecuencialDiario() {
+async function obtenerSecuencialDiario(fechaIso) {
   try {
     const supabase = obtenerClienteSupabase();
-    const hoy = new Date();
-    const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).toISOString();
-    const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1).toISOString();
+    const base = new Date(fechaIso);
+    const hoy = Number.isFinite(base.getTime()) ? base : new Date();
+    const inicio = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate())).toISOString();
+    const fin = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate() + 1)).toISOString();
     const { count } = await supabase
       .from('ordenes_trabajo')
       .select('id', { count: 'exact', head: true })
@@ -982,8 +1011,13 @@ export async function generarYSubirInformeParte({
   nombreFirmante,
   firmaUrl,
   fotosIntervencionUrls,
+  secuencialDiario: secuencialDiarioEntrada,
+  fechaInformeIso,
 }) {
-  const secuencialDiario = await obtenerSecuencialDiario();
+  const fechaBaseIso = resolverFechaInformeIso({ parte, formulario, seguimientoTiempo, intervension });
+  const secuencialDiario = Number.isFinite(Number(secuencialDiarioEntrada)) && Number(secuencialDiarioEntrada) > 0
+    ? Number(secuencialDiarioEntrada)
+    : await obtenerSecuencialDiario(fechaBaseIso);
 
   const firmaAccesible = firmaUrl
     ? await obtenerUrlFirmadaStorage(firmaUrl, { expiresIn: 900 })
@@ -1007,6 +1041,7 @@ export async function generarYSubirInformeParte({
     firmaUrl: firmaAccesible,
     fotosIntervencionUrls: fotosAccesibles,
     secuencialDiario,
+    fechaInformeIso,
   });
   const pdfUrl = await subirPdfInforme({
     pdfBlob,

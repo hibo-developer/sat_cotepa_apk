@@ -149,6 +149,23 @@ function resolverMinutosDesdeRangoIso(inicioIso, finIso) {
   return Math.max(1, Math.ceil(dif / 60000));
 }
 
+function extraerSecuencialInformeDesdeUrl(urlInforme) {
+  const url = String(urlInforme || '');
+  const nuevo = /SAT-\d{6}-(\d{2})\.pdf/i.exec(url);
+  if (nuevo) {
+    const n = Number.parseInt(nuevo[1], 10);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  const antiguo = /SAT-\d{2}-\d{2}-\d{4}-(\d{2})\.pdf/i.exec(url);
+  if (antiguo) {
+    const n = Number.parseInt(antiguo[1], 10);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  return null;
+}
+
 function resolverValoracionBooleana(payloadValor, valorActual = false) {
   if (typeof payloadValor === 'boolean') {
     return payloadValor;
@@ -697,6 +714,7 @@ export async function actualizarValoracionOrdenFinalizada(ordenId, payload) {
       estado,
       foto_url,
       firma_url,
+      informe_pdf_url,
       coste_materiales_editable,
       tarifa_mano_obra_hora,
       horas_mano_obra,
@@ -862,6 +880,7 @@ export async function actualizarValoracionOrdenFinalizada(ordenId, payload) {
     finIso: finInterv,
     pausasComida: fasesParseadas.intervension?.pausasComida || [],
   };
+  const secuencialInforme = extraerSecuencialInformeDesdeUrl(ordenActual.informe_pdf_url);
 
   const informe = await generarYSubirInformeParte({
     parte: {
@@ -887,6 +906,8 @@ export async function actualizarValoracionOrdenFinalizada(ordenId, payload) {
     nombreFirmante: extraerNombreFirmanteDesdeTareas(ordenActual.tareas_realizadas),
     firmaUrl: ordenActual.firma_url || '',
     fotosIntervencionUrls: extraerFotosIntervencionDesdeTareas(ordenActual.tareas_realizadas),
+    secuencialDiario: secuencialInforme || undefined,
+    fechaInformeIso: inicioInterv,
     valoracionEconomica: {
       costeMaterialesEditable,
       tarifaManoObraHora,
@@ -982,6 +1003,7 @@ export async function editarParteFinalizado(ordenId, payload) {
       tareas_realizadas,
       foto_url,
       firma_url,
+      informe_pdf_url,
       tiempo_empleado_minutos,
       prioridad,
       estado,
@@ -1152,6 +1174,7 @@ export async function editarParteFinalizado(ordenId, payload) {
     finIso: fasesParseadas.intervension?.finIso || ordenActual.fecha_fin,
     pausasComida: fasesParseadas.intervension?.pausasComida || [],
   };
+  const secuencialInforme = extraerSecuencialInformeDesdeUrl(ordenActual.informe_pdf_url);
 
   const valoracionEconomica = {
     costeMaterialesEditable: materialesNormalizados
@@ -1196,6 +1219,8 @@ export async function editarParteFinalizado(ordenId, payload) {
     nombreFirmante: extraerNombreFirmanteDesdeTareas(nuevasTareasRealizadas),
     firmaUrl: ordenActual.firma_url || '',
     fotosIntervencionUrls: fotosFinales,
+    secuencialDiario: secuencialInforme || undefined,
+    fechaInformeIso: inicioInterv,
     valoracionEconomica,
   });
 
