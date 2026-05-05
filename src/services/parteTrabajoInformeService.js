@@ -93,7 +93,7 @@ function crearReferenciaInforme(fechaIso, secuencial) {
   const mm = String(ahora.getMonth() + 1).padStart(2, '0');
   const yy = String(ahora.getFullYear()).slice(-2);
   const seq = String(Number.isFinite(secuencial) ? secuencial : 1).padStart(2, '0');
-  return `SAT-${yy}${mm}${dd}/${seq}`;
+  return `SAT-${yy}${mm}${dd}-${seq}`;
 }
 
 function resolverMinutosFase(fase) {
@@ -272,6 +272,13 @@ function limpiarTextoTrabajosRealizados(tareasRealizadas) {
     return '';
   }
 
+  const esFragmentoLugar = (valor) => {
+    const limpio = String(valor || '').replace(/[.,;]+$/g, '').trim();
+    if (!limpio) return false;
+    if (/\d/.test(limpio)) return false;
+    return /^(Comunidad|Provincia|Municipio)\b/i.test(limpio);
+  };
+
   const PATRONES_TECNICOS = [
     /^Parte registrado desde movilidad\b/i,
     /^Inicio:/i,
@@ -298,7 +305,8 @@ function limpiarTextoTrabajosRealizados(tareasRealizadas) {
       if (/^(Desplazamiento|Intervenci[oó]n)\b/i.test(parte)) {
         const separador = parte.search(/[:\-]/);
         if (separador !== -1) {
-          return parte.slice(separador + 1).trim();
+          const resto = parte.slice(separador + 1).trim();
+          return esFragmentoLugar(resto) ? '' : resto;
         }
         return '';
       }
@@ -308,7 +316,8 @@ function limpiarTextoTrabajosRealizados(tareasRealizadas) {
         .trim();
     })
     .filter(Boolean)
-    .filter((parte) => !PATRONES_TECNICOS.some((re) => re.test(parte)));
+    .filter((parte) => !PATRONES_TECNICOS.some((re) => re.test(parte)))
+    .filter((parte) => !esFragmentoLugar(parte));
 
   return fragmentos.join(' ').replace(/\s{2,}/g, ' ').trim();
 }
