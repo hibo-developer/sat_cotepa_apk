@@ -731,6 +731,10 @@ export async function actualizarValoracionOrdenFinalizada(ordenId, payload) {
       coste_total,
       fecha_inicio,
       fecha_fin,
+      desplazamiento_inicio,
+      desplazamiento_fin,
+      intervension_inicio,
+      intervension_fin,
       clientes ( id, nombre ),
       equipos ( id, nombre, marca, modelo ),
       tecnicos ( id, nombre ),
@@ -875,11 +879,21 @@ export async function actualizarValoracionOrdenFinalizada(ordenId, payload) {
 
   const materialesTexto = materialesOrdenATexto(ordenActual.materiales_orden);
   const fasesParseadas = extraerFasesDesdeTareas(ordenActual.tareas_realizadas);
-  const inicioInterv = fechaInicioIso || fasesParseadas.intervension?.inicioIso || ordenActual.fecha_inicio;
-  const finInterv = fechaFinIso || fasesParseadas.intervension?.finIso || ordenActual.fecha_fin;
+  const inicioInterv = fechaInicioIso
+    || ordenActual.intervension_inicio
+    || fasesParseadas.intervension?.inicioIso
+    || ordenActual.fecha_inicio;
+  const finInterv = fechaFinIso
+    || ordenActual.intervension_fin
+    || fasesParseadas.intervension?.finIso
+    || ordenActual.fecha_fin;
   const desplazamiento = {
-    inicioIso: fasesParseadas.desplazamiento?.inicioIso || ordenActual.fecha_inicio,
-    finIso: fasesParseadas.desplazamiento?.finIso || inicioInterv,
+    inicioIso: ordenActual.desplazamiento_inicio
+      || fasesParseadas.desplazamiento?.inicioIso
+      || ordenActual.fecha_inicio,
+    finIso: ordenActual.desplazamiento_fin
+      || fasesParseadas.desplazamiento?.finIso
+      || inicioInterv,
     distanciaMetros: Number.isFinite(Number(kmDesplazamientoFacturables))
       ? Math.round(kmDesplazamientoFacturables * 1000)
       : null,
@@ -1016,6 +1030,10 @@ export async function editarParteFinalizado(ordenId, payload) {
       firma_url,
       informe_pdf_url,
       tiempo_empleado_minutos,
+      desplazamiento_inicio,
+      desplazamiento_fin,
+      intervension_inicio,
+      intervension_fin,
       prioridad,
       estado,
       fecha_inicio,
@@ -1183,12 +1201,18 @@ export async function editarParteFinalizado(ordenId, payload) {
     .filter(Boolean)
     .join('\n');
 
-  const fasesParseadas = extraerFasesDesdeTareas(ordenActual.tareas_realizadas);
-  const inicioInterv = fasesParseadas.intervension?.inicioIso || ordenActual.fecha_inicio;
+  const fasesParseadas = extraerFasesDesdeTareas(nuevasTareasRealizadas);
+  const inicioInterv = ordenActual.intervension_inicio
+    || fasesParseadas.intervension?.inicioIso
+    || ordenActual.fecha_inicio;
 
   const desplazamiento = {
-    inicioIso: fasesParseadas.desplazamiento?.inicioIso || ordenActual.fecha_inicio,
-    finIso: fasesParseadas.desplazamiento?.finIso || inicioInterv,
+    inicioIso: ordenActual.desplazamiento_inicio
+      || fasesParseadas.desplazamiento?.inicioIso
+      || ordenActual.fecha_inicio,
+    finIso: ordenActual.desplazamiento_fin
+      || fasesParseadas.desplazamiento?.finIso
+      || inicioInterv,
     distanciaMetros: Number.isFinite(Number(ordenActual.km_desplazamiento_facturables))
       ? Math.round(Number(ordenActual.km_desplazamiento_facturables) * 1000)
       : null,
@@ -1196,7 +1220,9 @@ export async function editarParteFinalizado(ordenId, payload) {
 
   const intervensionRecuperada = {
     inicioIso: inicioInterv,
-    finIso: fasesParseadas.intervension?.finIso || ordenActual.fecha_fin,
+    finIso: ordenActual.intervension_fin
+      || fasesParseadas.intervension?.finIso
+      || ordenActual.fecha_fin,
     pausasComida: fasesParseadas.intervension?.pausasComida || [],
   };
   const secuencialInforme = extraerSecuencialInformeDesdeUrl(ordenActual.informe_pdf_url);
