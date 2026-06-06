@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import {
   obtenerClientes,
   obtenerEquiposPorCliente,
@@ -191,9 +192,18 @@ function parsearNumeroDecimal(valor) {
   return Number.isFinite(numero) ? numero : null;
 }
 
-function construirUrlRutaCliente({ lat, lng, direccion }) {
+function construirUrlRutaCliente({ lat, lng, direccion, preferirNativo = false }) {
   const latNum = Number(lat);
   const lngNum = Number(lng);
+  if (preferirNativo && Capacitor.getPlatform() === 'android') {
+    if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+      return `google.navigation:q=${latNum},${lngNum}`;
+    }
+    const dirNative = String(direccion || '').trim();
+    if (dirNative) {
+      return `google.navigation:q=${encodeURIComponent(dirNative)}`;
+    }
+  }
   if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
     return `https://www.google.com/maps/dir/?api=1&destination=${latNum},${lngNum}&travelmode=driving`;
   }
@@ -1287,10 +1297,12 @@ export function ParteTrabajoView({ rolUsuario }) {
 
   function abrirRutaCliente() {
     const cliente = clientes.find((c) => c.id === formulario.cliente_id);
+    const preferirNativo = Capacitor.isNativePlatform();
     const url = construirUrlRutaCliente({
       lat: cliente?.lat,
       lng: cliente?.lng,
       direccion: cliente?.direccion,
+      preferirNativo,
     });
     if (!url) {
       setError('El cliente no tiene coordenadas ni dirección para abrir la ruta.');
@@ -1304,6 +1316,10 @@ export function ParteTrabajoView({ rolUsuario }) {
       }).catch(() => { /* noop */ });
     }
     setError('');
+    if (preferirNativo) {
+      window.location.href = url;
+      return;
+    }
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 

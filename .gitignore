@@ -19,3 +19,5 @@ supabase/.temp
 .vscode/settings.json
 sat-release.keystore
 test-email.mjs
+SAT-Movil-COTEPA-*.apk
+SAT-Movil-COTEPA-*.exe
