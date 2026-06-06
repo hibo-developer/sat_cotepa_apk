@@ -15,6 +15,7 @@ import {
   intentarActualizarOrden,
 } from '../services/offlineSyncService';
 import { detenerTrackingBackground, iniciarTrackingBackground } from '../services/backgroundLocationService';
+import { abrirGoogleMaps } from '../services/externalNavigationService';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
 
 function obtenerUbicacionActual() {
@@ -78,6 +79,46 @@ async function resolverNombreLugar(latitud, longitud) {
       nombreLugar: nombreLugarCorto,
       nombreLugarCompleto,
     };
+  } catch {
+    return null;
+  }
+}
+
+function normalizarDireccion(direccion) {
+  return String(direccion || '')
+    .replace(/[·•]/g, ' ')
+    .replace(/N[º°]\s*/gi, 'N ')
+    .replace(/\s*,\s*/g, ', ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function geocodificarDireccion(direccion) {
+  const q = normalizarDireccion(direccion);
+  if (!q) return null;
+  try {
+    const respuesta = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(q)}`,
+      {
+        headers: {
+          Accept: 'application/json',
+          'Accept-Language': 'es',
+        },
+      },
+    );
+
+    if (!respuesta.ok) {
+      return null;
+    }
+
+    const data = await respuesta.json();
+    const primer = Array.isArray(data) ? data[0] : null;
+    const lat = primer?.lat ? Number(primer.lat) : null;
+    const lng = primer?.lon ? Number(primer.lon) : null;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return null;
+    }
+    return { lat, lng };
   } catch {
     return null;
   }
@@ -192,26 +233,31 @@ function parsearNumeroDecimal(valor) {
   return Number.isFinite(numero) ? numero : null;
 }
 
-function construirUrlRutaCliente({ lat, lng, direccion, preferirNativo = false }) {
+function construirUrlRutaCliente({ lat, lng, direccion, modoNavegacion = false }) {
   const latNum = Number(lat);
   const lngNum = Number(lng);
-  if (preferirNativo && Capacitor.getPlatform() === 'android') {
-    if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
-      return `google.navigation:q=${latNum},${lngNum}`;
-    }
-    const dirNative = String(direccion || '').trim();
-    if (dirNative) {
-      return `google.navigation:q=${encodeURIComponent(dirNative)}`;
-    }
+  if (Number.isFinite(latNum) && Number.isFinite(lngNum) && !(latNum === 0 && lngNum === 0)) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${latNum},${lngNum}&travelmode=driving${modoNavegacion ? '&dir_action=navigate' : ''}`;
   }
-  if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${latNum},${lngNum}&travelmode=driving`;
-  }
-  const dir = String(direccion || '').trim();
+  const dir = normalizarDireccion(direccion);
   if (dir) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dir)}&travelmode=driving`;
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dir)}&travelmode=driving${modoNavegacion ? '&dir_action=navigate' : ''}`;
   }
   return '';
+}
+
+function construirIntentRutaGoogleMaps({ lat, lng, direccion }) {
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  const destino = (Number.isFinite(latNum) && Number.isFinite(lngNum))
+    ? `${latNum},${lngNum}`
+    : normalizarDireccion(direccion);
+
+  if (!destino) {
+    return '';
+  }
+
+  return `intent://maps.google.com/maps?daddr=${encodeURIComponent(destino)}&directionsmode=driving#Intent;scheme=https;package=com.google.android.apps.maps;end`;
 }
 
 async function comprimirImagenA1280(archivo, nombreFinal) {
@@ -1295,14 +1341,36 @@ export function ParteTrabajoView({ rolUsuario }) {
     setFotosIntervencion((prev) => prev.filter((_, indice) => indice !== indiceObjetivo));
   }
 
-  function abrirRutaCliente() {
+  async function abrirRutaCliente() {
     const cliente = clientes.find((c) => c.id === formulario.cliente_id);
-    const preferirNativo = Capacitor.isNativePlatform();
+    const modoNavegacion = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+    const direccion = normalizarDireccion(cliente?.direccion);
+    let lat = cliente?.lat ?? null;
+    let lng = cliente?.lng ?? null;
+    const latNumInicial = Number(lat);
+    const lngNumInicial = Number(lng);
+    const tieneCoordsInicial =
+      Number.isFinite(latNumInicial) &&
+      Number.isFinite(lngNumInicial) &&
+      !(latNumInicial === 0 && lngNumInicial === 0);
+
+    if (!tieneCoordsInicial && direccion) {
+      setError('');
+      setMensaje('Buscando dirección del cliente…');
+      const coords = await geocodificarDireccion(direccion);
+      if (coords) {
+        lat = coords.lat;
+        lng = coords.lng;
+      } else {
+        lat = null;
+        lng = null;
+      }
+    }
     const url = construirUrlRutaCliente({
-      lat: cliente?.lat,
-      lng: cliente?.lng,
-      direccion: cliente?.direccion,
-      preferirNativo,
+      lat,
+      lng,
+      direccion,
+      modoNavegacion,
     });
     if (!url) {
       setError('El cliente no tiene coordenadas ni dirección para abrir la ruta.');
@@ -1316,8 +1384,24 @@ export function ParteTrabajoView({ rolUsuario }) {
       }).catch(() => { /* noop */ });
     }
     setError('');
-    if (preferirNativo) {
-      window.location.href = url;
+    setMensaje('');
+    if (modoNavegacion) {
+      try {
+        const rsp = await abrirGoogleMaps({ lat, lng, address: direccion });
+        if (rsp?.opened) return;
+      } catch { /* noop */ }
+      try {
+        window.location.href = url;
+      } catch {
+        // noop
+      }
+      setTimeout(() => {
+        try {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        } catch {
+          // noop
+        }
+      }, 400);
       return;
     }
     window.open(url, '_blank', 'noopener,noreferrer');
