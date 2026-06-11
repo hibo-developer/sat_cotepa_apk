@@ -16,19 +16,26 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    signingConfigs {
-        release {
-            storeFile file('../../sat-release.keystore')
-            storePassword System.getenv("KEYSTORE_PASSWORD")
-            keyAlias "sat-key"
-            keyPassword System.getenv("KEY_PASSWORD")
+    def releaseKeystoreFile = file('../../sat-release.keystore')
+    def releaseStorePassword = System.getenv("KEYSTORE_PASSWORD")
+    def releaseKeyPassword = System.getenv("KEY_PASSWORD")
+    def releaseSigningAvailable = releaseKeystoreFile.exists() && releaseStorePassword && releaseKeyPassword
+
+    if (releaseSigningAvailable) {
+        signingConfigs {
+            release {
+                storeFile releaseKeystoreFile
+                storePassword releaseStorePassword
+                keyAlias "sat-key"
+                keyPassword releaseKeyPassword
+            }
         }
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            signingConfig releaseSigningAvailable ? signingConfigs.release : signingConfigs.debug
         }
     }
 }

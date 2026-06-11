@@ -22,4 +22,9 @@ supabase/.temp
 sat-release.keystore
 test-email.mjs
 SAT-Movil-COTEPA-*.apk
+SAT-Movil-COTEPA.apk
 SAT-Movil-COTEPA-*.exe
+
+android/app/build
+android/build
+android/.gradle
