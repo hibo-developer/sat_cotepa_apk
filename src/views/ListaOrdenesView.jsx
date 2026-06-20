@@ -1681,7 +1681,7 @@ export function ListaOrdenesView({ rolUsuario }) {
 
   useEffect(() => {
     async function cargarTecnicosEdicion() {
-      if (!tieneConfiguracionSupabase()) {
+      if (!tieneConfiguracionSupabase() || rolUsuario === 'tecnico') {
         setTecnicosActivos([]);
         return;
       }
@@ -1695,7 +1695,7 @@ export function ListaOrdenesView({ rolUsuario }) {
     }
 
     cargarTecnicosEdicion();
-  }, []);
+  }, [rolUsuario]);
 
   function notificar(siguienteToast) {
     setToast({

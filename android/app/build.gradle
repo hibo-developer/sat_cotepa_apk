@@ -16,26 +16,71 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    def releaseKeystoreFile = file('../../sat-release.keystore')
-    def releaseStorePassword = System.getenv("KEYSTORE_PASSWORD")
-    def releaseKeyPassword = System.getenv("KEY_PASSWORD")
-    def releaseSigningAvailable = releaseKeystoreFile.exists() && releaseStorePassword && releaseKeyPassword
 
-    if (releaseSigningAvailable) {
-        signingConfigs {
+    def resolveSigningValue = { String envName, String propertyName, String defaultValue = null ->
+        def envValue = System.getenv(envName)
+        if (envValue != null && envValue.toString().trim()) {
+            return envValue.toString().trim()
+        }
+
+        if (project.hasProperty(propertyName)) {
+            def propertyValue = project.property(propertyName)?.toString()?.trim()
+            if (propertyValue) {
+                return propertyValue
+            }
+        }
+
+        return defaultValue
+    }
+
+    def releaseKeystorePath = resolveSigningValue("KEYSTORE_FILE", "RELEASE_KEYSTORE_FILE", "../../sat-release.keystore")
+    def releaseKeystoreFile = file(releaseKeystorePath)
+    def releaseStorePassword = resolveSigningValue("KEYSTORE_PASSWORD", "RELEASE_KEYSTORE_PASSWORD")
+    def releaseKeyPassword = resolveSigningValue("KEY_PASSWORD", "RELEASE_KEY_PASSWORD")
+    def releaseKeyAlias = resolveSigningValue("KEY_ALIAS", "RELEASE_KEY_ALIAS", "sat-key")
+    def releaseSigningAvailable =
+        releaseKeystoreFile.exists() &&
+        releaseStorePassword &&
+        releaseKeyPassword &&
+        releaseKeyAlias
+
+    def releaseBuildRequested = gradle.startParameter.taskNames.any { taskName ->
+        def normalized = taskName?.toString()?.toLowerCase()
+        normalized?.contains('release') || normalized?.contains('bundle')
+    }
+
+    if (releaseBuildRequested && !releaseSigningAvailable) {
+        def missingParts = []
+        if (!releaseKeystoreFile.exists()) missingParts << "keystore (${releaseKeystoreFile})"
+        if (!releaseStorePassword) missingParts << "KEYSTORE_PASSWORD / RELEASE_KEYSTORE_PASSWORD"
+        if (!releaseKeyPassword) missingParts << "KEY_PASSWORD / RELEASE_KEY_PASSWORD"
+        if (!releaseKeyAlias) missingParts << "KEY_ALIAS / RELEASE_KEY_ALIAS"
+
+        throw new GradleException(
+            "Falta la firma release de Android. Configura " +
+            missingParts.join(', ') +
+            " y vuelve a ejecutar el build release."
+        )
+    }
+
+    signingConfigs {
+        if (releaseSigningAvailable) {
             release {
                 storeFile releaseKeystoreFile
                 storePassword releaseStorePassword
-                keyAlias "sat-key"
+                keyAlias releaseKeyAlias
                 keyPassword releaseKeyPassword
             }
         }
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig releaseSigningAvailable ? signingConfigs.release : signingConfigs.debug
+            if (releaseSigningAvailable) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

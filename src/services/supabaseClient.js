@@ -6,6 +6,20 @@ const supabaseUrl = runtimeConfig?.SUPABASE_URL || import.meta.env.VITE_SUPABASE
 const supabaseAnonKey = runtimeConfig?.SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
 const cacheSignedUrls = new Map();
 
+function debeOmitirCacheUrlFirmada(bucket, opciones = {}) {
+  return Boolean(opciones.forceRefresh || bucket === 'informes-partes');
+}
+
+function anadirCacheBust(urlTexto) {
+  try {
+    const url = new URL(urlTexto);
+    url.searchParams.set('_ts', String(Date.now()));
+    return url.toString();
+  } catch {
+    return urlTexto;
+  }
+}
+
 // Cliente de Supabase centralizado para usar en servicios del dominio.
 export const supabase =
   supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
@@ -63,8 +77,9 @@ export async function obtenerUrlFirmadaStorage(referencia, opciones = {}) {
 
   const clave = `${ref.bucket}/${ref.path}`;
   const ahora = Date.now();
+  const omitirCache = debeOmitirCacheUrlFirmada(ref.bucket, opciones);
   const cached = cacheSignedUrls.get(clave);
-  if (cached && cached.url && cached.expiresAt && cached.expiresAt > ahora + 15_000) {
+  if (!omitirCache && cached && cached.url && cached.expiresAt && cached.expiresAt > ahora + 15_000) {
     return cached.url;
   }
 
@@ -82,6 +97,7 @@ export async function obtenerUrlFirmadaStorage(referencia, opciones = {}) {
   }
 
   const expMs = (Math.max(60, Math.min(3600, Number(expiresIn) || 600)) * 1000);
-  cacheSignedUrls.set(clave, { url: data.url, expiresAt: ahora + expMs });
-  return data.url;
+  const urlFinal = omitirCache ? anadirCacheBust(data.url) : data.url;
+  cacheSignedUrls.set(clave, { url: urlFinal, expiresAt: ahora + expMs });
+  return urlFinal;
 }

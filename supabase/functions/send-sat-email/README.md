@@ -1,6 +1,8 @@
 # Edge Function: send-sat-email
 
 Envia automaticamente el informe PDF del parte a sat@cotepa.com usando Resend.
+Solo admite llamadas autenticadas de roles `admin` u `oficina` y enlaces `pdfUrl`
+del bucket `informes-partes` del mismo proyecto Supabase.
 
 ## Secrets requeridos
 
@@ -9,12 +11,12 @@ Configura en Supabase:
 - RESEND_API_KEY
 - SAT_FROM_EMAIL (debe ser un remitente verificado en Resend, por ejemplo: SAT <sat@tu-dominio.com>)
 - SAT_TO_EMAIL (opcional, por defecto sat@cotepa.com)
-- MAIL_FUNCTION_TOKEN (opcional, recomendado)
+- SAT_ALLOWED_EMAIL_RECIPIENTS (opcional, lista separada por comas)
 
 ## Deploy
 
 ```bash
-supabase functions deploy send-sat-email --no-verify-jwt
+supabase functions deploy send-sat-email
 ```
 
 ## URL esperada para frontend

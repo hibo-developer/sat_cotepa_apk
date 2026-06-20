@@ -2,12 +2,16 @@
 
 Usar despues de ejecutar [supabase/13_apply_and_verify_security.sql](../supabase/13_apply_and_verify_security.sql) en SQL Editor.
 
+Si usas migraciones versionadas, aplicar tambien `supabase/migrations/20260620000000_harden_storage_path_policies.sql` para endurecer las rutas de `storage.objects`.
+Aplicar tambien `supabase/migrations/20260620010000_restrict_tecnicos_select_for_tecnicos.sql` para que un tecnico solo vea su propio registro en `public.tecnicos`.
+
 ## 1. Resultado SQL obligatorio
 
 - [ ] Bloque 3.1 devuelve 0 filas.
 - [ ] Bloque 3.2 devuelve 0 filas.
 - [ ] Bloque 3.3 devuelve 0 filas.
 - [ ] Bloque 3.4 devuelve 1 fila con `public.fn_es_sesion_no_anon_sat`.
+- [ ] Las subidas/borrados en Storage quedan limitados a la ruta valida esperada por bucket (`cliente/tecnico/...`) y no solo por `bucket_id`.
 
 ## 2. Configuracion Auth (manual)
 

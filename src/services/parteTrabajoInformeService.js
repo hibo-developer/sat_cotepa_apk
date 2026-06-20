@@ -883,6 +883,7 @@ async function crearPdfInforme({
   secuencialDiario,
   fechaInformeIso,
 }) {
+  const informeTraceId = `${parte?.id || formulario?.orden_id || 'sin-orden'}-${Date.now()}`;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
   const fechaBaseIso = resolverFechaInformeIso({ parte, formulario, seguimientoTiempo, intervension });
   let fechaEmisionIso = fechaBaseIso;
@@ -952,6 +953,7 @@ async function crearPdfInforme({
   // ==== Materiales ====
   const materiales = materialesDesdeTexto(formulario?.materialesTexto || '');
   const totalMaterialesCalc = totalMaterialesDesdeLista(materiales);
+
   dibujarTituloSeccion(doc, estado, 'Materiales utilizados');
   dibujarTablaMateriales(doc, estado, materiales);
 
@@ -978,6 +980,7 @@ async function crearPdfInforme({
   dibujarPiePaginas(doc);
 
   const refSegura = referencia.replace(/\//g, '-').replace(/[^a-zA-Z0-9\-_]/g, '');
+
   return { pdfBlob: doc.output('blob'), nombreArchivo: `${refSegura}.pdf` };
 }
 

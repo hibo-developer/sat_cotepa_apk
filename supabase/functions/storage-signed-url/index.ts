@@ -93,6 +93,8 @@ function normalizarTexto(valor: unknown) {
   return typeof valor === 'string' ? valor.trim() : '';
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function validarBucket(bucket: string) {
   return bucket === 'firmas-clientes' || bucket === 'fotos-intervenciones' || bucket === 'informes-partes';
 }
@@ -102,6 +104,129 @@ function validarPath(path: string) {
   if (path.startsWith('/')) return false;
   if (path.includes('..')) return false;
   return true;
+}
+
+function trocearPath(path: string) {
+  return path
+    .split('/')
+    .map((segmento) => segmento.trim())
+    .filter(Boolean);
+}
+
+function esUuid(valor: string) {
+  return UUID_RE.test(valor);
+}
+
+async function obtenerTecnicoActualId(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+) {
+  const { data: tecnico, error } = await supabaseAdmin
+    .from('tecnicos')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('activo', true)
+    .maybeSingle();
+
+  if (error || !tecnico?.id) {
+    return null;
+  }
+
+  return tecnico.id as string;
+}
+
+async function validarRutaFirma(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  path: string,
+  verificacion: { userId: string; rol: RolSat },
+) {
+  const partes = trocearPath(path);
+  if (partes.length !== 3) {
+    return { ok: false, error: 'Ruta de firma no valida' };
+  }
+
+  const [clienteId, tecnicoId, nombreArchivo] = partes;
+  if (!esUuid(clienteId) || !esUuid(tecnicoId) || !nombreArchivo) {
+    return { ok: false, error: 'Ruta de firma no valida' };
+  }
+
+  const [{ data: cliente, error: clienteError }, { data: tecnico, error: tecnicoError }] = await Promise.all([
+    supabaseAdmin.from('clientes').select('id').eq('id', clienteId).maybeSingle(),
+    supabaseAdmin.from('tecnicos').select('id').eq('id', tecnicoId).maybeSingle(),
+  ]);
+
+  if (clienteError || tecnicoError || !cliente?.id || !tecnico?.id) {
+    return { ok: false, error: 'La ruta de firma referencia entidades no validas' };
+  }
+
+  if (verificacion.rol !== 'tecnico') {
+    return { ok: true };
+  }
+
+  const tecnicoActualId = await obtenerTecnicoActualId(supabaseAdmin, verificacion.userId);
+  if (!tecnicoActualId || tecnicoActualId !== tecnicoId) {
+    return { ok: false, error: 'Acceso denegado a la firma solicitada' };
+  }
+
+  return { ok: true };
+}
+
+async function validarRutaOrden(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  path: string,
+  verificacion: { userId: string; rol: RolSat },
+) {
+  const partes = trocearPath(path);
+  if (partes.length !== 4) {
+    return { ok: false, error: 'Ruta de archivo no valida' };
+  }
+
+  const [clienteId, tecnicoId, ordenId, nombreArchivo] = partes;
+  if (!esUuid(clienteId) || !esUuid(tecnicoId) || !esUuid(ordenId) || !nombreArchivo) {
+    return { ok: false, error: 'Ruta de archivo no valida' };
+  }
+
+  const { data: orden, error: ordenError } = await supabaseAdmin
+    .from('ordenes_trabajo')
+    .select('id, cliente_id, tecnico_id')
+    .eq('id', ordenId)
+    .maybeSingle();
+
+  if (ordenError || !orden?.id) {
+    return { ok: false, error: 'La ruta referencia una orden no valida' };
+  }
+
+  if (orden.cliente_id !== clienteId || orden.tecnico_id !== tecnicoId) {
+    return { ok: false, error: 'La ruta no coincide con la orden asociada' };
+  }
+
+  if (verificacion.rol !== 'tecnico') {
+    return { ok: true };
+  }
+
+  const tecnicoActualId = await obtenerTecnicoActualId(supabaseAdmin, verificacion.userId);
+  if (!tecnicoActualId || tecnicoActualId !== tecnicoId) {
+    return { ok: false, error: 'Acceso denegado al archivo solicitado' };
+  }
+
+  return { ok: true };
+}
+
+async function validarAccesoRutaStorage(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  bucket: string,
+  path: string,
+  verificacion: { userId: string; rol: RolSat },
+) {
+  if (bucket === 'firmas-clientes') {
+    return await validarRutaFirma(supabaseAdmin, path, verificacion);
+  }
+
+  if (bucket === 'fotos-intervenciones' || bucket === 'informes-partes') {
+    return await validarRutaOrden(supabaseAdmin, path, verificacion);
+  }
+
+  return { ok: false, error: 'Bucket no permitido' };
 }
 
 Deno.serve(async (req) => {
@@ -154,22 +279,9 @@ Deno.serve(async (req) => {
 
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-  if (verificacion.rol === 'tecnico') {
-    const { data: tecnico, error: tecnicoError } = await supabaseAdmin
-      .from('tecnicos')
-      .select('id')
-      .eq('user_id', verificacion.userId)
-      .maybeSingle();
-
-    if (tecnicoError || !tecnico?.id) {
-      return jsonResponse({ error: 'No se pudo validar tecnico asociado' }, 403, cors);
-    }
-
-    const partes = path.split('/').filter(Boolean);
-    const tecnicoIdEnRuta = partes[1] || '';
-    if (tecnicoIdEnRuta !== tecnico.id) {
-      return jsonResponse({ error: 'Acceso denegado al archivo' }, 403, cors);
-    }
+  const accesoRuta = await validarAccesoRutaStorage(supabaseAdmin, bucket, path, verificacion);
+  if (!accesoRuta.ok) {
+    return jsonResponse({ error: accesoRuta.error || 'Acceso denegado al archivo' }, 403, cors);
   }
 
   const { data, error } = await supabaseAdmin.storage.from(bucket).createSignedUrl(path, expiresIn);

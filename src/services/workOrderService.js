@@ -774,6 +774,8 @@ export async function actualizarValoracionOrdenFinalizada(ordenId, payload) {
     throw new Error('Solo se puede valorar una orden finalizada.');
   }
 
+  const valoracionTraceId = `valoracion-${ordenId}-${Date.now()}`;
+
   const costeMaterialesCalculado = (Array.isArray(ordenActual.materiales_orden) ? ordenActual.materiales_orden : [])
     .reduce((acc, item) => acc + (Number(item.cantidad || 0) * Number(item.precio_unitario || 0)), 0);
 
@@ -1169,6 +1171,8 @@ export async function editarParteFinalizado(ordenId, payload) {
     throw new Error('Solo se puede editar un parte finalizado. Para cambios en órdenes abiertas usa el editor estándar.');
   }
 
+  const editarParteTraceId = `editar-parte-${ordenId}-${Date.now()}`;
+
   // Resolver descripción avería
   const descripcionAveria = payload.descripcion_averia !== undefined
     ? validarTextoRequerido(payload.descripcion_averia, 'Descripción de la avería')
@@ -1393,6 +1397,7 @@ export async function editarParteFinalizado(ordenId, payload) {
     costeDesplazamientoTotal,
     costeTotal,
   };
+
 
   const informe = await generarYSubirInformeParte({
     parte: {

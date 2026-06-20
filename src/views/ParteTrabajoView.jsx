@@ -378,8 +378,9 @@ function limpiarBorradorParte() {
   } catch {}
 }
 
-export function ParteTrabajoView() {
+export function ParteTrabajoView({ rolUsuario }) {
   const location = useLocation();
+  const esTecnico = rolUsuario === 'tecnico';
   const prefillAplicadoRef = useRef(false);
   const borradorInicialRef = useRef();
   if (borradorInicialRef.current === undefined) {
@@ -469,6 +470,29 @@ export function ParteTrabajoView() {
   const llegadaRegistradaRef = useRef(false);
 
   useEffect(() => {
+    if (!esTecnico || tecnicos.length === 0) {
+      return;
+    }
+
+    const tecnicoPropio = tecnicos[0];
+    if (!tecnicoPropio?.id) {
+      return;
+    }
+
+    setFormulario((prev) => {
+      if (prev.tecnico_id === tecnicoPropio.id) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        tecnico_id: tecnicoPropio.id,
+        orden_id: '',
+      };
+    });
+  }, [esTecnico, tecnicos]);
+
+  useEffect(() => {
     if (ignorarGuardadoBorradorRef.current) {
       ignorarGuardadoBorradorRef.current = false;
       return;
@@ -503,6 +527,9 @@ export function ParteTrabajoView() {
         setClientes(clientesRsp.items);
         setTecnicos(tecnicosRsp.items);
         setMaterialesInventario(materialesRsp || []);
+        if (esTecnico && (tecnicosRsp.items || []).length === 0) {
+          setError('Tu usuario técnico no está vinculado a un registro activo en tecnicos.');
+        }
       } catch (err) {
         setError(err.message || 'No se pudieron cargar los catálogos del parte de trabajo.');
       } finally {
@@ -511,7 +538,7 @@ export function ParteTrabajoView() {
     }
 
     cargarCatalogos();
-  }, []);
+  }, [esTecnico]);
 
   useEffect(() => {
     async function cargarEquipos() {
@@ -1377,7 +1404,10 @@ export function ParteTrabajoView() {
 
   function resetearFormulario() {
     ignorarGuardadoBorradorRef.current = true;
-    setFormulario(FORM_INICIAL);
+    setFormulario({
+      ...FORM_INICIAL,
+      tecnico_id: esTecnico ? (tecnicos[0]?.id || '') : '',
+    });
     setDesplazamiento({
       inicioIso: null, finIso: null, ubicacionInicio: null, ubicacionFin: null,
       distanciaMetros: null, minutosGeo: null,
@@ -1848,8 +1878,9 @@ export function ParteTrabajoView() {
             value={formulario.tecnico_id}
             onChange={(e) => setFormulario((prev) => ({ ...prev, tecnico_id: e.target.value, orden_id: '' }))}
             className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            disabled={esTecnico}
           >
-            <option value="">Selecciona técnico</option>
+            <option value="">{esTecnico ? 'Tu técnico asignado' : 'Selecciona técnico'}</option>
             {tecnicos.map((tecnico) => (
               <option key={tecnico.id} value={tecnico.id}>
                 {tecnico.nombre}

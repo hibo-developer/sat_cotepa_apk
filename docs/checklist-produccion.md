@@ -6,6 +6,8 @@
 - [ ] `supabase/04_security_roles_rls.sql` aplicado en entorno objetivo.
 - [ ] `supabase/10_security_hardening.sql` aplicado en entorno objetivo.
 - [ ] `supabase/11_block_anonymous_sessions.sql` aplicado en entorno objetivo.
+- [ ] `supabase/migrations/20260620000000_harden_storage_path_policies.sql` aplicado en entorno objetivo.
+- [ ] `supabase/migrations/20260620010000_restrict_tecnicos_select_for_tecnicos.sql` aplicado en entorno objetivo.
 - [ ] `supabase/12_verify_no_anonymous_policies.sql` ejecutado sin hallazgos (bloques 1-3 en 0 filas).
 - [ ] Alternativa: `supabase/13_apply_and_verify_security.sql` ejecutado completo en una sola pasada.
 - [ ] Leaked Password Protection activado, o excepcion aprobada siguiendo [docs/checklist-auth-produccion-plan-free.md](checklist-auth-produccion-plan-free.md) si el plan de Supabase no lo incluye.
@@ -38,6 +40,7 @@
 - [ ] `npm run build:pwsh` sin errores.
 - [ ] Build desktop (`npm run build:desktop:pwsh`) generado y probado en maquina limpia.
 - [ ] APK (`npm run build:apk:pwsh`) instalada y validada.
+- [ ] APK `release` firmada con keystore de producción real; si falta keystore/secretos, el build debe fallar y no usar firma `debug`.
 - [ ] Plan de respaldo y rollback definido.
 
 ## 6. Operacion

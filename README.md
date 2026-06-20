@@ -1,6 +1,6 @@
-# SAT Móvil COTEPA — React + Vite + Supabase
+# SAT Móvil COTEPA — Desktop + Android + Supabase
 
-Aplicación de gestión de Servicio de Asistencia Técnica (SAT) con soporte **web**, **desktop (Electron)** y **móvil (Android/Capacitor)**. Gestiona órdenes de trabajo, partes de trabajo, inventario de materiales, clientes y equipos, con roles diferenciados (`admin`, `oficina`, `tecnico`), firma digital del cliente, generación de informes PDF, exportaciones Excel/ZIP y **soporte offline-first** mediante Dexie (IndexedDB).
+Aplicación de gestión de Servicio de Asistencia Técnica (SAT) orientada a **desktop (Electron)** y **móvil Android (Capacitor)**. Gestiona órdenes de trabajo, partes de trabajo, inventario de materiales, clientes y equipos, con roles diferenciados (`admin`, `oficina`, `tecnico`), firma digital del cliente, generación de informes PDF, exportaciones Excel/ZIP y **soporte offline-first** mediante Dexie (IndexedDB).
 
 ---
 
@@ -22,7 +22,6 @@ Aplicación de gestión de Servicio de Asistencia Técnica (SAT) con soporte **w
 
 ## Plataformas de distribución
 
-- **Web**: despliegue estático (cualquier CDN / hosting)
 - **Desktop**: instalador `.exe` (NSIS) y portable via Electron Builder
 - **Android**: APK / AAB via Capacitor + Gradle
 
@@ -47,12 +46,6 @@ PowerShell (entorno Windows del proyecto):
 
 ```powershell
 npm run dev:pwsh
-```
-
-Build web:
-
-```powershell
-npm run build:pwsh
 ```
 
 ---
@@ -100,6 +93,8 @@ VITE_SUPABASE_ANON_KEY=<anon_key>
 10. `supabase/migrations/20260501040000_drop_redundant_deny_anonymous.sql`
 11. `supabase/migrations/20260501050000_move_security_definer_to_private_schema.sql`
 12. `supabase/migrations/20260501060000_storage_select_policies.sql`
+13. `supabase/migrations/20260620000000_harden_storage_path_policies.sql`
+14. `supabase/migrations/20260620010000_restrict_tecnicos_select_for_tecnicos.sql`
 
 ### Scripts legacy (referencia, no ejecutar si ya se aplicaron las migraciones)
 
@@ -134,7 +129,63 @@ Documentación de validación: `docs/checklist-validacion-roles.md` y `docs/chec
 
 ### Android release (keystore)
 
-- Define `KEYSTORE_PASSWORD` y `KEY_PASSWORD` como variables de entorno para generar releases firmadas (no se guardan en el repo).
+- El build `release` ya no usa la firma `debug` como fallback. Si falta la firma de producción, Gradle falla de forma explícita.
+- Puedes generar un keystore nuevo en Windows con `powershell -ExecutionPolicy Bypass -File .\scripts\create-android-keystore.ps1`.
+- Configura la firma release con variables de entorno o propiedades de Gradle:
+- `KEYSTORE_FILE` o `RELEASE_KEYSTORE_FILE`: ruta al keystore. Si no se define, se usa `sat-release.keystore` en la raíz del repo.
+- `KEYSTORE_PASSWORD` o `RELEASE_KEYSTORE_PASSWORD`: contraseña del keystore.
+- `KEY_PASSWORD` o `RELEASE_KEY_PASSWORD`: contraseña de la clave.
+- `KEY_ALIAS` o `RELEASE_KEY_ALIAS`: alias de la clave. Por defecto `sat-key`.
+- Ejemplo PowerShell:
+
+```powershell
+$env:KEYSTORE_FILE="C:\secure\sat-release.keystore"
+$env:KEYSTORE_PASSWORD="***"
+$env:KEY_PASSWORD="***"
+$env:KEY_ALIAS="sat-key"
+npm run build:apk:pwsh
+```
+
+### Windows desktop: firma interna gratis para uso corporativo
+
+- Si el `setup.exe` se usa solo en PCs gestionados por Cotepa, puede firmarse con un certificado interno gratuito en lugar de comprar una firma publica.
+- Esta opcion mejora la integridad y la identificacion del instalador dentro de la empresa, pero no sustituye una firma publica para equipos externos o distribucion general.
+- Flujo recomendado:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\create-windows-internal-code-signing-cert.ps1
+```
+
+- Esto genera:
+- un certificado publico `.cer` para repartir confianza en los PCs de Cotepa;
+- un `.pfx` con clave privada para firmar el instalador.
+- En cada PC corporativo, o por GPO/Intune, importa el `.cer`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install-windows-internal-signing-trust.ps1 `
+  -CertificatePath "C:\secure\cotepa-code-signing\COTEPA-Internal-Code-Signing.cer" `
+  -Scope LocalMachine
+```
+
+- Luego compila el instalador:
+
+```powershell
+npm run build:desktop:pwsh
+```
+
+- Y firmalo:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\sign-desktop-installer.ps1 `
+  -InstallerPath "C:\app_sat - copia\release\2026-06-20_1520\SAT-Movil-COTEPA-Setup-0.1.0-x64.exe" `
+  -PfxPath "C:\secure\cotepa-code-signing\COTEPA-Internal-Code-Signing.pfx"
+```
+
+- Requisito tecnico:
+- `signtool.exe` debe estar instalado mediante Windows SDK o App Certification Kit.
+- Si no esta instalado, el script de firma lo indicara con un error claro.
+- Limitacion:
+- esta firma interna solo sera confiable en equipos que tengan importado el `.cer` en `Trusted Root` y `Trusted Publishers`.
 
 ### Checklist QA (offline/sync)
 
@@ -168,43 +219,3 @@ supabase/        # SQL de esquema, roles, hardening, storage y migraciones
 electron/        # Main process, preload y afterPack para la app desktop
 android/         # Proyecto Capacitor/Gradle para Android
 ```
-
----
-
-## Integración con Power Apps
-
-El backend en **Supabase expone una API REST estándar (PostgREST)** y soporta autenticación JWT, lo que permite conectar Power Apps al mismo origen de datos sin duplicar la base de datos.
-
-### Qué se puede hacer hoy
-
-| Caso de uso | Mecanismo |
-|---|---|
-| **Leer órdenes de trabajo** desde Power Apps | Conector HTTP personalizado → `GET {SUPABASE_URL}/rest/v1/ordenes_trabajo` con header `apikey` + `Authorization: Bearer <token>` |
-| **Crear / actualizar órdenes** | Conector HTTP → `POST` / `PATCH` al mismo endpoint |
-| **Consultar clientes y equipos** | Igual, endpoints `/rest/v1/clientes` y `/rest/v1/equipos` |
-| **Ver inventario de materiales** | Endpoint `/rest/v1/materiales` |
-| **Disparar notificaciones o correo** | Power Automate → llama a la Edge Function `send-sat-email` via HTTP |
-| **Descargar PDF de un parte** | Power Automate descarga desde Supabase Storage (`/storage/v1/object/informes-partes/<ruta>`) |
-
-### Pasos para conectar Power Apps
-
-1. En Supabase → **Settings → API**: copia `Project URL` y `anon key`.
-2. En Power Apps → **Conectores personalizados** → nuevo conector desde URL OpenAPI o manual.
-   - Host: `<proyecto>.supabase.co`
-   - Autenticación: API Key en header (`apikey`) + `Authorization: Bearer <service_role_key>` para acceso de solo lectura seguro desde un flujo de Power Automate (no exponer `service_role` en cliente final; usar `anon` + políticas RLS).
-3. Crear un **flujo de Power Automate** intermediario si se necesita lógica de transformación o seguridad adicional antes de llegar a Power Apps.
-4. Las tablas ya tienen **RLS activo**: cualquier petición con `anon key` respeta los permisos del rol `anon` (actualmente bloqueado); usar un JWT de usuario real o el `service_role` solo en flujos de backend.
-
-### Limitaciones actuales
-
-- La firma del cliente y las fotos de intervención se almacenan en Supabase Storage; Power Apps puede leer las URLs públicas pero no el canvas de firma directamente.
-- El modo offline (Dexie/IndexedDB) es exclusivo de la app React; Power Apps no tiene acceso a esa cola local.
-- La generación del PDF de informe requiere la lógica JS (`jsPDF`) de la app React; desde Power Apps se puede descargar el PDF ya generado, pero no regenerarlo sin invocar la app o una Edge Function dedicada.
-
----
-
-## Hoja de ruta sugerida para integración Power Apps
-
-1. **Corto plazo**: conector de solo lectura (listas de órdenes, clientes) para dashboards Power BI / Power Apps.
-2. **Medio plazo**: formulario Power Apps para que oficina cree/edite órdenes sin necesidad de la app React.
-3. **Largo plazo**: Edge Function `generate-pdf` en Supabase para que Power Automate pueda regenerar informes PDF sin depender del frontend React.

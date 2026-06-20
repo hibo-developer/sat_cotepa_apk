@@ -1,6 +1,5 @@
 node_modules
 dist
-dist-hosting
 .vite
 build
 .cache
@@ -28,3 +27,5 @@ SAT-Movil-COTEPA-*.exe
 android/app/build
 android/build
 android/.gradle
+.dbg/
+debug-report-material-prices.md

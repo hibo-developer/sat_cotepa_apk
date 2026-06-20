@@ -5,14 +5,18 @@ import { obtenerClienteSupabase } from './supabaseClient';
 // Se usa como fallback cuando no hay conexión a Supabase.
 // Se precalienta en background para disponer de la lista completa offline.
 // ---------------------------------------------------------------------------
-const CACHE_KEY_TECNICOS = 'sat_cache_tecnicos_v1';
-const CACHE_KEY_CLIENTES = 'sat_cache_clientes_v1';
-const CACHE_KEY_EQUIPOS = 'sat_cache_equipos_v1';
+const CACHE_KEY_TECNICOS = 'sat_cache_tecnicos_v2';
+const CACHE_KEY_CLIENTES = 'sat_cache_clientes_v2';
+const CACHE_KEY_EQUIPOS = 'sat_cache_equipos_v2';
 const TAMANO_LOTE_CACHE = 500;
 
 let precargaClientesEnCurso = null;
 let precargaTecnicosEnCurso = null;
 let precargaEquiposEnCurso = null;
+
+function crearClaveCache(claveBase, userId) {
+  return `${claveBase}:${userId || 'sin-sesion'}`;
+}
 
 function guardarEnCache(clave, items) {
   try {
@@ -58,6 +62,45 @@ function crearErrorCatalogoSinCache(etiqueta, errorOriginal) {
   return new Error(
     `No se pudieron obtener los ${etiqueta} y no hay caché offline disponible.${detalle}`,
   );
+}
+
+async function obtenerContextoUsuarioCatalogos(supabase) {
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError) {
+    throw authError;
+  }
+
+  const userId = authData?.user?.id;
+  if (!userId) {
+    return { userId: null, rol: null, tecnicoId: null };
+  }
+
+  const [{ data: usuarioSat, error: usuarioSatError }, { data: tecnico, error: tecnicoError }] = await Promise.all([
+    supabase
+      .from('usuarios_sat')
+      .select('rol')
+      .eq('user_id', userId)
+      .maybeSingle(),
+    supabase
+      .from('tecnicos')
+      .select('id, activo')
+      .eq('user_id', userId)
+      .maybeSingle(),
+  ]);
+
+  if (usuarioSatError) {
+    throw usuarioSatError;
+  }
+
+  if (tecnicoError) {
+    throw tecnicoError;
+  }
+
+  return {
+    userId,
+    rol: usuarioSat?.rol || null,
+    tecnicoId: tecnico?.activo ? tecnico.id : null,
+  };
 }
 
 async function cargarCatalogoCompleto({
@@ -107,11 +150,12 @@ async function cargarCatalogoCompleto({
 
 async function precargarClientesEnBackground(supabase) {
   if (!precargaClientesEnCurso) {
+    const contexto = await obtenerContextoUsuarioCatalogos(supabase);
     precargaClientesEnCurso = cargarCatalogoCompleto({
       supabase,
       tabla: 'clientes',
       columnas: 'id, nombre',
-      cacheKey: CACHE_KEY_CLIENTES,
+      cacheKey: crearClaveCache(CACHE_KEY_CLIENTES, contexto.userId),
       orderBy: 'nombre',
     }).finally(() => {
       precargaClientesEnCurso = null;
@@ -123,14 +167,25 @@ async function precargarClientesEnBackground(supabase) {
 
 async function precargarTecnicosEnBackground(supabase) {
   if (!precargaTecnicosEnCurso) {
-    precargaTecnicosEnCurso = cargarCatalogoCompleto({
-      supabase,
-      tabla: 'tecnicos',
-      columnas: 'id, nombre, especialidad',
-      cacheKey: CACHE_KEY_TECNICOS,
-      orderBy: 'nombre',
-      filtros: (consulta) => consulta.eq('activo', true),
-    }).finally(() => {
+    precargaTecnicosEnCurso = (async () => {
+      const contexto = await obtenerContextoUsuarioCatalogos(supabase);
+      return await cargarCatalogoCompleto({
+        supabase,
+        tabla: 'tecnicos',
+        columnas: 'id, nombre, especialidad',
+        cacheKey: crearClaveCache(CACHE_KEY_TECNICOS, contexto.userId),
+        orderBy: 'nombre',
+        filtros: (consulta) => {
+          let siguiente = consulta.eq('activo', true);
+          if (contexto.rol === 'tecnico') {
+            siguiente = contexto.tecnicoId
+              ? siguiente.eq('id', contexto.tecnicoId)
+              : siguiente.eq('id', '00000000-0000-0000-0000-000000000000');
+          }
+          return siguiente;
+        },
+      });
+    })().finally(() => {
       precargaTecnicosEnCurso = null;
     });
   }
@@ -140,11 +195,12 @@ async function precargarTecnicosEnBackground(supabase) {
 
 async function precargarEquiposEnBackground(supabase) {
   if (!precargaEquiposEnCurso) {
+    const contexto = await obtenerContextoUsuarioCatalogos(supabase);
     precargaEquiposEnCurso = cargarCatalogoCompleto({
       supabase,
       tabla: 'equipos',
       columnas: 'id, cliente_id, nombre, marca, modelo',
-      cacheKey: CACHE_KEY_EQUIPOS,
+      cacheKey: crearClaveCache(CACHE_KEY_EQUIPOS, contexto.userId),
       orderBy: 'nombre',
     }).finally(() => {
       precargaEquiposEnCurso = null;
@@ -204,6 +260,8 @@ async function asegurarRegistroTecnicoParaAdminActual(supabase) {
 export async function obtenerClientes(opciones = {}) {
   const { busqueda = '', limite = 20, pagina = 1 } = opciones;
   const supabase = obtenerClienteSupabase();
+  const contexto = await obtenerContextoUsuarioCatalogos(supabase);
+  const cacheKey = crearClaveCache(CACHE_KEY_CLIENTES, contexto.userId);
   const desde = (pagina - 1) * limite;
   const hasta = desde + limite - 1;
 
@@ -221,7 +279,7 @@ export async function obtenerClientes(opciones = {}) {
 
   if (error) {
     // Fallback offline: devolver datos cacheados filtrados
-    const cacheados = leerDeCache(CACHE_KEY_CLIENTES);
+    const cacheados = leerDeCache(cacheKey);
     if (cacheados.length > 0) {
       return aplicarFiltroYPaginacion(cacheados, busqueda, limite, pagina);
     }
@@ -236,12 +294,12 @@ export async function obtenerClientes(opciones = {}) {
 
   // Mantiene una versión completa del catálogo para uso offline.
   if (!busqueda.trim() && pagina === 1 && resultado.items.length > 0) {
-    if (resultado.total > resultado.items.length) {
+    if (contexto.rol !== 'tecnico' && resultado.total > resultado.items.length) {
       precargarClientesEnBackground(supabase).catch(() => {
-        guardarEnCache(CACHE_KEY_CLIENTES, resultado.items);
+        guardarEnCache(cacheKey, resultado.items);
       });
     } else {
-      guardarEnCache(CACHE_KEY_CLIENTES, resultado.items);
+      guardarEnCache(cacheKey, resultado.items);
     }
   }
 
@@ -252,6 +310,7 @@ export async function obtenerTecnicosActivos(opciones = {}) {
   const { busqueda = '', limite = 20, pagina = 1 } = opciones;
   const supabase = obtenerClienteSupabase();
   await asegurarRegistroTecnicoParaAdminActual(supabase);
+  const contexto = await obtenerContextoUsuarioCatalogos(supabase);
   const desde = (pagina - 1) * limite;
   const hasta = desde + limite - 1;
 
@@ -261,6 +320,12 @@ export async function obtenerTecnicosActivos(opciones = {}) {
     .eq('activo', true)
     .order('nombre', { ascending: true })
     .range(desde, hasta);
+
+  if (contexto.rol === 'tecnico') {
+    consulta = contexto.tecnicoId
+      ? consulta.eq('id', contexto.tecnicoId)
+      : consulta.eq('id', '00000000-0000-0000-0000-000000000000');
+  }
 
   const busquedaNormalizada = normalizarBusquedaParaOr(busqueda);
   if (busquedaNormalizada) {
@@ -273,7 +338,7 @@ export async function obtenerTecnicosActivos(opciones = {}) {
 
   if (error) {
     // Fallback offline: devolver datos cacheados filtrados
-    const cacheados = leerDeCache(CACHE_KEY_TECNICOS);
+    const cacheados = leerDeCache(crearClaveCache(CACHE_KEY_TECNICOS, contexto.userId));
     if (cacheados.length > 0) {
       return aplicarFiltroYPaginacion(cacheados, busqueda, limite, pagina);
     }
@@ -290,10 +355,10 @@ export async function obtenerTecnicosActivos(opciones = {}) {
   if (!busqueda.trim() && pagina === 1 && resultado.items.length > 0) {
     if (resultado.total > resultado.items.length) {
       precargarTecnicosEnBackground(supabase).catch(() => {
-        guardarEnCache(CACHE_KEY_TECNICOS, resultado.items);
+        guardarEnCache(crearClaveCache(CACHE_KEY_TECNICOS, contexto.userId), resultado.items);
       });
     } else {
-      guardarEnCache(CACHE_KEY_TECNICOS, resultado.items);
+      guardarEnCache(crearClaveCache(CACHE_KEY_TECNICOS, contexto.userId), resultado.items);
     }
   }
 
@@ -307,6 +372,8 @@ export async function obtenerEquiposPorCliente(clienteId, opciones = {}) {
   }
 
   const supabase = obtenerClienteSupabase();
+  const contexto = await obtenerContextoUsuarioCatalogos(supabase);
+  const cacheKey = crearClaveCache(CACHE_KEY_EQUIPOS, contexto.userId);
   const desde = (pagina - 1) * limite;
   const hasta = desde + limite - 1;
 
@@ -327,7 +394,7 @@ export async function obtenerEquiposPorCliente(clienteId, opciones = {}) {
   const { data, error, count } = await consulta;
 
   if (error) {
-    const cacheados = leerDeCache(CACHE_KEY_EQUIPOS);
+    const cacheados = leerDeCache(cacheKey);
     const equiposCliente = cacheados.filter((equipo) => equipo.cliente_id === clienteId);
     if (equiposCliente.length > 0) {
       return aplicarFiltroYPaginacion(equiposCliente, busqueda, limite, pagina);
@@ -342,12 +409,12 @@ export async function obtenerEquiposPorCliente(clienteId, opciones = {}) {
   };
 
   if (pagina === 1 && resultado.items.length > 0) {
-    if (resultado.total > resultado.items.length) {
+    if (contexto.rol !== 'tecnico' && resultado.total > resultado.items.length) {
       precargarEquiposEnBackground(supabase).catch(() => {
-        guardarEnCache(CACHE_KEY_EQUIPOS, resultado.items);
+        guardarEnCache(cacheKey, resultado.items);
       });
     } else {
-      guardarEnCache(CACHE_KEY_EQUIPOS, resultado.items);
+      guardarEnCache(cacheKey, resultado.items);
     }
   }
 
@@ -356,10 +423,15 @@ export async function obtenerEquiposPorCliente(clienteId, opciones = {}) {
 
 export async function precargarCatalogosOffline() {
   const supabase = obtenerClienteSupabase();
+  const contexto = await obtenerContextoUsuarioCatalogos(supabase);
 
-  await Promise.allSettled([
-    precargarClientesEnBackground(supabase),
-    precargarTecnicosEnBackground(supabase),
-    precargarEquiposEnBackground(supabase),
-  ]);
+  const tareas = [precargarTecnicosEnBackground(supabase)];
+  if (contexto.rol !== 'tecnico') {
+    tareas.push(
+      precargarClientesEnBackground(supabase),
+      precargarEquiposEnBackground(supabase),
+    );
+  }
+
+  await Promise.allSettled(tareas);
 }

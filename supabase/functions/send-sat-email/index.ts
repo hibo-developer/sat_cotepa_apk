@@ -58,6 +58,44 @@ function jsonResponse(
   });
 }
 
+function escapeHtml(valor: string) {
+  return valor
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function validarUrlInformeSupabase(pdfUrl: string, supabaseUrl: string) {
+  try {
+    const pdf = new URL(pdfUrl);
+    const proyecto = new URL(supabaseUrl);
+
+    if (pdf.protocol !== 'https:') {
+      return { ok: false, error: 'pdfUrl debe ser https' };
+    }
+
+    if (pdf.hostname !== proyecto.hostname) {
+      return { ok: false, error: 'pdfUrl debe pertenecer al proyecto Supabase actual' };
+    }
+
+    const path = pdf.pathname || '';
+    const esRutaStorageInforme =
+      path.startsWith('/storage/v1/object/sign/informes-partes/')
+      || path.startsWith('/storage/v1/object/public/informes-partes/')
+      || path.startsWith('/storage/v1/object/informes-partes/');
+
+    if (!esRutaStorageInforme) {
+      return { ok: false, error: 'pdfUrl debe apuntar a informes-partes en Supabase Storage' };
+    }
+
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'pdfUrl no valida' };
+  }
+}
+
 async function verificarSesionYRol(
   req: Request,
   supabaseUrl: string,
@@ -97,6 +135,10 @@ async function verificarSesionYRol(
   const rol = (perfil?.rol || '') as RolSat;
   if (rol !== 'admin' && rol !== 'oficina' && rol !== 'tecnico') {
     return { error: jsonResponse({ error: 'Acceso denegado: rol SAT no autorizado.' }, 403, cors) };
+  }
+
+  if (rol === 'tecnico') {
+    return { error: jsonResponse({ error: 'Solo admin u oficina pueden enviar correos SAT.' }, 403, cors) };
   }
 
   return {
@@ -158,13 +200,17 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Campos requeridos faltantes' }, 400, cors);
   }
 
-  try {
-    const u = new URL(pdfUrl);
-    if (u.protocol !== 'https:') {
-      return jsonResponse({ error: 'pdfUrl debe ser https' }, 400, cors);
-    }
-  } catch {
-    return jsonResponse({ error: 'pdfUrl no valida' }, 400, cors);
+  if (asunto.length > 160) {
+    return jsonResponse({ error: 'El asunto supera la longitud permitida' }, 400, cors);
+  }
+
+  if (texto.length > 5000) {
+    return jsonResponse({ error: 'El cuerpo del correo supera la longitud permitida' }, 400, cors);
+  }
+
+  const validacionPdf = validarUrlInformeSupabase(pdfUrl, supabaseUrl);
+  if (!validacionPdf.ok) {
+    return jsonResponse({ error: validacionPdf.error || 'pdfUrl no valida' }, 400, cors);
   }
 
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
@@ -176,8 +222,8 @@ Deno.serve(async (req) => {
 
   const html = [
     '<p>Se genero un nuevo informe de parte de trabajo SAT.</p>',
-    `<p><strong>Parte:</strong> ${body.parteId || 'sin-id'}</p>`,
-    `<p><strong>PDF:</strong> <a href="${pdfUrl}">${pdfUrl}</a></p>`,
+    `<p><strong>Parte:</strong> ${escapeHtml((body.parteId || 'sin-id').trim())}</p>`,
+    `<p><strong>PDF:</strong> <a href="${escapeHtml(pdfUrl)}">${escapeHtml(pdfUrl)}</a></p>`,
   ].join('');
 
   const respuestaResend = await fetch('https://api.resend.com/emails', {
