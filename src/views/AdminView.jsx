@@ -195,7 +195,7 @@ export function AdminView() {
   if (!tieneConfiguracionSupabase()) {
     return (
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
-        Configura Supabase en `.env` para usar las herramientas internas de administración.
+        Configura Supabase en `app-config.js` o con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` para usar las herramientas internas de administración.
       </section>
     );
   }

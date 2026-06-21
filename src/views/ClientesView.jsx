@@ -250,7 +250,7 @@ export function ClientesView({ rolUsuario }) {
   if (sinConfiguracion) {
     return (
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
-        Configura Supabase en .env para habilitar el CRUD de clientes y equipos.
+        Configura Supabase en `app-config.js` o con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` para habilitar el CRUD de clientes y equipos.
       </section>
     );
   }

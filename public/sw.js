@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `sat-app-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
@@ -10,8 +10,14 @@ const PRECACHE_URLS = [
 
 function esActivoEstatico(url) {
   if (!url || url.origin !== self.location.origin) return false;
+  if (url.pathname.endsWith('/app-config.js')) return false;
   if (url.pathname.includes('/assets/')) return true;
   return /\.(?:js|css|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|eot|json|webmanifest)$/i.test(url.pathname);
+}
+
+async function networkOnlyNoStore(request) {
+  const noStoreRequest = new Request(request, { cache: 'no-store' });
+  return fetch(noStoreRequest);
 }
 
 async function cacheFirst(request) {
@@ -76,6 +82,11 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  if (url.pathname.endsWith('/app-config.js')) {
+    event.respondWith(networkOnlyNoStore(request));
+    return;
+  }
+
   if (request.mode === 'navigate') {
     const indexUrl = new URL('./index.html', self.location).toString();
     event.respondWith((async () => {
@@ -106,4 +117,3 @@ self.addEventListener('fetch', (event) => {
     }
   })());
 });
-
