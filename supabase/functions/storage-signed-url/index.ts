@@ -1,38 +1,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const DEFAULT_ALLOWED_ORIGINS = [
-  'capacitor://localhost',
-  'https://localhost',
-  'http://localhost',
-  'http://localhost:5173',
-  'http://localhost:4173',
-  'https://sat-cotepa.netlify.app',
-  'null',
-];
-
-function getAllowedOrigins(): string[] {
-  const env = (Deno.env.get('SAT_ALLOWED_ORIGINS') || '').trim();
-  if (!env) return DEFAULT_ALLOWED_ORIGINS;
-  return env
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
 function buildCorsHeaders(req: Request): { headers: Record<string, string>; originAllowed: boolean } {
   const origin = req.headers.get('Origin');
-  const allowed = getAllowedOrigins();
-  const originAllowed = !origin || allowed.includes(origin);
-  const allowOrigin = origin || allowed[0];
+  const allowOrigin = origin || '*';
   return {
-    originAllowed,
-    headers: originAllowed ? {
+    originAllowed: true,
+    headers: {
       'Access-Control-Allow-Origin': allowOrigin,
       'Vary': 'Origin',
       'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Max-Age': '86400',
-    } : {},
+    },
   };
 }
 

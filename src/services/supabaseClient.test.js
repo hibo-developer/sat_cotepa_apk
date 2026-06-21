@@ -53,4 +53,16 @@ describe('obtenerUrlFirmadaStorage', () => {
     expect(primera).toBe(segunda);
     expect(primera).not.toContain('_ts=');
   });
+
+  it('no devuelve referencias sb:// cuando falla la firma de una URL de storage', async () => {
+    invokeMock.mockResolvedValue({
+      data: null,
+      error: { message: 'Failed to fetch' },
+    });
+
+    const mod = await import('./supabaseClient');
+    const url = await mod.obtenerUrlFirmadaStorage('sb://informes-partes/cli/tec/ord/informe.pdf');
+
+    expect(url).toBe('');
+  });
 });

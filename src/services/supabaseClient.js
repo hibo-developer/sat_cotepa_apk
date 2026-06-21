@@ -20,6 +20,15 @@ function anadirCacheBust(urlTexto) {
   }
 }
 
+function esUrlHttpValida(urlTexto) {
+  try {
+    const url = new URL(String(urlTexto || '').trim());
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 // Cliente de Supabase centralizado para usar en servicios del dominio.
 export const supabase =
   supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
@@ -102,11 +111,14 @@ export async function obtenerUrlFirmadaStorage(referencia, opciones = {}) {
     // #region debug-point C:storage-signed-url-fallback
     fetch('http://127.0.0.1:7777/event', { method: 'POST', body: JSON.stringify({ sessionId: 'supabase-cors-pdf', runId: 'pre-fix', hypothesisId: 'C', location: 'src/services/supabaseClient.js:97', msg: '[DEBUG] storage-signed-url fallback to original reference', data: { referencia: String(referencia || ''), bucket: ref.bucket, path: ref.path }, ts: Date.now() }) }).catch(() => {});
     // #endregion
-    return String(referencia || '').trim();
+    return '';
   }
 
   const expMs = (Math.max(60, Math.min(3600, Number(expiresIn) || 600)) * 1000);
   const urlFinal = omitirCache ? anadirCacheBust(data.url) : data.url;
+  if (!esUrlHttpValida(urlFinal)) {
+    return '';
+  }
   cacheSignedUrls.set(clave, { url: urlFinal, expiresAt: ahora + expMs });
   return urlFinal;
 }

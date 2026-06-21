@@ -21,7 +21,15 @@
 | E | La invocación a `admin-users`/`storage-signed-url` envía cabeceras o método que desencadenan un preflight distinto al esperado. | Medium | Low | Pending |
 
 ## Log Evidence
-- Pending
+- Evidencia de navegador: el preflight a `admin-users` y `storage-signed-url` fallaba sin `Access-Control-Allow-Origin`.
+- Evidencia HTTP pre-fix: `OPTIONS` devolvia `200/204` sin cabeceras CORS visibles.
+- Evidencia HTTP intermedia: un `POST` manual a `admin-users` respondio `{"error":"Origen no permitido"}`, confirmando que la whitelist estaba bloqueando el origen web.
+- Evidencia HTTP post-fix: `OPTIONS` a `admin-users` y `storage-signed-url` devuelve `Access-Control-Allow-Origin: https://sat-cotepa.netlify.app`, `access-control-allow-methods: POST, OPTIONS` y `access-control-allow-headers: authorization, x-client-info, apikey, content-type`.
+- Evidencia funcional post-fix parcial: `POST` manual a `admin-users` devuelve `401 Falta cabecera Authorization` con cabeceras CORS correctas, lo que demuestra que el navegador ya podra recibir respuestas del endpoint.
 
 ## Verification Conclusion
-- Pending
+- A: CONFIRMED. La whitelist de origen de las funciones edge estaba rechazando el origen web y dejaba el navegador sin CORS util.
+- B: CONFIRMED. El cliente intentaba abrir `sb://...` cuando la firma fallaba.
+- C: CONFIRMED. `storage-signed-url` podia fallar y el fallback devolvia la referencia original, provocando el error de esquema no soportado.
+- D: REJECTED. No hay evidencia de que el problema principal fuera una version obsoleta del frontend; la causa observable estaba en CORS y fallback de URL.
+- E: PARTIALLY CONFIRMED. La invocacion del navegador hacia funciones con `Authorization`/`apikey` dispara preflight, por lo que estas funciones deben responder siempre con CORS util.
