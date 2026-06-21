@@ -80,9 +80,6 @@ export function parsearReferenciaStorage(valor) {
 export async function obtenerUrlFirmadaStorage(referencia, opciones = {}) {
   const { expiresIn = 600 } = opciones;
   const ref = parsearReferenciaStorage(referencia);
-  // #region debug-point B:storage-reference
-  fetch('http://127.0.0.1:7777/event', { method: 'POST', body: JSON.stringify({ sessionId: 'supabase-cors-pdf', runId: 'pre-fix', hypothesisId: 'B', location: 'src/services/supabaseClient.js:74', msg: '[DEBUG] obtenerUrlFirmadaStorage input', data: { referencia: String(referencia || ''), bucket: ref?.bucket || null, path: ref?.path || null, expiresIn }, ts: Date.now() }) }).catch(() => {});
-  // #endregion
   if (!ref) {
     return String(referencia || '').trim();
   }
@@ -103,14 +100,8 @@ export async function obtenerUrlFirmadaStorage(referencia, opciones = {}) {
       expiresIn: Math.max(60, Math.min(3600, Number(expiresIn) || 600)),
     },
   });
-  // #region debug-point A:storage-signed-url-result
-  fetch('http://127.0.0.1:7777/event', { method: 'POST', body: JSON.stringify({ sessionId: 'supabase-cors-pdf', runId: 'pre-fix', hypothesisId: error || !data?.url ? 'A' : 'C', location: 'src/services/supabaseClient.js:94', msg: '[DEBUG] storage-signed-url response', data: { bucket: ref.bucket, path: ref.path, hasUrl: Boolean(data?.url), url: data?.url || null, errorMessage: error?.message || null, errorName: error?.name || null, errorStatus: error?.context?.status || null }, ts: Date.now() }) }).catch(() => {});
-  // #endregion
 
   if (error || !data?.url) {
-    // #region debug-point C:storage-signed-url-fallback
-    fetch('http://127.0.0.1:7777/event', { method: 'POST', body: JSON.stringify({ sessionId: 'supabase-cors-pdf', runId: 'pre-fix', hypothesisId: 'C', location: 'src/services/supabaseClient.js:97', msg: '[DEBUG] storage-signed-url fallback to original reference', data: { referencia: String(referencia || ''), bucket: ref.bucket, path: ref.path }, ts: Date.now() }) }).catch(() => {});
-    // #endregion
     return '';
   }
 

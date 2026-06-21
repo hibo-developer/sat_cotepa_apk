@@ -1118,9 +1118,6 @@ function TarjetaOrden({
     setDescargandoInforme(true);
     try {
       const url = await obtenerUrlFirmadaStorage(orden.informePdfUrl, { expiresIn: 900 });
-      // #region debug-point D:download-informe-url
-      fetch('http://127.0.0.1:7777/event', { method: 'POST', body: JSON.stringify({ sessionId: 'supabase-cors-pdf', runId: 'pre-fix', hypothesisId: 'D', location: 'src/views/ListaOrdenesView.jsx:1121', msg: '[DEBUG] descargarInformePdf resolved URL', data: { ordenId: orden.id, numeroTicket: orden.numero_ticket || null, referenciaOriginal: orden.informePdfUrl || null, urlResuelta: url || null }, ts: Date.now() }) }).catch(() => {});
-      // #endregion
       if (!url) {
         throw new Error('No se pudo obtener el enlace del informe.');
       }
