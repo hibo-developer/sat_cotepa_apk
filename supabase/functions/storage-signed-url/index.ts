@@ -235,7 +235,7 @@ Deno.serve(async (req) => {
   const cors = corsInfo.headers;
 
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: cors });
+    return new Response('ok', { status: 200, headers: cors });
   }
 
   if (!corsInfo.originAllowed) {

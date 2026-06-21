@@ -2,15 +2,15 @@
   "functions": [
     {
       "name": "admin-users",
-      "excludeAuthentication": false
+      "excludeAuthentication": true
     },
     {
       "name": "send-sat-email",
-      "excludeAuthentication": false
+      "excludeAuthentication": true
     },
     {
       "name": "storage-signed-url",
-      "excludeAuthentication": false
+      "excludeAuthentication": true
     }
   ]
 }
