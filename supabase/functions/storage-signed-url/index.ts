@@ -6,6 +6,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost',
   'http://localhost:5173',
   'http://localhost:4173',
+  'https://sat-cotepa.netlify.app',
   'null',
 ];
 

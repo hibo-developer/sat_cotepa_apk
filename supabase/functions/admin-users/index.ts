@@ -9,6 +9,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost',
   'http://localhost:5173',
   'http://localhost:4173',
+  'https://sat-cotepa.netlify.app',
   'null', // Electron file:// puede enviar Origin: null
 ];
 
@@ -21,16 +22,20 @@ function getAllowedOrigins(): string[] {
     .filter(Boolean);
 }
 
-function buildCorsHeaders(req: Request): Record<string, string> {
+function buildCorsHeaders(req: Request): { headers: Record<string, string>; originAllowed: boolean } {
   const origin = req.headers.get('Origin');
   const allowed = getAllowedOrigins();
-  const allowOrigin = origin && allowed.includes(origin) ? origin : allowed[0];
+  const originAllowed = !origin || allowed.includes(origin);
+  const allowOrigin = origin || allowed[0];
   return {
-    'Access-Control-Allow-Origin': allowOrigin,
-    'Vary': 'Origin',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Max-Age': '86400',
+    originAllowed,
+    headers: originAllowed ? {
+      'Access-Control-Allow-Origin': allowOrigin,
+      'Vary': 'Origin',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Max-Age': '86400',
+    } : {},
   };
 }
 
@@ -305,14 +310,15 @@ async function eliminarUsuario(
 }
 
 Deno.serve(async (req) => {
-  const cors = buildCorsHeaders(req);
-  const origin = req.headers.get('Origin');
-  if (origin && !getAllowedOrigins().includes(origin)) {
-    return jsonResponse({ error: 'Origen no permitido' }, 403, {});
-  }
+  const corsInfo = buildCorsHeaders(req);
+  const cors = corsInfo.headers;
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: cors });
+  }
+
+  if (!corsInfo.originAllowed) {
+    return jsonResponse({ error: 'Origen no permitido' }, 403, {});
   }
 
   if (req.method !== 'POST') {
