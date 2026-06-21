@@ -57,6 +57,9 @@ async function invocarAdminUsers(action, payload = {}) {
       payload,
     },
   });
+  // #region debug-point E:admin-users-result
+  fetch('http://127.0.0.1:7777/event', { method: 'POST', body: JSON.stringify({ sessionId: 'supabase-cors-pdf', runId: 'pre-fix', hypothesisId: 'E', location: 'src/services/userAdminService.js:60', msg: '[DEBUG] admin-users response', data: { action, hasData: Boolean(data), dataError: data?.error || null, errorMessage: error?.message || null, errorName: error?.name || null, errorStatus: error?.context?.status || null }, ts: Date.now() }) }).catch(() => {});
+  // #endregion
 
   if (error) {
     const mensaje = await construirMensajeErrorFuncion(error);
