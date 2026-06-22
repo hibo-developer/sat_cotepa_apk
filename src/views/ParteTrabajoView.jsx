@@ -470,6 +470,17 @@ export function ParteTrabajoView({ rolUsuario }) {
   const llegadaRegistradaRef = useRef(false);
 
   useEffect(() => {
+    // #region debug-point A:parte-mount
+    fetch('http://127.0.0.1:7777/event', { method: 'POST', body: JSON.stringify({ sessionId: 'intervention-form-reset', runId: 'pre-fix', hypothesisId: 'A', location: 'src/views/ParteTrabajoView.jsx:472', msg: '[DEBUG] ParteTrabajoView mounted', data: { pathname: location.pathname, hasPrefill: Boolean(location.state?.prefill), hasDraftAtMount: Boolean(borradorInicialRef.current), draftKeys: borradorInicialRef.current ? Object.keys(borradorInicialRef.current) : [] }, ts: Date.now() }) }).catch(() => {});
+    // #endregion
+    return () => {
+      // #region debug-point A:parte-unmount
+      fetch('http://127.0.0.1:7777/event', { method: 'POST', body: JSON.stringify({ sessionId: 'intervention-form-reset', runId: 'pre-fix', hypothesisId: 'A', location: 'src/views/ParteTrabajoView.jsx:475', msg: '[DEBUG] ParteTrabajoView unmounted', data: { pathname: location.pathname }, ts: Date.now() }) }).catch(() => {});
+      // #endregion
+    };
+  }, [location.pathname, location.state]);
+
+  useEffect(() => {
     if (!esTecnico || tecnicos.length === 0) {
       return;
     }
@@ -497,6 +508,9 @@ export function ParteTrabajoView({ rolUsuario }) {
       ignorarGuardadoBorradorRef.current = false;
       return;
     }
+    // #region debug-point E:parte-draft-save
+    fetch('http://127.0.0.1:7777/event', { method: 'POST', body: JSON.stringify({ sessionId: 'intervention-form-reset', runId: 'pre-fix', hypothesisId: 'E', location: 'src/views/ParteTrabajoView.jsx:500', msg: '[DEBUG] guardarBorradorParte triggered', data: { cliente_id: formulario.cliente_id || null, equipo_id: formulario.equipo_id || null, tecnico_id: formulario.tecnico_id || null, orden_id: formulario.orden_id || null, descripcionLen: (formulario.descripcion_problema || '').length, tareasLen: (formulario.tareas_realizadas_libre || '').length, materialesCount: Array.isArray(materialesSeleccionados) ? materialesSeleccionados.length : 0, intervencionInicio: intervension?.inicioIso || null, intervencionFin: intervension?.finIso || null }, ts: Date.now() }) }).catch(() => {});
+    // #endregion
     guardarBorradorParte({
       formulario,
       desplazamiento,
@@ -1403,6 +1417,9 @@ export function ParteTrabajoView({ rolUsuario }) {
   }
 
   function resetearFormulario() {
+    // #region debug-point B:parte-reset
+    fetch('http://127.0.0.1:7777/event', { method: 'POST', body: JSON.stringify({ sessionId: 'intervention-form-reset', runId: 'pre-fix', hypothesisId: 'B', location: 'src/views/ParteTrabajoView.jsx:1405', msg: '[DEBUG] resetearFormulario called', data: { cliente_id: formulario.cliente_id || null, equipo_id: formulario.equipo_id || null, tecnico_id: formulario.tecnico_id || null, orden_id: formulario.orden_id || null, descripcionLen: (formulario.descripcion_problema || '').length, tareasLen: (formulario.tareas_realizadas_libre || '').length, materialesCount: Array.isArray(materialesSeleccionados) ? materialesSeleccionados.length : 0, motivo: 'explicit-call' }, ts: Date.now() }) }).catch(() => {});
+    // #endregion
     ignorarGuardadoBorradorRef.current = true;
     setFormulario({
       ...FORM_INICIAL,
