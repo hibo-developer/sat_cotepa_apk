@@ -357,7 +357,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/ordenes" replace />} />
             <Route path="/ordenes" element={<ListaOrdenesView rolUsuario={rolUsuario} />} />
-            <Route path="/parte" element={<ParteTrabajoView rolUsuario={rolUsuario} />} />
+            <Route path="/parte" element={<ParteTrabajoView rolUsuario={rolUsuario} sesion={sesion} />} />
             <Route
               path="/clientes"
               element={puedeVerClientes ? <ClientesView rolUsuario={rolUsuario} /> : <Navigate to="/ordenes" replace />}

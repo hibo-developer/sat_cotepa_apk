@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { ToastEstado } from '../components/ToastEstado';
 import {
   obtenerClientes,
   obtenerEquiposPorCliente,
@@ -14,6 +15,19 @@ import {
   estaOnline,
   intentarActualizarOrden,
 } from '../services/offlineSyncService';
+import {
+  construirSnapshotSesionParte,
+  cerrarSesionParteActiva,
+  emitirNotificacionSesionParte,
+  esSesionParteAbierta,
+  obtenerDeviceInstanceId,
+  obtenerSesionParteActivaActual,
+  reclamarSesionParteActiva,
+  rehidratarFotosSesionParte,
+  serializarFotosSesionParte,
+  suscribirSesionesParteUsuario,
+  tieneProgresoSesionParte,
+} from '../services/parteSessionSyncService';
 import { abrirGoogleMaps } from '../services/externalNavigationService';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
 
@@ -378,7 +392,7 @@ function limpiarBorradorParte() {
   } catch {}
 }
 
-export function ParteTrabajoView({ rolUsuario }) {
+export function ParteTrabajoView({ rolUsuario, sesion }) {
   const location = useLocation();
   const esTecnico = rolUsuario === 'tecnico';
   const prefillAplicadoRef = useRef(false);
@@ -461,6 +475,8 @@ export function ParteTrabajoView({ rolUsuario }) {
   const [firmaClienteDataUrl, setFirmaClienteDataUrl] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
+  const [toast, setToast] = useState(null);
+  const [sesionParteRemota, setSesionParteRemota] = useState(null);
   const canvasFirmaRef = useRef(null);
   const inputFotoAntesRef = useRef(null);
   const inputFotoDespuesRef = useRef(null);
@@ -468,6 +484,129 @@ export function ParteTrabajoView({ rolUsuario }) {
   const dibujandoFirmaRef = useRef(false);
   const ignorarGuardadoBorradorRef = useRef(false);
   const llegadaRegistradaRef = useRef(false);
+  const sesionParteActivaRef = useRef(null);
+  const sesionParteRemotaRef = useRef(null);
+  const sincronizandoSesionParteRef = useRef(false);
+  const hidratandoSesionParteRef = useRef(false);
+  const ultimoSnapshotSesionRef = useRef('');
+  const deviceInstanceIdRef = useRef(obtenerDeviceInstanceId());
+
+  function mostrarAvisoSincronizacion({ titulo, descripcion, tipo = 'error' }) {
+    setToast({ titulo, descripcion, tipo });
+    emitirNotificacionSesionParte({ titulo, descripcion }).catch(() => {});
+  }
+
+  function actualizarSesionParteRemota(nuevaSesion) {
+    sesionParteRemotaRef.current = nuevaSesion;
+    setSesionParteRemota(nuevaSesion);
+  }
+
+  function tieneProgresoSesionLocal() {
+    return tieneProgresoSesionParte({
+      formulario,
+      desplazamiento,
+      intervension,
+      seguimientoTiempo,
+      materialesSeleccionados,
+      fotosIntervencion,
+      firmaClienteDataUrl,
+    });
+  }
+
+  async function construirSnapshotSesionActual() {
+    const snapshot = construirSnapshotSesionParte({
+      formulario,
+      desplazamiento,
+      intervension,
+      seguimientoTiempo,
+      materialesSeleccionados,
+      pendienteGeoIntervension,
+      fotosIntervencion,
+      firmaClienteDataUrl,
+    });
+    snapshot.fotosIntervencion = await serializarFotosSesionParte(fotosIntervencion);
+    return snapshot;
+  }
+
+  async function aplicarSnapshotSesion(snapshot, mensajeSync) {
+    if (!snapshot || typeof snapshot !== 'object') {
+      return;
+    }
+
+    hidratandoSesionParteRef.current = true;
+    const snapshotFormulario = snapshot.formulario && typeof snapshot.formulario === 'object'
+      ? snapshot.formulario
+      : {};
+
+    setFormulario({
+      ...FORM_INICIAL,
+      ...snapshotFormulario,
+    });
+    setDesplazamiento(snapshot.desplazamiento && typeof snapshot.desplazamiento === 'object'
+      ? { ...DESPLAZAMIENTO_INICIAL, ...snapshot.desplazamiento }
+      : DESPLAZAMIENTO_INICIAL);
+    setIntervension(snapshot.intervension && typeof snapshot.intervension === 'object'
+      ? { ...INTERVENSION_INICIAL, ...snapshot.intervension }
+      : INTERVENSION_INICIAL);
+    setSeguimientoTiempo(snapshot.seguimientoTiempo && typeof snapshot.seguimientoTiempo === 'object'
+      ? { ...SEGUIMIENTO_INICIAL, ...snapshot.seguimientoTiempo }
+      : SEGUIMIENTO_INICIAL);
+    setMaterialesSeleccionados(Array.isArray(snapshot.materialesSeleccionados) ? snapshot.materialesSeleccionados : []);
+    setPendienteGeoIntervension(Boolean(snapshot.pendienteGeoIntervension));
+    setFirmaClienteDataUrl(typeof snapshot.firmaClienteDataUrl === 'string' ? snapshot.firmaClienteDataUrl : '');
+    setFotosIntervencion(await rehidratarFotosSesionParte(snapshot.fotosIntervencion));
+    if (mensajeSync) {
+      setMensaje(mensajeSync);
+      setError('');
+    }
+  }
+
+  async function sincronizarSesionParte({ estado = 'draft', force = false } = {}) {
+    if (!sesion?.user?.id || !tieneConfiguracionSupabase() || !estaOnline()) {
+      return null;
+    }
+
+    const hayProgreso = tieneProgresoSesionLocal();
+
+    if (!hayProgreso) {
+      return null;
+    }
+
+    const snapshot = await construirSnapshotSesionActual();
+    const snapshotClave = JSON.stringify(snapshot);
+    if (!force && snapshotClave === ultimoSnapshotSesionRef.current) {
+      return sesionParteActivaRef.current;
+    }
+
+    const sesionActiva = await reclamarSesionParteActiva({
+      ordenId: formulario.orden_id || null,
+      snapshot,
+      estado,
+    });
+    sesionParteActivaRef.current = sesionActiva;
+    ultimoSnapshotSesionRef.current = snapshotClave;
+    actualizarSesionParteRemota(null);
+    return sesionActiva;
+  }
+
+  async function cerrarSesionParteLocal(reason) {
+    if (!sesion?.user?.id || !tieneConfiguracionSupabase() || !estaOnline()) {
+      sesionParteActivaRef.current = null;
+      ultimoSnapshotSesionRef.current = '';
+      actualizarSesionParteRemota(null);
+      return null;
+    }
+
+    const snapshot = await construirSnapshotSesionActual();
+    const resultado = await cerrarSesionParteActiva({
+      reason,
+      snapshot,
+    });
+    sesionParteActivaRef.current = null;
+    ultimoSnapshotSesionRef.current = '';
+    actualizarSesionParteRemota(null);
+    return resultado;
+  }
 
   useEffect(() => {
     if (!esTecnico || tecnicos.length === 0) {
@@ -506,6 +645,160 @@ export function ParteTrabajoView({ rolUsuario }) {
       pendienteGeoIntervension,
     });
   }, [desplazamiento, formulario, intervension, materialesSeleccionados, pendienteGeoIntervension, seguimientoTiempo]);
+
+  useEffect(() => {
+    if (!sesion?.user?.id || !tieneConfiguracionSupabase()) {
+      return undefined;
+    }
+
+    let cancelado = false;
+
+    async function inicializarSesionActivaParte() {
+      try {
+        const sesionActiva = await obtenerSesionParteActivaActual();
+        if (cancelado || !esSesionParteAbierta(sesionActiva)) {
+          return;
+        }
+
+        if (sesionActiva.device_instance_id === deviceInstanceIdRef.current) {
+          sesionParteActivaRef.current = sesionActiva;
+          if (!tieneProgresoSesionLocal() && sesionActiva.snapshot) {
+            await aplicarSnapshotSesion(sesionActiva.snapshot, 'Parte recuperado desde esta instancia.');
+          }
+          return;
+        }
+
+        actualizarSesionParteRemota(sesionActiva);
+        if (!tieneProgresoSesionLocal() && sesionActiva.snapshot) {
+          await aplicarSnapshotSesion(
+            sesionActiva.snapshot,
+            'Se ha cargado el parte activo detectado en otra instancia.',
+          );
+        }
+        mostrarAvisoSincronizacion({
+          titulo: 'Parte activo en otra instancia',
+          descripcion: `Se ha detectado un parte en curso desde ${sesionActiva.platform || 'otro dispositivo'}. Si continúas aquí, tomarás el control.`,
+          tipo: 'error',
+        });
+      } catch {
+        // noop
+      }
+    }
+
+    const desuscribir = suscribirSesionesParteUsuario({
+      userId: sesion.user.id,
+      onEvent: async (payload) => {
+        const nueva = payload?.new;
+        if (!nueva || typeof nueva !== 'object') {
+          return;
+        }
+
+        const esInstanciaLocal = nueva.device_instance_id === deviceInstanceIdRef.current;
+        if (esInstanciaLocal) {
+          if (esSesionParteAbierta(nueva)) {
+            sesionParteActivaRef.current = nueva;
+            return;
+          }
+
+          if (nueva.estado === 'force_closed') {
+            sesionParteActivaRef.current = null;
+            ultimoSnapshotSesionRef.current = '';
+            actualizarSesionParteRemota(null);
+            resetearFormulario();
+            setMensaje(nueva.remote_message || 'El parte ha sido cerrado automáticamente por actividad desde otra instancia.');
+            setError('');
+            mostrarAvisoSincronizacion({
+              titulo: 'Parte cerrado en esta instancia',
+              descripcion: nueva.remote_message || 'Otra plataforma ha tomado el control del parte activo.',
+              tipo: 'error',
+            });
+            return;
+          }
+
+          sesionParteActivaRef.current = null;
+          ultimoSnapshotSesionRef.current = '';
+          return;
+        }
+
+        if (esSesionParteAbierta(nueva)) {
+          actualizarSesionParteRemota(nueva);
+          if (!tieneProgresoSesionLocal() && nueva.snapshot) {
+            await aplicarSnapshotSesion(
+              nueva.snapshot,
+              'El parte activo se ha actualizado desde otra instancia.',
+            );
+          }
+          return;
+        }
+
+        const esCierreDeSesionRemotaActual = sesionParteRemotaRef.current?.id === nueva.id;
+        actualizarSesionParteRemota(null);
+        if (esCierreDeSesionRemotaActual && !esSesionParteAbierta(sesionParteActivaRef.current) && tieneProgresoSesionLocal()) {
+          resetearFormulario();
+          setMensaje(nueva.remote_message || 'El parte ha sido cerrado automáticamente porque finalizó en otra instancia.');
+          setError('');
+          mostrarAvisoSincronizacion({
+            titulo: 'Parte cerrado en otra instancia',
+            descripcion: nueva.remote_message || 'El parte activo se ha cerrado en otra plataforma y esta instancia se ha actualizado.',
+            tipo: nueva.estado === 'submitted' ? 'success' : 'error',
+          });
+        }
+      },
+    });
+
+    inicializarSesionActivaParte().catch(() => {});
+
+    return () => {
+      cancelado = true;
+      desuscribir();
+    };
+  }, [sesion?.user?.id]);
+
+  useEffect(() => {
+    if (hidratandoSesionParteRef.current) {
+      hidratandoSesionParteRef.current = false;
+      return undefined;
+    }
+
+    const sesionActiva = sesionParteActivaRef.current;
+    const debeSincronizar =
+      esSesionParteAbierta(sesionActiva)
+      || Boolean(intervension.inicioIso)
+      || Boolean(intervension.finIso);
+
+    if (!sesion?.user?.id || !debeSincronizar || !estaOnline()) {
+      return undefined;
+    }
+
+    const timerId = window.setTimeout(async () => {
+      if (sincronizandoSesionParteRef.current) {
+        return;
+      }
+
+      sincronizandoSesionParteRef.current = true;
+      try {
+        await sincronizarSesionParte({
+          estado: intervension.inicioIso && !intervension.finIso ? 'active' : 'draft',
+        });
+      } catch {
+        // noop
+      } finally {
+        sincronizandoSesionParteRef.current = false;
+      }
+    }, 700);
+
+    return () => window.clearTimeout(timerId);
+  }, [
+    sesion?.user?.id,
+    formulario,
+    desplazamiento,
+    intervension,
+    seguimientoTiempo,
+    materialesSeleccionados,
+    pendienteGeoIntervension,
+    firmaClienteDataUrl,
+    fotosIntervencion,
+  ]);
 
   useEffect(() => {
     async function cargarCatalogos() {
@@ -1062,6 +1355,15 @@ export function ParteTrabajoView({ rolUsuario }) {
     setCapturandoIntervension(true);
 
     const inicioIntervIso = new Date().toISOString();
+    if (sesion?.user?.id && estaOnline()) {
+      try {
+        await sincronizarSesionParte({ estado: 'active', force: true });
+      } catch (errSync) {
+        setError(errSync.message || 'No se pudo bloquear el parte en tiempo real.');
+        setCapturandoIntervension(false);
+        return;
+      }
+    }
 
     try {
       const ubicacion = await obtenerUbicacionActual();
@@ -1404,6 +1706,9 @@ export function ParteTrabajoView({ rolUsuario }) {
 
   function resetearFormulario() {
     ignorarGuardadoBorradorRef.current = true;
+    sesionParteActivaRef.current = null;
+    ultimoSnapshotSesionRef.current = '';
+    actualizarSesionParteRemota(null);
     setFormulario({
       ...FORM_INICIAL,
       tecnico_id: esTecnico ? (tecnicos[0]?.id || '') : '',
@@ -1431,12 +1736,13 @@ export function ParteTrabajoView({ rolUsuario }) {
     limpiarBorradorParte();
   }
 
-  function eliminarParteBorrador() {
+  async function eliminarParteBorrador() {
     if (!window.confirm('¿Eliminar este parte sin guardar? Se perderán los datos registrados.')) {
       return;
     }
     setMensaje('');
     setError('');
+    await cerrarSesionParteLocal('cancelled').catch(() => {});
     resetearFormulario();
     setMensaje('Parte eliminado.');
   }
@@ -1523,6 +1829,7 @@ export function ParteTrabajoView({ rolUsuario }) {
           tecnicoNombre: tecnicoSeleccionado?.nombre || 'Tecnico no identificado',
         },
       });
+      await cerrarSesionParteLocal('submitted').catch(() => {});
       setMensaje(`Parte guardado localmente${motivo ? ` (${motivo})` : ''}. Se enviará automáticamente al recuperar conexión.`);
       resetearFormulario();
     }
@@ -1553,6 +1860,7 @@ export function ParteTrabajoView({ rolUsuario }) {
       // valoración económica desde el panel SAT. Esto evita que el técnico
       // descargue una versión "preliminar" sin importes y que más tarde
       // aparezca otra distinta tras la valoración.
+      await cerrarSesionParteLocal('submitted').catch(() => {});
       setMensaje('Parte registrado. El informe PDF estará disponible cuando el administrador valore la orden.');
       resetearFormulario();
     } catch (err) {
@@ -1679,6 +1987,11 @@ export function ParteTrabajoView({ rolUsuario }) {
       {mensaje && (
         <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
           {mensaje}
+        </p>
+      )}
+      {sesionParteRemota && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          Hay un parte activo en otra instancia ({sesionParteRemota.platform || 'desconocida'}). Si continúas aquí y registras actividad, esta instancia tomará el control automáticamente.
         </p>
       )}
 
@@ -2202,6 +2515,7 @@ export function ParteTrabajoView({ rolUsuario }) {
           {guardando ? 'Guardando parte...' : 'Registrar parte de trabajo'}
         </button>
       </form>
+      <ToastEstado toast={toast} onClose={() => setToast(null)} />
     </section>
   );
 }
