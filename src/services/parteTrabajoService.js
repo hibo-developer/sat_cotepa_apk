@@ -6,6 +6,7 @@ import {
   validarTextoRequerido,
 } from './satValidation';
 import { crearOrdenTrabajo } from './workOrderService';
+import { normalizarKmDesplazamientoFacturable } from './distanciaClienteService';
 
 function parsearMateriales(textoMateriales) {
   if (!textoMateriales.trim()) {
@@ -64,16 +65,6 @@ function resolverMinutosFase(fase) {
   }
 
   return Math.max(1, Math.ceil(diferenciaMs / 60000));
-}
-
-// Dirección fiscal de Cotepa S.L. (en futuros cambios, leer de tabla config_empresa)
-function obtenerDireccionFiscalCotepa() {
-  return {
-    latitud: 39.4415,
-    longitud: -0.3820,
-    nombreLugar: 'Cotepa S.L., Paiporta',
-    nombreLugarCompleto: 'Pol. Industrial La Pasqualeta, Calle Sequía de Rascanya, 46200 Paiporta, Valencia',
-  };
 }
 
 function construirResumenDesplazamiento(desplazamiento) {
@@ -698,7 +689,7 @@ export async function crearParteTrabajo(payload) {
   // panel de valoración.
   const distanciaDesplazamientoMetros = Number(payload?.desplazamiento?.distanciaMetros);
   if (Number.isFinite(distanciaDesplazamientoMetros) && distanciaDesplazamientoMetros > 0) {
-    ordenPayload.km_desplazamiento_facturables = Number(((distanciaDesplazamientoMetros * 2) / 1000).toFixed(2));
+    ordenPayload.km_desplazamiento_facturables = normalizarKmDesplazamientoFacturable(distanciaDesplazamientoMetros);
   }
 
   const { data: orden, error: errorOrden } = await supabase

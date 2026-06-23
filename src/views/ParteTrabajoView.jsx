@@ -29,7 +29,15 @@ import {
   tieneProgresoSesionParte,
 } from '../services/parteSessionSyncService';
 import { abrirGoogleMaps } from '../services/externalNavigationService';
-import { tieneConfiguracionSupabase } from '../services/supabaseClient';
+import { obtenerClienteSupabase, tieneConfiguracionSupabase } from '../services/supabaseClient';
+import {
+  analizarConsistenciaKmCliente,
+  calcularDistanciaFacturableMetros,
+  calcularDistanciaMetros,
+  normalizarKmDesplazamientoFacturable,
+  resolverDestinoFacturable,
+  UBICACION_COTEPA,
+} from '../services/distanciaClienteService';
 
 function obtenerUbicacionActual() {
   return new Promise((resolve, reject) => {
@@ -137,73 +145,15 @@ async function geocodificarDireccion(direccion) {
   }
 }
 
-// Dirección fiscal de Cotepa S.L. (Paiporta, Valencia). Se utiliza como
-// origen FIJO del desplazamiento del técnico, sin importar dónde se
-// encuentre cuando pulse "Inicio Desplazamiento".
-const UBICACION_COTEPA = {
-  latitud: 39.4415,
-  longitud: -0.3820,
-  nombreLugar: 'Cotepa S.L., Paiporta',
-  nombreLugarCompleto: 'Pol. Industrial La Pasqualeta, Calle Sequía de Rascanya, 46200 Paiporta, Valencia',
-};
-
-function calcularDistanciaMetros(origen, destino) {
-  if (!origen || !destino) {
-    return null;
-  }
-
-  const radioTierra = 6371000;
-  const lat1 = (origen.latitud * Math.PI) / 180;
-  const lat2 = (destino.latitud * Math.PI) / 180;
-  const deltaLat = ((destino.latitud - origen.latitud) * Math.PI) / 180;
-  const deltaLon = ((destino.longitud - origen.longitud) * Math.PI) / 180;
-
-  const a =
-    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2)
-    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return Math.round(radioTierra * c);
-}
-
-// Distancia por carretera entre dos puntos (en metros). Usa el servicio
-// público OSRM (Open Source Routing Machine) que devuelve la ruta real
-// en coche. Si falla (sin conexión, time-out, error CORS, etc.) cae a
-// la distancia en línea recta multiplicada por 1.3, que es el factor de
-// rodeo medio de una red de carreteras secundarias en España.
+// Distancia facturable estable entre dos puntos. Para evitar discrepancias
+// entre dias o dispositivos, la facturacion usa un calculo determinista
+// basado en coordenadas fijas y un factor de rodeo estable.
 async function calcularDistanciaCarreteraMetros(origen, destino) {
   if (!origen || !destino) {
     return null;
   }
 
-  const haversine = calcularDistanciaMetros(origen, destino);
-
-  try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${origen.longitud},${origen.latitud};${destino.longitud},${destino.latitud}?overview=false&alternatives=false&steps=false`;
-    const controlador = new AbortController();
-    const tiempoLimite = setTimeout(() => controlador.abort(), 8000);
-    const respuesta = await fetch(url, { signal: controlador.signal, headers: { Accept: 'application/json' } });
-    clearTimeout(tiempoLimite);
-
-    if (!respuesta.ok) {
-      throw new Error(`OSRM HTTP ${respuesta.status}`);
-    }
-
-    const data = await respuesta.json();
-    const ruta = Array.isArray(data?.routes) ? data.routes[0] : null;
-    const metrosRuta = ruta && Number.isFinite(Number(ruta.distance)) ? Math.round(Number(ruta.distance)) : null;
-
-    if (metrosRuta && metrosRuta > 0) {
-      return metrosRuta;
-    }
-  } catch {
-    // se usa el fallback Haversine × 1.3
-  }
-
-  if (Number.isFinite(haversine)) {
-    return Math.round(haversine * 1.3);
-  }
-  return null;
+  return calcularDistanciaFacturableMetros(origen, destino);
 }
 
 function redondearMinutos(inicioIso, finIso) {
@@ -244,6 +194,44 @@ function formatearLugar(ubicacion) {
 function parsearNumeroDecimal(valor) {
   const numero = Number.parseFloat(String(valor || '').replace(',', '.'));
   return Number.isFinite(numero) ? numero : null;
+}
+
+async function obtenerAnalisisConsistenciaKmCliente(clienteId, kmActual, ordenIdActual = null) {
+  if (!clienteId || !Number.isFinite(Number(kmActual)) || !tieneConfiguracionSupabase()) {
+    return null;
+  }
+
+  try {
+    const supabase = obtenerClienteSupabase();
+    let consulta = supabase
+      .from('ordenes_trabajo')
+      .select('id, km_desplazamiento_facturables, fecha_fin')
+      .eq('cliente_id', clienteId)
+      .not('km_desplazamiento_facturables', 'is', null)
+      .order('fecha_fin', { ascending: false, nullsFirst: false })
+      .limit(12);
+
+    if (ordenIdActual) {
+      consulta = consulta.neq('id', ordenIdActual);
+    }
+
+    const { data, error } = await consulta;
+    if (error) {
+      throw error;
+    }
+
+    const historicoKms = Array.isArray(data)
+      ? data.map((item) => Number(item.km_desplazamiento_facturables)).filter((valor) => Number.isFinite(valor) && valor > 0)
+      : [];
+
+    return analizarConsistenciaKmCliente({
+      kmActual,
+      historicoKms,
+      umbralPct: 5,
+    });
+  } catch {
+    return null;
+  }
 }
 
 function construirUrlRutaCliente({ lat, lng, direccion, modoNavegacion = false }) {
@@ -1318,9 +1306,20 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
 
     try {
       const ubicacionCliente = await obtenerUbicacionActual();
+      const clienteSeleccionado = clientes.find((item) => item.id === formulario.cliente_id);
+      const referenciaDestino = resolverDestinoFacturable({
+        cliente: clienteSeleccionado,
+        ubicacionActual: ubicacionCliente,
+      });
       const lugarResuelto = await resolverNombreLugar(ubicacionCliente.latitud, ubicacionCliente.longitud);
       const finIso = new Date().toISOString();
-      const distanciaMetros = await calcularDistanciaCarreteraMetros(UBICACION_COTEPA, ubicacionCliente);
+      const distanciaMetros = await calcularDistanciaCarreteraMetros(UBICACION_COTEPA, referenciaDestino.destino);
+      const kmFacturables = normalizarKmDesplazamientoFacturable(distanciaMetros);
+      const analisisConsistencia = await obtenerAnalisisConsistenciaKmCliente(
+        formulario.cliente_id,
+        kmFacturables,
+        formulario.orden_id,
+      );
 
       setDesplazamiento({
         inicioIso: desplazamiento.inicioIso,
@@ -1334,7 +1333,13 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         distanciaMetros,
         minutosGeo: null,
       });
-      setMensaje('Desplazamiento finalizado. Distancia calculada (se facturará el doble: ida+vuelta).');
+      const mensajeConsistencia = analisisConsistencia?.alerta
+        ? ` Aviso: el kilometraje difiere un ${analisisConsistencia.variacionPct}% del histórico del cliente (referencia ${analisisConsistencia.kmReferencia} km).`
+        : '';
+      const mensajeReferencia = referenciaDestino.fuente === 'cliente'
+        ? ' Distancia calculada con las coordenadas fijas del cliente para mantener consistencia.'
+        : ' Distancia calculada con la geolocalización capturada porque el cliente no tiene coordenadas fijas.';
+      setMensaje(`Desplazamiento finalizado.${mensajeReferencia}${mensajeConsistencia}`);
     } catch (err) {
       const finIso = new Date().toISOString();
 
@@ -1367,6 +1372,11 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
 
     try {
       const ubicacion = await obtenerUbicacionActual();
+      const clienteSeleccionado = clientes.find((item) => item.id === formulario.cliente_id);
+      const referenciaDestino = resolverDestinoFacturable({
+        cliente: clienteSeleccionado,
+        ubicacionActual: ubicacion,
+      });
       const lugarResuelto = await resolverNombreLugar(ubicacion.latitud, ubicacion.longitud);
       const ubicacionConLugar = {
         ...ubicacion,
@@ -1389,7 +1399,16 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
       // si seguía abierto: el técnico ya está en cliente, así que aquí
       // calculamos los kilómetros desde Cotepa hasta esta ubicación.
       if (!desplazamiento.finIso) {
-        const distanciaDesplazamiento = await calcularDistanciaCarreteraMetros(UBICACION_COTEPA, ubicacionConLugar);
+        const distanciaDesplazamiento = await calcularDistanciaCarreteraMetros(
+          UBICACION_COTEPA,
+          referenciaDestino.destino,
+        );
+        const kmFacturables = normalizarKmDesplazamientoFacturable(distanciaDesplazamiento);
+        const analisisConsistencia = await obtenerAnalisisConsistenciaKmCliente(
+          formulario.cliente_id,
+          kmFacturables,
+          formulario.orden_id,
+        );
         setDesplazamiento((prev) => ({
           ...prev,
           inicioIso: prev?.inicioIso || inicioIntervIso,
@@ -1399,6 +1418,11 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
           distanciaMetros: distanciaDesplazamiento,
           minutosGeo: null,
         }));
+        if (analisisConsistencia?.alerta) {
+          setMensaje(
+            `Intervención iniciada con geolocalización en cliente. Aviso: el kilometraje difiere un ${analisisConsistencia.variacionPct}% del histórico del cliente (referencia ${analisisConsistencia.kmReferencia} km).`,
+          );
+        }
       }
 
       setIntervension({
@@ -1412,7 +1436,15 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         pausaComidaActiva: null,
       });
       setPendienteGeoIntervension(false);
-      setMensaje('Intervención iniciada con geolocalización en cliente.');
+      if (!desplazamiento.finIso) {
+        if (referenciaDestino.fuente === 'cliente') {
+          setMensaje((previo) => previo || 'Intervención iniciada con geolocalización en cliente. El kilometraje se fija con las coordenadas guardadas del cliente.');
+        } else {
+          setMensaje((previo) => previo || 'Intervención iniciada con geolocalización en cliente. El cliente no tiene coordenadas fijas y se usa la ubicación capturada.');
+        }
+      } else {
+        setMensaje('Intervención iniciada con geolocalización en cliente.');
+      }
     } catch (err) {
       const sinConexion = navigator.onLine === false;
 
