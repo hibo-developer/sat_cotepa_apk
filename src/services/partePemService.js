@@ -3,6 +3,19 @@ import { limpiarTexto, validarTextoRequerido } from './satValidation';
 import { crearOrdenTrabajo } from './workOrderService';
 import { subirFotosIntervencionStorage } from './parteTrabajoService';
 
+const TEXTO_ACEPTACION_CLIENTE = `Aceptación por parte del cliente:
+En el día de la fecha de hoy se ha finalizado el montaje y se ha realizado con éxito positivo la puesta en marcha sobre la instalación del equipo asignado.
+Verifica que ésta corresponde en cuanto a características técnicas y constructivas a lo pedido.
+Además, declara:
+- Haber predispuesto las obras de construcción y los locales de colocación de la instalación, así como las conexiones con las redes de suministro con arreglo a la normativa vigente para la prevención de incendios, de accidentes y de contaminación.
+- Haber instalado el interruptor magnetotérmico diferencial con poder de ruptura tal de respetar las características de la instalación y haber predispuesto la instalación de puesta a tierra.
+- Haber obtenido el visto bueno de las autoridades competentes para la instalación del equipo entregado.
+- Haber recibido el Manual de Uso y mantenimiento del equipo entregado.
+- Estar al tanto de los procedimientos de seguridad.
+- Haber recibido las instrucciones para el correcto funcionamiento, mantenimiento, utilización, límites y prestaciones de la instalación.
+- Haber asistido a los controles de funcionalidad.
+Se compromete, por último, a atenerse a las instrucciones contenidas en el manual relativas al uso y mantenimiento de la instalación.`;
+
 function esDataUrlImagen(valor) {
   return /^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(valor || '');
 }
@@ -228,6 +241,7 @@ export async function crearPartePem(payload) {
   const pemData = {
     tipo_operacion: tipoOrden,
     equipo_matricula: matricula,
+    aceptacion_texto: TEXTO_ACEPTACION_CLIENTE,
     notas_tecnico: notasTecnico || null,
     notas_cliente: notasCliente || null,
     checks: {
@@ -267,6 +281,7 @@ export async function crearPartePem(payload) {
   if (fotosIntervencionUrls.length) {
     lineas.push(`Fotos intervención: ${fotosIntervencionUrls.join(' | ')}`);
   }
+  lineas.push('Aceptación cliente: incluida');
   lineas.push(`Firmante: ${nombreFirmante}`);
 
   const minutos = calcularMinutos(intervension.inicioIso, intervension.finIso);
@@ -298,4 +313,3 @@ export async function crearPartePem(payload) {
     fotos_intervencion_urls: fotosIntervencionUrls,
   };
 }
-
