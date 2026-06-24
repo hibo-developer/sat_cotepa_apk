@@ -151,13 +151,13 @@ function resolverMinutosDesdeRangoIso(inicioIso, finIso) {
 
 function extraerSecuencialInformeDesdeUrl(urlInforme) {
   const url = String(urlInforme || '');
-  const nuevo = /SAT-\d{6}-(\d{2})\.pdf/i.exec(url);
+  const nuevo = /(?:SAT|PEM)-\d{6}-(\d{2})\.pdf/i.exec(url);
   if (nuevo) {
     const n = Number.parseInt(nuevo[1], 10);
     return Number.isFinite(n) ? n : null;
   }
 
-  const antiguo = /SAT-\d{2}-\d{2}-\d{4}-(\d{2})\.pdf/i.exec(url);
+  const antiguo = /(?:SAT|PEM)-\d{2}-\d{2}-\d{4}-(\d{2})\.pdf/i.exec(url);
   if (antiguo) {
     const n = Number.parseInt(antiguo[1], 10);
     return Number.isFinite(n) ? n : null;

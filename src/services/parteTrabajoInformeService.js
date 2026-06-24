@@ -106,14 +106,15 @@ function resolverFechaInformeIso({ parte, formulario, seguimientoTiempo, interve
   return new Date().toISOString();
 }
 
-function crearReferenciaInforme(fechaIso, secuencial) {
+function crearReferenciaInforme(fechaIso, secuencial, prefijoInforme = 'SAT') {
   const f = new Date(fechaIso);
   const ahora = Number.isFinite(f.getTime()) ? f : new Date();
   const dd = String(ahora.getDate()).padStart(2, '0');
   const mm = String(ahora.getMonth() + 1).padStart(2, '0');
   const yy = String(ahora.getFullYear()).slice(-2);
   const seq = String(Number.isFinite(secuencial) ? secuencial : 1).padStart(2, '0');
-  return `SAT-${yy}${mm}${dd}-${seq}`;
+  const prefijo = String(prefijoInforme || 'SAT').trim().toUpperCase() || 'SAT';
+  return `${prefijo}-${yy}${mm}${dd}-${seq}`;
 }
 
 function resolverMinutosFase(fase) {
@@ -882,6 +883,7 @@ async function crearPdfInforme({
   fotosIntervencionUrls,
   secuencialDiario,
   fechaInformeIso,
+  prefijoInforme = 'SAT',
 }) {
   const informeTraceId = `${parte?.id || formulario?.orden_id || 'sin-orden'}-${Date.now()}`;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
@@ -893,7 +895,7 @@ async function crearPdfInforme({
       fechaEmisionIso = f.toISOString();
     }
   }
-  const referencia = crearReferenciaInforme(fechaEmisionIso, secuencialDiario);
+  const referencia = crearReferenciaInforme(fechaEmisionIso, secuencialDiario, prefijoInforme);
   const logoDataUrl = await obtenerLogoEmpresa();
 
   metaInforme = {
@@ -922,8 +924,8 @@ async function crearPdfInforme({
     ['Prioridad', prioridad],
   ]);
 
-  // ==== Descripción de la avería ====
-  dibujarTituloSeccion(doc, estado, 'Descripción de la avería');
+  // ==== Descripción ====
+  dibujarTituloSeccion(doc, estado, prefijoInforme === 'PEM' ? 'Descripción de la orden' : 'Descripción de la avería');
   dibujarParrafo(doc, estado, descripcion);
 
   // ==== Trabajos realizados ====
@@ -1008,19 +1010,25 @@ async function subirPdfInforme({ pdfBlob, nombreArchivo, clienteId, tecnicoId, o
   return `sb://informes-partes/${ruta}`;
 }
 
-async function obtenerSecuencialDiario(fechaIso) {
+async function obtenerSecuencialDiario(fechaIso, filtroTipoOrden = 'averia') {
   try {
     const supabase = obtenerClienteSupabase();
     const base = new Date(fechaIso);
     const hoy = Number.isFinite(base.getTime()) ? base : new Date();
     const inicio = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate())).toISOString();
     const fin = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate() + 1)).toISOString();
-    const { count } = await supabase
+    let consulta = supabase
       .from('ordenes_trabajo')
       .select('id', { count: 'exact', head: true })
       .eq('estado', 'finalizado')
       .gte('fecha_fin', inicio)
       .lt('fecha_fin', fin);
+    if (filtroTipoOrden === 'pem') {
+      consulta = consulta.in('tipo_orden', ['montaje', 'puesta_en_marcha']);
+    } else if (filtroTipoOrden === 'averia') {
+      consulta = consulta.eq('tipo_orden', 'averia');
+    }
+    const { count } = await consulta;
     return (count || 0) + 1;
   } catch {
     return 1;
@@ -1042,11 +1050,13 @@ export async function generarYSubirInformeParte({
   fotosIntervencionUrls,
   secuencialDiario: secuencialDiarioEntrada,
   fechaInformeIso,
+  prefijoInforme = 'SAT',
+  filtroTipoOrden = 'averia',
 }) {
   const fechaBaseIso = resolverFechaInformeIso({ parte, formulario, seguimientoTiempo, intervension });
   const secuencialDiario = Number.isFinite(Number(secuencialDiarioEntrada)) && Number(secuencialDiarioEntrada) > 0
     ? Number(secuencialDiarioEntrada)
-    : await obtenerSecuencialDiario(fechaBaseIso);
+    : await obtenerSecuencialDiario(fechaBaseIso, filtroTipoOrden);
 
   const firmaAccesible = firmaUrl
     ? await obtenerUrlFirmadaStorage(firmaUrl, { expiresIn: 900 })
@@ -1071,6 +1081,7 @@ export async function generarYSubirInformeParte({
     fotosIntervencionUrls: fotosAccesibles,
     secuencialDiario,
     fechaInformeIso,
+    prefijoInforme,
   });
   const pdfUrl = await subirPdfInforme({
     pdfBlob,

@@ -24,6 +24,11 @@ vi.mock('./parteTrabajoService', () => ({
   subirFotosIntervencionStorage: (...args) => subirFotosMock(...args),
 }));
 
+const generarInformeMock = vi.fn(async () => ({ pdfUrl: 'sb://informes-partes/c1/t1/ot-123/PEM-260624-01.pdf', nombreArchivo: 'PEM-260624-01.pdf' }));
+vi.mock('./parteTrabajoInformeService', () => ({
+  generarYSubirInformeParte: (...args) => generarInformeMock(...args),
+}));
+
 describe('partePemService', () => {
   it('valida campos obligatorios', async () => {
     const { crearPartePem } = await import('./partePemService');
@@ -52,6 +57,7 @@ describe('partePemService', () => {
     crearOrdenTrabajoMock.mockClear();
     subirFotosMock.mockClear();
     uploadMock.mockClear();
+    generarInformeMock.mockClear();
 
     const updateSingle = vi.fn(async () => ({ data: { id: 'ot-123', numero_ticket: 999 }, error: null }));
     const updateSelect = vi.fn(() => ({ single: updateSingle }));
@@ -62,7 +68,20 @@ describe('partePemService', () => {
       if (tabla !== 'ordenes_trabajo') {
         throw new Error(`tabla inesperada: ${tabla}`);
       }
-      return { update };
+      const selectSingle = vi.fn(async () => ({
+        data: {
+          id: 'ot-123',
+          descripcion_averia: 'PEM · Montaje',
+          prioridad: 'media',
+          clientes: { nombre: 'Cliente 1' },
+          equipos: { nombre: 'Equipo 1', marca: null, modelo: null },
+          tecnicos: { nombre: 'Tecnico 1' },
+        },
+        error: null,
+      }));
+      const selectEq = vi.fn(() => ({ single: selectSingle }));
+      const select = vi.fn(() => ({ eq: selectEq }));
+      return { update, select };
     });
 
     const { crearPartePem } = await import('./partePemService');
@@ -97,8 +116,8 @@ describe('partePemService', () => {
       tipo_orden: 'montaje',
     });
     expect(subirFotosMock).toHaveBeenCalledTimes(1);
+    expect(generarInformeMock).toHaveBeenCalledTimes(1);
     expect(rsp).toMatchObject({ id: 'ot-123' });
     expect(update).toHaveBeenCalledTimes(1);
   });
 });
-

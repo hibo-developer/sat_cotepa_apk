@@ -112,6 +112,7 @@ export function PartePemView({ rolUsuario, sesion }) {
   const [fotosIntervencion, setFotosIntervencion] = useState([]);
   const [previewsFotos, setPreviewsFotos] = useState([]);
   const previewsFotosRef = useRef(new Map());
+  const inputFotoCamaraRef = useRef(null);
 
   const canvasFirmaRef = useRef(null);
   const dibujandoFirmaRef = useRef(false);
@@ -674,13 +675,38 @@ export function PartePemView({ rolUsuario, sesion }) {
 
         <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-2">
           <h3 className="text-sm font-bold text-slate-800">Fotos vinculadas a la intervención</h3>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => inputFotoCamaraRef.current?.click()}
+              className="rounded-xl bg-marca-700 px-4 py-3 text-sm font-bold text-white active:scale-95 disabled:opacity-60"
+              disabled={enviando}
+            >
+              Tomar foto
+            </button>
+            <label className="cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 active:scale-95">
+              Subir desde galería
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={manejarSeleccionFotos}
+                className="hidden"
+              />
+            </label>
+          </div>
           <input
+            ref={inputFotoCamaraRef}
             type="file"
             accept="image/*"
+            capture="environment"
             multiple
             onChange={manejarSeleccionFotos}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="hidden"
           />
+          <p className="text-[11px] text-slate-600">
+            Máximo 10 fotos. En móvil, "Tomar foto" abre la cámara.
+          </p>
           {fotosIntervencion.length > 0 && (
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold text-slate-600">{fotosIntervencion.length} foto(s) seleccionadas</p>

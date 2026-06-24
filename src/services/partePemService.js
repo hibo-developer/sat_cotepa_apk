@@ -2,6 +2,7 @@ import { obtenerClienteSupabase } from './supabaseClient';
 import { limpiarTexto, validarTextoRequerido } from './satValidation';
 import { crearOrdenTrabajo } from './workOrderService';
 import { subirFotosIntervencionStorage } from './parteTrabajoService';
+import { generarYSubirInformeParte } from './parteTrabajoInformeService';
 
 const TEXTO_ACEPTACION_CLIENTE = `Aceptación por parte del cliente:
 En el día de la fecha de hoy se ha finalizado el montaje y se ha realizado con éxito positivo la puesta en marcha sobre la instalación del equipo asignado.
@@ -94,6 +95,12 @@ function calcularMinutos(inicioIso, finIso) {
   return Math.max(1, Math.ceil((fin - inicio) / 60000));
 }
 
+function construirEtiquetaEquipo(equipo) {
+  if (!equipo) return 'Sin equipo';
+  const piezas = [equipo.nombre, equipo.marca, equipo.modelo].filter(Boolean);
+  return piezas.length ? piezas.join(' ') : 'Sin equipo';
+}
+
 export async function obtenerOrdenesAbiertasParaPartePem(filtros = {}) {
   const supabase = obtenerClienteSupabase();
   const clienteId = limpiarTexto(filtros.cliente_id);
@@ -178,14 +185,15 @@ export async function crearPartePem(payload) {
     }
   }
 
+  let descripcionOrden = '';
   if (!ordenIdEntrada) {
     const etiquetaTipo = tipoOrden === 'montaje' ? 'PEM · Montaje' : 'PEM · Puesta en marcha';
-    const descripcion = String(payload.descripcion_orden || payload.descripcion_averia || etiquetaTipo).trim() || etiquetaTipo;
+    descripcionOrden = String(payload.descripcion_orden || payload.descripcion_averia || etiquetaTipo).trim() || etiquetaTipo;
     const ordenNueva = await crearOrdenTrabajo({
       cliente_id: clienteId,
       equipo_id: equipoId,
       tecnico_id: tecnicoId,
-      descripcion_averia: descripcion,
+      descripcion_averia: descripcionOrden,
       prioridad: payload.prioridad || 'media',
       estado: 'pendiente',
       tipo_orden: tipoOrden,
@@ -226,6 +234,16 @@ export async function crearPartePem(payload) {
     if (!['montaje', 'puesta_en_marcha'].includes(ordenActual.tipo_orden || '')) {
       throw new Error('La orden seleccionada no es de tipo PEM.');
     }
+  }
+
+  const { data: contextoOrden, error: errorContextoOrden } = await supabase
+    .from('ordenes_trabajo')
+    .select('id, descripcion_averia, prioridad, clientes ( nombre ), equipos ( nombre, marca, modelo ), tecnicos ( nombre )')
+    .eq('id', ordenIdTrabajo)
+    .single();
+
+  if (errorContextoOrden) {
+    throw new Error(`No se pudo cargar la orden para el informe PEM: ${errorContextoOrden.message}`);
   }
 
   const [fotosIntervencionUrls, firmaUrl] = await Promise.all([
@@ -285,11 +303,47 @@ export async function crearPartePem(payload) {
   lineas.push(`Firmante: ${nombreFirmante}`);
 
   const minutos = calcularMinutos(intervension.inicioIso, intervension.finIso);
+  const descripcionInforme = contextoOrden?.descripcion_averia || descripcionOrden || (tipoOrden === 'montaje' ? 'PEM · Montaje' : 'PEM · Puesta en marcha');
+
+  const informe = await generarYSubirInformeParte({
+    parte: {
+      id: ordenIdTrabajo,
+      tareas_realizadas: lineas.join(' | '),
+      descripcion_averia: descripcionInforme,
+      prioridad: contextoOrden?.prioridad || payload.prioridad || 'media',
+    },
+    formulario: {
+      cliente_id: clienteId,
+      tecnico_id: tecnicoId,
+      orden_id: ordenIdTrabajo,
+      prioridad: contextoOrden?.prioridad || payload.prioridad || 'media',
+      tiempo_empleado: String(minutos || 0),
+      descripcion_problema: descripcionInforme,
+      materialesTexto: '',
+    },
+    seguimientoTiempo: null,
+    desplazamiento: null,
+    intervension: {
+      inicioIso: intervension.inicioIso || null,
+      finIso: intervension.finIso || null,
+      pausasComida: [],
+    },
+    clienteNombre: contextoOrden?.clientes?.nombre || 'Cliente no identificado',
+    equipoNombre: construirEtiquetaEquipo(contextoOrden?.equipos),
+    tecnicoNombre: contextoOrden?.tecnicos?.nombre || 'Tecnico no identificado',
+    nombreFirmante,
+    firmaUrl,
+    fotosIntervencionUrls,
+    fechaInformeIso: intervension.inicioIso || undefined,
+    prefijoInforme: 'PEM',
+    filtroTipoOrden: 'pem',
+  });
 
   const actualizacion = {
     estado: 'finalizado',
     tareas_realizadas: lineas.join(' | '),
     firma_url: firmaUrl,
+    informe_pdf_url: informe?.pdfUrl || null,
     fecha_fin: new Date().toISOString(),
     fecha_instalacion: fechaInstalacion,
     pem_data: pemData,
@@ -311,5 +365,7 @@ export async function crearPartePem(payload) {
     ...ordenFinal,
     nombre_firmante: nombreFirmante,
     fotos_intervencion_urls: fotosIntervencionUrls,
+    informe_pdf_url: informe?.pdfUrl || ordenFinal?.informe_pdf_url || '',
+    informe_nombre: informe?.nombreArchivo || '',
   };
 }
