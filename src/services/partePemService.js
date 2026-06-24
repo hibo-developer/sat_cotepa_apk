@@ -313,6 +313,7 @@ export async function crearPartePem(payload) {
       descripcion_averia: descripcionInforme,
       prioridad: contextoOrden?.prioridad || payload.prioridad || 'media',
       pem_data: pemData,
+      numero_ticket: contextoOrden?.numero_ticket || 'SIN-OT',
     },
     formulario: {
       cliente_id: clienteId,
@@ -339,6 +340,7 @@ export async function crearPartePem(payload) {
     fechaInformeIso: intervension.inicioIso || undefined,
     prefijoInforme: 'PEM',
     filtroTipoOrden: 'pem',
+    otNumero: contextoOrden?.numero_ticket || 'SIN-OT',
   });
 
   const actualizacion = {

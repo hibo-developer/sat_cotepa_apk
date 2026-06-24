@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import logoCotepaUrl from '../assets/cotepa.jpg';
 import { obtenerClienteSupabase, obtenerUrlFirmadaStorage } from './supabaseClient';
+import { subirArchivoSAT } from './storageSat';
 
 // =====================================================================
 // Constantes de diseño - paleta corporativa COTEPA
@@ -1023,16 +1024,15 @@ export function obtenerUrlPublicaInformeParte(clienteId, parteId) {
   return `sb://informes-partes/${ruta}`;
 }
 
-async function subirPdfInforme({ pdfBlob, nombreArchivo, clienteId, tecnicoId, ordenId }) {
-  const supabase = obtenerClienteSupabase();
-  const ruta = `${clienteId}/${tecnicoId}/${ordenId}/${nombreArchivo}`;
-  const { error } = await supabase.storage
-    .from('informes-partes')
-    .upload(ruta, pdfBlob, { upsert: true, contentType: 'application/pdf', cacheControl: '0' });
-  if (error) {
-    throw new Error(`No se pudo subir el PDF a Storage: ${error.message}`);
-  }
-  return `sb://informes-partes/${ruta}`;
+async function subirPdfInforme({ pdfBlob, nombreArchivo, clienteId, tecnicoId, ordenId, otNumero }) {
+  const resultado = await subirArchivoSAT(pdfBlob, {
+    otNumero: otNumero || 'SIN-OT',
+    parteId: ordenId || 'sin-orden',
+    tipo: 'pdf-parte',
+    indice: 0,
+    nombreArchivo,
+  });
+  return `sb://${resultado.bucket}/${resultado.path}`;
 }
 
 async function obtenerSecuencialDiario(fechaIso, filtroTipoOrden = 'averia') {
@@ -1077,6 +1077,7 @@ export async function generarYSubirInformeParte({
   fechaInformeIso,
   prefijoInforme = 'SAT',
   filtroTipoOrden = 'averia',
+  otNumero,
 }) {
   const fechaBaseIso = resolverFechaInformeIso({ parte, formulario, seguimientoTiempo, intervension });
   const secuencialDiario = Number.isFinite(Number(secuencialDiarioEntrada)) && Number(secuencialDiarioEntrada) > 0
@@ -1114,6 +1115,7 @@ export async function generarYSubirInformeParte({
     clienteId: formulario.cliente_id,
     tecnicoId: formulario.tecnico_id,
     ordenId: formulario.orden_id || parte?.id,
+    otNumero: otNumero || parte?.numero_ticket || formulario.numero_ticket || 'SIN-OT',
   });
   if (!pdfUrl) throw new Error('No se pudo obtener la URL pública del informe PDF.');
   return { pdfUrl, nombreArchivo };

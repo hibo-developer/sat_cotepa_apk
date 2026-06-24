@@ -31,7 +31,7 @@ describe('storageSat', () => {
     expect(BUCKET_AUDIOS).toBe('audios-clientes');
   });
 
-  it('construye rutas con formato YYYY/MM/SAT-{ot}/parte-{id}/{tipo}-{idx}_{ts}.{ext}', async () => {
+  it('construye rutas legibles para fotos sin duplicar el prefijo SAT', async () => {
     const { subirArchivoSAT } = await import('./storageSat');
 
     const blob = new Blob(['test'], { type: 'image/png' });
@@ -56,9 +56,38 @@ describe('storageSat', () => {
       indice: 2,
     });
 
-    expect(result.path).toMatch(/^20\d{2}\/\d{2}\/SAT-SAT-123\/parte-parte-456\/foto-evidencia-2_\d+\.png$/);
+    expect(result.path).toMatch(/^20\d{2}\/\d{2}\/SAT-123\/parte-parte-456\/foto-evidencia-2_\d+\.png$/);
     expect(result.bucket).toBe('fotos-intervenciones');
     expect(result.registro.id).toBe('test-id');
+  });
+
+  it('conserva el nombre legible del PDF en la ruta', async () => {
+    const { subirArchivoSAT } = await import('./storageSat');
+
+    const blob = new Blob(['pdf'], { type: 'application/pdf' });
+    const singleMock = vi.fn(async () => ({ data: { id: 'pdf-id' }, error: null }));
+    const selectMock = vi.fn(() => ({ single: singleMock }));
+    const insertMock = vi.fn(() => ({ select: selectMock }));
+    const fromTableMock = vi.fn(() => ({ insert: insertMock }));
+
+    fromMock.mockImplementation((name) => {
+      if (name === 'archivos_parte') {
+        return fromTableMock();
+      }
+      return {
+        upload: uploadMock.mockResolvedValue({ error: null }),
+      };
+    });
+
+    const result = await subirArchivoSAT(blob, {
+      otNumero: 'SAT-260615-01',
+      parteId: 'parte-999',
+      tipo: 'pdf-parte',
+      nombreArchivo: 'SAT-260615-01.pdf',
+    });
+
+    expect(result.path).toMatch(/^20\d{2}\/\d{2}\/SAT-260615-01\/parte-parte-999\/SAT-260615-01\.pdf$/);
+    expect(result.bucket).toBe('informes-partes');
   });
 
   it('listarArchivosParte devuelve array vacío si no hay parteId', async () => {

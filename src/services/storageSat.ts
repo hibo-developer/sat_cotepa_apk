@@ -69,13 +69,20 @@ function construirRutaArchivo(params: {
   indice: number;
   timestamp: number;
   extension: string;
+  nombreArchivo?: string;
 }): string {
-  const { otNumero, parteId, tipo, indice, timestamp, extension } = params;
+  const { otNumero, parteId, tipo, indice, timestamp, extension, nombreArchivo } = params;
   const fecha = new Date(timestamp);
   const yyyy = String(fecha.getFullYear());
   const mm = String(fecha.getMonth() + 1).padStart(2, '0');
-  const nombreBase = `${tipo}-${indice}_${timestamp}.${extension}`;
-  return `${yyyy}/${mm}/SAT-${otNumero}/parte-${parteId}/${nombreBase}`;
+  const carpetaOt = /^SAT-|^PEM-/i.test(otNumero) ? otNumero : `SAT-${otNumero}`;
+  const nombreBase = nombreArchivo
+    ? String(nombreArchivo)
+      .trim()
+      .replace(/[\\/:*?"<>|]/g, '-')
+      .replace(/\s+/g, '-')
+    : `${tipo}-${indice}_${timestamp}.${extension}`;
+  return `${yyyy}/${mm}/${carpetaOt}/parte-${parteId}/${nombreBase}`;
 }
 
 /**
@@ -91,10 +98,11 @@ export async function subirArchivoSAT(
     parteId: string;
     tipo: TipoArchivoSAT;
     indice?: number;
+    nombreArchivo?: string;
   },
 ): Promise<{ path: string; bucket: string; registro: ArchivoParte }> {
   const supabase = obtenerClienteSupabase();
-  const { otNumero, parteId, tipo } = params;
+  const { otNumero, parteId, tipo, nombreArchivo } = params;
   const indice = params.indice ?? 0;
   const timestamp = Date.now();
 
@@ -138,6 +146,7 @@ export async function subirArchivoSAT(
     indice,
     timestamp,
     extension,
+    nombreArchivo,
   });
 
   const { error: errorSubida } = await supabase.storage

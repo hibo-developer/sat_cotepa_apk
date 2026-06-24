@@ -121,34 +121,70 @@ async function validarRutaFirma(
   verificacion: { userId: string; rol: RolSat },
 ) {
   const partes = trocearPath(path);
-  if (partes.length !== 3) {
-    return { ok: false, error: 'Ruta de firma no valida' };
+  
+  // Formato nuevo legible: YYYY/MM/SAT-{ot}/parte-{id}/firma-cliente-0_{ts}.{ext}
+  if (partes.length === 5) {
+    const [yyyy, mm, otParte, parteCarpeta, nombreArchivo] = partes;
+    const yyyyValido = /^\d{4}$/.test(yyyy);
+    const mmValido = /^\d{2}$/.test(mm);
+    const otValido = /^(SAT|PEM)-\d{6}-\d{2}$/.test(otParte);
+    const parteValido = /^parte-[a-zA-Z0-9\-_]+$/.test(parteCarpeta);
+    const archivoValido = nombreArchivo && nombreArchivo.startsWith('firma-cliente');
+    
+    if (yyyyValido && mmValido && otValido && parteValido && archivoValido) {
+      const otNumero = otParte;
+      const { data: orden, error: ordenError } = await supabaseAdmin
+        .from('ordenes_trabajo')
+        .select('id, tecnico_id')
+        .eq('numero_ticket', otNumero)
+        .maybeSingle();
+      
+      if (ordenError || !orden?.id) {
+        return { ok: false, error: 'La ruta referencia una orden no valida' };
+      }
+      
+      if (verificacion.rol !== 'tecnico') {
+        return { ok: true };
+      }
+      
+      const tecnicoActualId = await obtenerTecnicoActualId(supabaseAdmin, verificacion.userId);
+      if (!tecnicoActualId || tecnicoActualId !== orden.tecnico_id) {
+        return { ok: false, error: 'Acceso denegado a la firma solicitada' };
+      }
+      
+      return { ok: true };
+    }
   }
+  
+  // Formato antiguo: clienteId/tecnicoId/nombreArchivo
+  if (partes.length === 3) {
+    const [clienteId, tecnicoId, nombreArchivo] = partes;
+    if (!esUuid(clienteId) || !esUuid(tecnicoId) || !nombreArchivo) {
+      return { ok: false, error: 'Ruta de firma no valida' };
+    }
 
-  const [clienteId, tecnicoId, nombreArchivo] = partes;
-  if (!esUuid(clienteId) || !esUuid(tecnicoId) || !nombreArchivo) {
-    return { ok: false, error: 'Ruta de firma no valida' };
-  }
+    const [{ data: cliente, error: clienteError }, { data: tecnico, error: tecnicoError }] = await Promise.all([
+      supabaseAdmin.from('clientes').select('id').eq('id', clienteId).maybeSingle(),
+      supabaseAdmin.from('tecnicos').select('id').eq('id', tecnicoId).maybeSingle(),
+    ]);
 
-  const [{ data: cliente, error: clienteError }, { data: tecnico, error: tecnicoError }] = await Promise.all([
-    supabaseAdmin.from('clientes').select('id').eq('id', clienteId).maybeSingle(),
-    supabaseAdmin.from('tecnicos').select('id').eq('id', tecnicoId).maybeSingle(),
-  ]);
+    if (clienteError || tecnicoError || !cliente?.id || !tecnico?.id) {
+      return { ok: false, error: 'La ruta de firma referencia entidades no validas' };
+    }
 
-  if (clienteError || tecnicoError || !cliente?.id || !tecnico?.id) {
-    return { ok: false, error: 'La ruta de firma referencia entidades no validas' };
-  }
+    if (verificacion.rol !== 'tecnico') {
+      return { ok: true };
+    }
 
-  if (verificacion.rol !== 'tecnico') {
+    const tecnicoActualId = await obtenerTecnicoActualId(supabaseAdmin, verificacion.userId);
+    if (!tecnicoActualId || tecnicoActualId !== tecnicoId) {
+      return { ok: false, error: 'Acceso denegado a la firma solicitada' };
+    }
+
     return { ok: true };
   }
-
-  const tecnicoActualId = await obtenerTecnicoActualId(supabaseAdmin, verificacion.userId);
-  if (!tecnicoActualId || tecnicoActualId !== tecnicoId) {
-    return { ok: false, error: 'Acceso denegado a la firma solicitada' };
-  }
-
-  return { ok: true };
+  
+  return { ok: false, error: 'Ruta de firma no valida' };
 }
 
 async function validarRutaOrden(
@@ -157,39 +193,77 @@ async function validarRutaOrden(
   verificacion: { userId: string; rol: RolSat },
 ) {
   const partes = trocearPath(path);
-  if (partes.length !== 4) {
-    return { ok: false, error: 'Ruta de archivo no valida' };
+  
+  // Formato nuevo legible: YYYY/MM/SAT-{ot}/parte-{id}/{tipo}-{idx}_{ts}.{ext}
+  // Ejemplo: 2026/06/SAT-260615-01/parte-abc123/pdf-parte-0_1234567890.pdf
+  if (partes.length === 5) {
+    const [yyyy, mm, otParte, parteCarpeta, nombreArchivo] = partes;
+    const yyyyValido = /^\d{4}$/.test(yyyy);
+    const mmValido = /^\d{2}$/.test(mm);
+    const otValido = /^(SAT|PEM)-\d{6}-\d{2}$/.test(otParte);
+    const parteValido = /^parte-[a-zA-Z0-9\-_]+$/.test(parteCarpeta);
+    const archivoValido = nombreArchivo && nombreArchivo.length > 0;
+    
+    if (yyyyValido && mmValido && otValido && parteValido && archivoValido) {
+      // Extraer número de OT para validar acceso
+      const otNumero = otParte; // SAT-260615-01 o PEM-260615-01
+      const { data: orden, error: ordenError } = await supabaseAdmin
+        .from('ordenes_trabajo')
+        .select('id, tecnico_id')
+        .eq('numero_ticket', otNumero)
+        .maybeSingle();
+      
+      if (ordenError || !orden?.id) {
+        return { ok: false, error: 'La ruta referencia una orden no valida' };
+      }
+      
+      if (verificacion.rol !== 'tecnico') {
+        return { ok: true };
+      }
+      
+      const tecnicoActualId = await obtenerTecnicoActualId(supabaseAdmin, verificacion.userId);
+      if (!tecnicoActualId || tecnicoActualId !== orden.tecnico_id) {
+        return { ok: false, error: 'Acceso denegado al archivo solicitado' };
+      }
+      
+      return { ok: true };
+    }
   }
+  
+  // Formato antiguo con UUIDs: clienteId/tecnicoId/ordenId/nombreArchivo
+  if (partes.length === 4) {
+    const [clienteId, tecnicoId, ordenId, nombreArchivo] = partes;
+    if (!esUuid(clienteId) || !esUuid(tecnicoId) || !esUuid(ordenId) || !nombreArchivo) {
+      return { ok: false, error: 'Ruta de archivo no valida' };
+    }
 
-  const [clienteId, tecnicoId, ordenId, nombreArchivo] = partes;
-  if (!esUuid(clienteId) || !esUuid(tecnicoId) || !esUuid(ordenId) || !nombreArchivo) {
-    return { ok: false, error: 'Ruta de archivo no valida' };
-  }
+    const { data: orden, error: ordenError } = await supabaseAdmin
+      .from('ordenes_trabajo')
+      .select('id, cliente_id, tecnico_id')
+      .eq('id', ordenId)
+      .maybeSingle();
 
-  const { data: orden, error: ordenError } = await supabaseAdmin
-    .from('ordenes_trabajo')
-    .select('id, cliente_id, tecnico_id')
-    .eq('id', ordenId)
-    .maybeSingle();
+    if (ordenError || !orden?.id) {
+      return { ok: false, error: 'La ruta referencia una orden no valida' };
+    }
 
-  if (ordenError || !orden?.id) {
-    return { ok: false, error: 'La ruta referencia una orden no valida' };
-  }
+    if (orden.cliente_id !== clienteId || orden.tecnico_id !== tecnicoId) {
+      return { ok: false, error: 'La ruta no coincide con la orden asociada' };
+    }
 
-  if (orden.cliente_id !== clienteId || orden.tecnico_id !== tecnicoId) {
-    return { ok: false, error: 'La ruta no coincide con la orden asociada' };
-  }
+    if (verificacion.rol !== 'tecnico') {
+      return { ok: true };
+    }
 
-  if (verificacion.rol !== 'tecnico') {
+    const tecnicoActualId = await obtenerTecnicoActualId(supabaseAdmin, verificacion.userId);
+    if (!tecnicoActualId || tecnicoActualId !== tecnicoId) {
+      return { ok: false, error: 'Acceso denegado al archivo solicitado' };
+    }
+
     return { ok: true };
   }
-
-  const tecnicoActualId = await obtenerTecnicoActualId(supabaseAdmin, verificacion.userId);
-  if (!tecnicoActualId || tecnicoActualId !== tecnicoId) {
-    return { ok: false, error: 'Acceso denegado al archivo solicitado' };
-  }
-
-  return { ok: true };
+  
+  return { ok: false, error: 'Ruta de archivo no valida' };
 }
 
 async function validarAccesoRutaStorage(
