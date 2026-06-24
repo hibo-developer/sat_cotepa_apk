@@ -735,6 +735,7 @@ export async function actualizarValoracionOrdenFinalizada(ordenId, payload) {
       `
       id,
       numero_ticket,
+      tipo_orden,
       cliente_id,
       equipo_id,
       tecnico_id,
@@ -746,6 +747,7 @@ export async function actualizarValoracionOrdenFinalizada(ordenId, payload) {
       foto_url,
       firma_url,
       informe_pdf_url,
+      pem_data,
       coste_materiales_editable,
       tarifa_mano_obra_hora,
       horas_mano_obra,
@@ -1411,12 +1413,14 @@ export async function editarParteFinalizado(ordenId, payload) {
   };
 
 
+  const esPem = ['montaje', 'puesta_en_marcha'].includes(ordenActual.tipo_orden || '');
   const informe = await generarYSubirInformeParte({
     parte: {
       id: ordenActual.id,
       tareas_realizadas: nuevasTareasRealizadas || '',
       descripcion_averia: descripcionAveria || null,
       prioridad: ordenActual.prioridad || null,
+      ...(esPem ? { pem_data: ordenActual.pem_data || null } : {}),
     },
     formulario: {
       cliente_id: ordenActual.cliente_id,
@@ -1438,6 +1442,8 @@ export async function editarParteFinalizado(ordenId, payload) {
     secuencialDiario: secuencialInforme || undefined,
     fechaInformeIso: inicioInterv,
     valoracionEconomica,
+    prefijoInforme: esPem ? 'PEM' : 'SAT',
+    filtroTipoOrden: esPem ? 'pem' : 'averia',
   });
 
   await guardarInformePdfUrl(id, informe.pdfUrl);

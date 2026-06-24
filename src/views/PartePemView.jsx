@@ -78,18 +78,21 @@ function construirUrlRutaCliente({ lat, lng, direccion, modoNavegacion = false }
   return '';
 }
 
-const TEXTO_ACEPTACION_CLIENTE = `Aceptación por parte del cliente:
-En el día de la fecha de hoy se ha finalizado el montaje y se ha realizado con éxito positivo la puesta en marcha sobre la instalación del equipo asignado.
-Verifica que ésta corresponde en cuanto a características técnicas y constructivas a lo pedido.
-Además, declara:
-- Haber predispuesto las obras de construcción y los locales de colocación de la instalación, así como las conexiones con las redes de suministro con arreglo a la normativa vigente para la prevención de incendios, de accidentes y de contaminación.
-- Haber instalado el interruptor magnetotérmico diferencial con poder de ruptura tal de respetar las características de la instalación y haber predispuesto la instalación de puesta a tierra.
-- Haber obtenido el visto bueno de las autoridades competentes para la instalación del equipo entregado.
-- Haber recibido el Manual de Uso y mantenimiento del equipo entregado.
-- Estar al tanto de los procedimientos de seguridad.
-- Haber recibido las instrucciones para el correcto funcionamiento, mantenimiento, utilización, límites y prestaciones de la instalación.
-- Haber asistido a los controles de funcionalidad.
-Se compromete, por último, a atenerse a las instrucciones contenidas en el manual relativas al uso y mantenimiento de la instalación.`;
+const TEXTO_ACEPTACION_CLIENTE = `ACEPTACIÓN POR PARTE DEL CLIENTE
+
+En el día de hoy se ha finalizado el montaje y se ha realizado con éxito la puesta en marcha de la instalación del equipo asignado.
+El cliente verifica que esta corresponde en cuanto a características técnicas y constructivas a lo solicitado.
+
+Asimismo, el cliente DECLARA:
+
+Haber predispuesto las obras de construcción y los locales de colocación de la instalación, así como las conexiones con las redes de suministro, con arreglo a la normativa vigente para la prevención de incendios, de accidentes y de contaminación.
+Haber instalado el interruptor magnetotérmico diferencial con poder de ruptura tal que respete las características de la instalación, y haber predispuesto la instalación de puesta a tierra.
+Haber obtenido el visto bueno de las autoridades competentes para la instalación del equipo entregado.
+Haber recibido el Manual de Uso y Mantenimiento del equipo entregado.
+Estar al corriente de los procedimientos de seguridad.
+Haber recibido las instrucciones para el correcto funcionamiento, mantenimiento, utilización, límites y prestaciones de la instalación.
+Haber asistido a los controles de funcionalidad.
+Por último, SE COMPROMETE a atenerse a las instrucciones contenidas en el manual relativas al uso y mantenimiento de la instalación.`;
 
 export function PartePemView({ rolUsuario, sesion }) {
   const location = useLocation();

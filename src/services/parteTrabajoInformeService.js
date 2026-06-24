@@ -40,6 +40,22 @@ const EMPRESA = {
   web: 'www.cotepa.com',
 };
 
+const TEXTO_ACEPTACION_CLIENTE_PEM = `ACEPTACIÓN POR PARTE DEL CLIENTE
+
+En el día de hoy se ha finalizado el montaje y se ha realizado con éxito la puesta en marcha de la instalación del equipo asignado.
+El cliente verifica que esta corresponde en cuanto a características técnicas y constructivas a lo solicitado.
+
+Asimismo, el cliente DECLARA:
+
+Haber predispuesto las obras de construcción y los locales de colocación de la instalación, así como las conexiones con las redes de suministro, con arreglo a la normativa vigente para la prevención de incendios, de accidentes y de contaminación.
+Haber instalado el interruptor magnetotérmico diferencial con poder de ruptura tal que respete las características de la instalación, y haber predispuesto la instalación de puesta a tierra.
+Haber obtenido el visto bueno de las autoridades competentes para la instalación del equipo entregado.
+Haber recibido el Manual de Uso y Mantenimiento del equipo entregado.
+Estar al corriente de los procedimientos de seguridad.
+Haber recibido las instrucciones para el correcto funcionamiento, mantenimiento, utilización, límites y prestaciones de la instalación.
+Haber asistido a los controles de funcionalidad.
+Por último, SE COMPROMETE a atenerse a las instrucciones contenidas en el manual relativas al uso y mantenimiento de la instalación.`;
+
 let logoEmpresaCache = null;
 let logoEmpresaPromise = null;
 
@@ -694,7 +710,7 @@ async function dibujarFotos(doc, estado, urls) {
   }
 }
 
-async function dibujarFirma(doc, estado, firmaUrl, nombreFirmante) {
+async function dibujarFirma(doc, estado, firmaUrl, nombreFirmante, avisoConformidad) {
   const alto = 48;
   reservarEspacio(doc, estado, alto + 3);
 
@@ -759,8 +775,12 @@ async function dibujarFirma(doc, estado, firmaUrl, nombreFirmante) {
   setText(doc, COLOR.textoMute);
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
-  const aviso = 'El cliente declara haber recibido el servicio descrito y dar su conformidad a las tareas realizadas.';
-  doc.text(doc.splitTextToSize(aviso, colDatos - 8), xD, estado.y + 40);
+  const aviso = avisoConformidad !== undefined
+    ? String(avisoConformidad || '')
+    : 'El cliente declara haber recibido el servicio descrito y dar su conformidad a las tareas realizadas.';
+  if (aviso) {
+    doc.text(doc.splitTextToSize(aviso, colDatos - 8), xD, estado.y + 40);
+  }
 
   estado.y += alto + 4;
 }
@@ -973,7 +993,12 @@ async function crearPdfInforme({
 
   // ==== Conformidad ====
   dibujarTituloSeccion(doc, estado, 'Conformidad del cliente');
-  await dibujarFirma(doc, estado, firmaUrl, nombreFirmante);
+  const esPem = String(prefijoInforme || 'SAT').trim().toUpperCase() === 'PEM';
+  const textoAceptacionCliente = esPem
+    ? TEXTO_ACEPTACION_CLIENTE_PEM
+    : txt(parte?.aceptacion_texto || formulario?.aceptacion_texto, '').trim();
+  if (textoAceptacionCliente) dibujarParrafo(doc, estado, textoAceptacionCliente);
+  await dibujarFirma(doc, estado, firmaUrl, nombreFirmante, esPem ? '' : undefined);
 
   // ==== Aviso legal ====
   dibujarBloqueLegal(doc, estado);

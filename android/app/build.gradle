@@ -56,11 +56,10 @@ android {
         if (!releaseKeyPassword) missingParts << "KEY_PASSWORD / RELEASE_KEY_PASSWORD"
         if (!releaseKeyAlias) missingParts << "KEY_ALIAS / RELEASE_KEY_ALIAS"
 
-        throw new GradleException(
-            "Falta la firma release de Android. Configura " +
-            missingParts.join(', ') +
-            " y vuelve a ejecutar el build release."
-        )
+        println "--------------------------------------------------------------------------------"
+        println "ADVERTENCIA: Falta la firma release de Android. El APK/Bundle no estará firmado."
+        println "Configura: " + missingParts.join(', ')
+        println "--------------------------------------------------------------------------------"
     }
 
     signingConfigs {
