@@ -144,6 +144,16 @@ export function PartePemView({ rolUsuario, sesion }) {
 
   const esTecnico = rolUsuario === 'tecnico';
   const puedeUsar = !!sesion && (esTecnico || rolUsuario === 'admin');
+  const clienteSeleccionado = clientes.find((c) => c.id === formulario.cliente_id) || null;
+  const telefonoCliente = clienteSeleccionado?.telefono ? String(clienteSeleccionado.telefono).trim() : '';
+  const telefonoClienteHref = telefonoCliente ? telefonoCliente.replace(/[^\d+]/g, '') : '';
+  const direccionCliente = clienteSeleccionado?.direccion ? String(clienteSeleccionado.direccion).trim() : '';
+  const latCliente = Number(clienteSeleccionado?.lat);
+  const lngCliente = Number(clienteSeleccionado?.lng);
+  const tieneCoordsCliente =
+    Number.isFinite(latCliente) &&
+    Number.isFinite(lngCliente) &&
+    !(latCliente === 0 && lngCliente === 0);
 
   useEffect(() => {
     if (!tieneConfiguracionSupabase()) {
@@ -570,6 +580,33 @@ export function PartePemView({ rolUsuario, sesion }) {
           >
             Iniciar ruta al cliente
           </button>
+          {clienteSeleccionado && (
+            <div className="mt-2 space-y-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+              <p className="font-semibold text-slate-800">{clienteSeleccionado.nombre}</p>
+              {direccionCliente && (
+                <p>
+                  <span className="font-semibold">Dirección:</span> {direccionCliente}
+                </p>
+              )}
+              {telefonoCliente && (
+                <p>
+                  <span className="font-semibold">Teléfono:</span>{' '}
+                  {telefonoClienteHref ? (
+                    <a className="font-bold text-marca-800 underline" href={`tel:${telefonoClienteHref}`}>
+                      {telefonoCliente}
+                    </a>
+                  ) : (
+                    <span className="font-semibold">{telefonoCliente}</span>
+                  )}
+                </p>
+              )}
+              {tieneCoordsCliente && (
+                <p>
+                  <span className="font-semibold">Coordenadas:</span> {latCliente.toFixed(5)}, {lngCliente.toFixed(5)}
+                </p>
+              )}
+            </div>
+          )}
         </label>
 
         <label className="block">
