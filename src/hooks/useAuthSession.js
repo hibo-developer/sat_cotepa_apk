@@ -21,6 +21,38 @@ function resolverFactorPreferido(factores) {
   return preferido?.id || null;
 }
 
+// Rate-limiting de login en cliente: máximo 5 intentos fallidos en ventana de 15 min.
+const LOGIN_MAX_INTENTOS = 5;
+const LOGIN_VENTANA_MS = 15 * 60 * 1000;
+const _loginIntentos = { count: 0, ventanaInicio: 0 };
+
+function registrarIntentoFallido() {
+  const ahora = Date.now();
+  if (ahora - _loginIntentos.ventanaInicio > LOGIN_VENTANA_MS) {
+    _loginIntentos.count = 0;
+    _loginIntentos.ventanaInicio = ahora;
+  }
+  _loginIntentos.count += 1;
+}
+
+function verificarRateLimitLogin() {
+  const ahora = Date.now();
+  if (ahora - _loginIntentos.ventanaInicio > LOGIN_VENTANA_MS) {
+    _loginIntentos.count = 0;
+    _loginIntentos.ventanaInicio = ahora;
+  }
+  if (_loginIntentos.count >= LOGIN_MAX_INTENTOS) {
+    const esperaMs = LOGIN_VENTANA_MS - (ahora - _loginIntentos.ventanaInicio);
+    const esperaMin = Math.ceil(esperaMs / 60000);
+    throw new Error(`Demasiados intentos fallidos. Espera ${esperaMin} minuto${esperaMin !== 1 ? 's' : ''} antes de volver a intentarlo.`);
+  }
+}
+
+function resetearRateLimitLogin() {
+  _loginIntentos.count = 0;
+  _loginIntentos.ventanaInicio = 0;
+}
+
 export function useAuthSession() {
   const [sesion, setSesion] = useState(null);
   const [sesionPendienteMfa, setSesionPendienteMfa] = useState(null);
@@ -111,9 +143,16 @@ export function useAuthSession() {
 
   async function login(email, password) {
     setError('');
-    const sesionCreada = await iniciarSesionConPassword({ email, password });
-    const resultado = await evaluarSesion(sesionCreada);
-    return resultado;
+    verificarRateLimitLogin();
+    try {
+      const sesionCreada = await iniciarSesionConPassword({ email, password });
+      resetearRateLimitLogin();
+      const resultado = await evaluarSesion(sesionCreada);
+      return resultado;
+    } catch (err) {
+      registrarIntentoFallido();
+      throw err;
+    }
   }
 
   async function verificarMfa(codigo) {

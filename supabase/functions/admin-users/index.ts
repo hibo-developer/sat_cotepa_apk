@@ -2,11 +2,23 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 function buildCorsHeaders(req: Request): { headers: Record<string, string>; originAllowed: boolean } {
   const origin = req.headers.get('Origin');
-  const allowOrigin = origin || '*';
+
+  // Allowed origins: production Netlify domain, localhost for dev.
+  // Requests without Origin (server-to-server, mobile native) are always allowed.
+  const ALLOWED_ORIGINS = new Set([
+    'https://sat.cotepa.com',
+    'https://sat-cotepa.netlify.app',
+    'http://localhost:5173',
+    'http://localhost:4173',
+  ]);
+
+  const originAllowed = !origin || ALLOWED_ORIGINS.has(origin);
+  const allowOrigin = originAllowed ? (origin || '') : '';
+
   return {
-    originAllowed: true,
+    originAllowed,
     headers: {
-      'Access-Control-Allow-Origin': allowOrigin,
+      ...(allowOrigin ? { 'Access-Control-Allow-Origin': allowOrigin } : {}),
       'Vary': 'Origin',
       'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -149,8 +161,12 @@ async function crearUsuario(supabaseAdmin: ReturnType<typeof createClient>, payl
     throw new Error('El email es obligatorio.');
   }
 
-  if (!password || password.length < 6) {
-    throw new Error('La contrasena debe tener al menos 6 caracteres.');
+  if (!password || password.length < 10) {
+    throw new Error('La contrasena debe tener al menos 10 caracteres.');
+  }
+
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password)) {
+    throw new Error('La contrasena debe incluir mayusculas, minusculas y numeros.');
   }
 
   const { data: creado, error: crearError } = await supabaseAdmin.auth.admin.createUser({
@@ -205,8 +221,12 @@ async function actualizarUsuario(supabaseAdmin: ReturnType<typeof createClient>,
     throw new Error('El user_id es obligatorio.');
   }
 
-  if (password && password.length < 6) {
-    throw new Error('La nueva contrasena debe tener al menos 6 caracteres.');
+  if (password && password.length < 10) {
+    throw new Error('La nueva contrasena debe tener al menos 10 caracteres.');
+  }
+
+  if (password && (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password))) {
+    throw new Error('La nueva contrasena debe incluir mayusculas, minusculas y numeros.');
   }
 
   if (email || password) {

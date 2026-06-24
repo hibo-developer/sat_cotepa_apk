@@ -74,6 +74,22 @@ app.whenReady().then(() => {
 
   try {
     const { session } = require('electron');
+
+    // Aplicar CSP y cabeceras de seguridad para el build de escritorio
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': [
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://api.pwnedpasswords.com; font-src 'self' data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';",
+          ],
+          'X-Content-Type-Options': ['nosniff'],
+          'X-Frame-Options': ['DENY'],
+          'Referrer-Policy': ['strict-origin-when-cross-origin'],
+        },
+      });
+    });
+
     session.defaultSession
       .clearStorageData({ storages: ['serviceworkers', 'cachestorage'] })
       .catch((err) => logLinea('clearStorageData-error', err));
