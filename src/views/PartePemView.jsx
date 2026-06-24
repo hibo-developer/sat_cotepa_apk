@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { ToastEstado } from '../components/ToastEstado';
 import {
   obtenerClientes,
@@ -8,6 +9,7 @@ import {
 } from '../services/catalogosService';
 import { crearPartePem, obtenerOrdenesAbiertasParaPartePem } from '../services/partePemService';
 import { estaOnline } from '../services/offlineSyncService';
+import { abrirGoogleMaps } from '../services/externalNavigationService';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
 
 async function comprimirImagenA1280(archivo, nombreFinal) {
@@ -52,6 +54,28 @@ async function comprimirImagenA1280(archivo, nombreFinal) {
 
 function fechaHoyIso() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function normalizarDireccion(direccion) {
+  return String(direccion || '')
+    .replace(/[·•]/g, ' ')
+    .replace(/N[º°]\s*/gi, 'N ')
+    .replace(/\s*,\s*/g, ', ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function construirUrlRutaCliente({ lat, lng, direccion, modoNavegacion = false }) {
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  if (Number.isFinite(latNum) && Number.isFinite(lngNum) && !(latNum === 0 && lngNum === 0)) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${latNum},${lngNum}&travelmode=driving${modoNavegacion ? '&dir_action=navigate' : ''}`;
+  }
+  const dir = normalizarDireccion(direccion);
+  if (dir) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dir)}&travelmode=driving${modoNavegacion ? '&dir_action=navigate' : ''}`;
+  }
+  return '';
 }
 
 const TEXTO_ACEPTACION_CLIENTE = `Aceptación por parte del cliente:
@@ -339,6 +363,56 @@ export function PartePemView({ rolUsuario, sesion }) {
     setMensaje('Inicio de intervención registrado.');
   }
 
+  async function abrirRutaCliente() {
+    const cliente = clientes.find((c) => c.id === formulario.cliente_id);
+    if (!cliente) {
+      setError('Selecciona un cliente para abrir la ruta.');
+      return;
+    }
+
+    const modoNavegacion = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+    const url = construirUrlRutaCliente({
+      lat: cliente.lat,
+      lng: cliente.lng,
+      direccion: cliente.direccion,
+      modoNavegacion,
+    });
+    if (!url) {
+      setError('El cliente no tiene coordenadas ni dirección para abrir la ruta.');
+      return;
+    }
+
+    setError('');
+    setMensaje('');
+
+    if (modoNavegacion) {
+      try {
+        const rsp = await abrirGoogleMaps({ lat: cliente.lat, lng: cliente.lng, address: cliente.direccion || '' });
+        if (rsp?.opened) {
+          return;
+        }
+      } catch {
+        // noop
+      }
+      try {
+        window.location.href = url;
+        return;
+      } catch {
+        // noop
+      }
+      setTimeout(() => {
+        try {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        } catch {
+          // noop
+        }
+      }, 400);
+      return;
+    }
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
   function finalizarIntervension() {
     if (!intervension.inicioIso) {
       setError('Primero debes pulsar Inicio de intervención.');
@@ -488,6 +562,14 @@ export function PartePemView({ rolUsuario, sesion }) {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={abrirRutaCliente}
+            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 active:scale-95 disabled:opacity-60"
+            disabled={!formulario.cliente_id}
+          >
+            Iniciar ruta al cliente
+          </button>
         </label>
 
         <label className="block">
