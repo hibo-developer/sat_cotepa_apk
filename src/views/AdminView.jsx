@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, ShieldUser } from 'lucide-react';
+import { RefreshCw, ShieldUser, Settings } from 'lucide-react';
 import { obtenerClienteSupabase, tieneConfiguracionSupabase } from '../services/supabaseClient';
+import { useSettings } from '../hooks/useSettings';
 import {
   actualizarUsuarioSat,
   crearUsuarioSat,
@@ -22,6 +23,7 @@ const USUARIOS_POR_PAGINA = 10;
 export function AdminView() {
   const [usuarios, setUsuarios] = useState([]);
   const [puedeAdministrar, setPuedeAdministrar] = useState(null);
+  const [settings, updateSettings] = useSettings();
   const [cargandoUsuarios, setCargandoUsuarios] = useState(false);
   const [guardandoUsuario, setGuardandoUsuario] = useState(false);
   const [errorUsuarios, setErrorUsuarios] = useState('');
@@ -438,6 +440,32 @@ export function AdminView() {
             )}
           </div>
         </div>
+      </section>
+
+      <section className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:p-5">
+        <header className="flex items-center gap-2">
+          <Settings className="h-5 w-5 text-marca-700" />
+          <h3 className="text-base font-bold text-slate-800">Ajustes de la aplicación</h3>
+        </header>
+
+        <p className="text-sm text-slate-600">
+          Configura el comportamiento del dictado por voz y otras opciones.
+        </p>
+
+        <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <input
+            type="checkbox"
+            checked={settings.grabarAudioDictado}
+            onChange={(e) => updateSettings({ grabarAudioDictado: e.target.checked })}
+            className="h-4 w-4 rounded border-slate-300 text-marca-900 focus:ring-marca-500"
+          />
+          <div>
+            <span className="block text-sm font-semibold text-slate-800">Grabar audio durante dictado</span>
+            <span className="block text-xs text-slate-600">
+              Si está activo, se guarda el audio en Supabase Storage para posibles disputas legales.
+            </span>
+          </div>
+        </label>
       </section>
     </section>
   );

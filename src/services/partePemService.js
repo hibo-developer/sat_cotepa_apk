@@ -3,6 +3,7 @@ import { limpiarTexto, validarTextoRequerido } from './satValidation';
 import { crearOrdenTrabajo } from './workOrderService';
 import { subirFotosIntervencionStorage } from './parteTrabajoService';
 import { generarYSubirInformeParte } from './parteTrabajoInformeService';
+import { subirArchivoSAT } from './storageSat';
 
 const TEXTO_ACEPTACION_CLIENTE = `ACEPTACIÓN POR PARTE DEL CLIENTE
 
@@ -50,7 +51,7 @@ async function resolverBlobImagen(fuente) {
   throw new Error('Formato de imagen no válido para subir a Storage.');
 }
 
-async function subirFirmaClienteStorage(supabase, { firmaDataUrl, clienteId, tecnicoId }) {
+async function subirFirmaClienteStorage(supabase, { firmaDataUrl, clienteId, tecnicoId, otNumero, parteId }) {
   if (!esDataUrlImagen(firmaDataUrl)) {
     return firmaDataUrl;
   }
@@ -62,25 +63,14 @@ async function subirFirmaClienteStorage(supabase, { firmaDataUrl, clienteId, tec
     throw new Error('No se pudo procesar la firma del cliente para subirla a Storage.');
   }
 
-  const extension = blobFirma.type === 'image/jpeg' ? 'jpg' : 'png';
-  const nombreArchivo = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${extension}`;
-  const rutaArchivo = `${clienteId}/${tecnicoId}/${nombreArchivo}`;
+  const resultado = await subirArchivoSAT(blobFirma, {
+    otNumero: otNumero || 'SIN-OT',
+    parteId: parteId || 'sin-parte',
+    tipo: 'firma-cliente',
+    indice: 0,
+  });
 
-  const { error: errorSubida } = await supabase.storage
-    .from('firmas-clientes')
-    .upload(rutaArchivo, blobFirma, {
-      upsert: false,
-      contentType: blobFirma.type || 'image/png',
-      cacheControl: '3600',
-    });
-
-  if (errorSubida) {
-    throw new Error(
-      `No se pudo subir la firma del cliente a Storage. Verifica bucket/policies de firmas-clientes. (${errorSubida.message})`,
-    );
-  }
-
-  return `sb://firmas-clientes/${rutaArchivo}`;
+  return `sb://${resultado.bucket}/${resultado.path}`;
 }
 
 function normalizarTipoOrden(valor) {
@@ -241,7 +231,7 @@ export async function crearPartePem(payload) {
 
   const { data: contextoOrden, error: errorContextoOrden } = await supabase
     .from('ordenes_trabajo')
-    .select('id, descripcion_averia, prioridad, clientes ( nombre ), equipos ( nombre, marca, modelo ), tecnicos ( nombre )')
+    .select('id, numero_ticket, descripcion_averia, prioridad, clientes ( nombre ), equipos ( nombre, marca, modelo ), tecnicos ( nombre )')
     .eq('id', ordenIdTrabajo)
     .single();
 
@@ -255,8 +245,16 @@ export async function crearPartePem(payload) {
       clienteId,
       tecnicoId,
       ordenId: ordenIdTrabajo,
+      otNumero: contextoOrden?.numero_ticket || 'SIN-OT',
+      parteId: ordenIdTrabajo,
     }),
-    subirFirmaClienteStorage(supabase, { firmaDataUrl: firmaEntrada, clienteId, tecnicoId }),
+    subirFirmaClienteStorage(supabase, {
+      firmaDataUrl: firmaEntrada,
+      clienteId,
+      tecnicoId,
+      otNumero: contextoOrden?.numero_ticket || 'SIN-OT',
+      parteId: ordenIdTrabajo,
+    }),
   ]);
 
   const pemData = {

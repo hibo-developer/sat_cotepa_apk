@@ -7,6 +7,7 @@ import {
 } from './satValidation';
 import { crearOrdenTrabajo } from './workOrderService';
 import { normalizarKmDesplazamientoFacturable } from './distanciaClienteService';
+import { subirArchivoSAT } from './storageSat';
 
 function parsearMateriales(textoMateriales) {
   if (!textoMateriales.trim()) {
@@ -342,7 +343,7 @@ async function resolverBlobImagen(fuente) {
   throw new Error('Formato de imagen no válido para subir a Storage.');
 }
 
-async function subirFirmaClienteStorage(supabase, { firmaDataUrl, clienteId, tecnicoId }) {
+async function subirFirmaClienteStorage(supabase, { firmaDataUrl, clienteId, tecnicoId, otNumero, parteId }) {
   if (!esDataUrlImagen(firmaDataUrl)) {
     return firmaDataUrl;
   }
@@ -354,28 +355,17 @@ async function subirFirmaClienteStorage(supabase, { firmaDataUrl, clienteId, tec
     throw new Error('No se pudo procesar la firma del cliente para subirla a Storage.');
   }
 
-  const extension = blobFirma.type === 'image/jpeg' ? 'jpg' : 'png';
-  const nombreArchivo = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${extension}`;
-  const rutaArchivo = `${clienteId}/${tecnicoId}/${nombreArchivo}`;
+  const resultado = await subirArchivoSAT(blobFirma, {
+    otNumero: otNumero || 'SIN-OT',
+    parteId: parteId || 'sin-parte',
+    tipo: 'firma-cliente',
+    indice: 0,
+  });
 
-  const { error: errorSubida } = await supabase.storage
-    .from('firmas-clientes')
-    .upload(rutaArchivo, blobFirma, {
-      upsert: false,
-      contentType: blobFirma.type || 'image/png',
-      cacheControl: '3600',
-    });
-
-  if (errorSubida) {
-    throw new Error(
-      `No se pudo subir la firma del cliente a Storage. Verifica bucket/policies de firmas-clientes. (${errorSubida.message})`,
-    );
-  }
-
-  return `sb://firmas-clientes/${rutaArchivo}`;
+  return `sb://${resultado.bucket}/${resultado.path}`;
 }
 
-export async function subirFotosIntervencionStorage(supabase, { fotos, clienteId, tecnicoId, ordenId }) {
+export async function subirFotosIntervencionStorage(supabase, { fotos, clienteId, tecnicoId, ordenId, otNumero, parteId }) {
   const listaFotos = Array.isArray(fotos) ? fotos : [];
   if (listaFotos.length === 0) {
     return [];
@@ -392,23 +382,14 @@ export async function subirFotosIntervencionStorage(supabase, { fotos, clienteId
       throw new Error(`No se pudo procesar la foto ${indice + 1} de la intervención.`);
     }
 
-    const extension = blobFoto.type === 'image/jpeg' ? 'jpg' : blobFoto.type === 'image/webp' ? 'webp' : 'png';
-    const nombreArchivo = `${Date.now()}-${indice + 1}-${Math.random().toString(36).slice(2, 10)}.${extension}`;
-    const rutaArchivo = `${clienteId}/${tecnicoId}/${ordenId}/${nombreArchivo}`;
+    const resultado = await subirArchivoSAT(blobFoto, {
+      otNumero: otNumero || 'SIN-OT',
+      parteId: parteId || ordenId || 'sin-parte',
+      tipo: 'foto-evidencia',
+      indice,
+    });
 
-    const { error: errorSubida } = await supabase.storage
-      .from('fotos-intervenciones')
-      .upload(rutaArchivo, blobFoto, {
-        upsert: false,
-        contentType: blobFoto.type || 'image/png',
-        cacheControl: '3600',
-      });
-
-    if (errorSubida) {
-      throw new Error(`No se pudo subir la foto ${indice + 1} de la intervención: ${errorSubida.message}`);
-    }
-
-    urls.push(`sb://fotos-intervenciones/${rutaArchivo}`);
+    urls.push(`sb://${resultado.bucket}/${resultado.path}`);
   }
 
   return urls;
@@ -449,6 +430,7 @@ export async function crearParteTrabajo(payload) {
   let ordenIdTrabajo = ordenIdEntrada;
   let clienteId = limpiarTexto(payload.cliente_id);
   let equipoId = limpiarTexto(payload.equipo_id) || null;
+  let otNumero = 'SIN-OT';
   const clienteNombreEntrada = normalizarNombreEntidad(payload.cliente_nombre);
   const equipoNombreEntrada = normalizarNombreEntidad(payload.equipo_nombre);
   const tecnicoId = limpiarTexto(payload.tecnico_id);
@@ -540,7 +522,7 @@ export async function crearParteTrabajo(payload) {
   if (ordenIdEntrada) {
     const { data: ordenActual, error: ordenActualError } = await supabase
       .from('ordenes_trabajo')
-      .select('id, cliente_id, equipo_id, tecnico_id, estado')
+      .select('id, numero_ticket, cliente_id, equipo_id, tecnico_id, estado')
       .eq('id', ordenIdEntrada)
       .maybeSingle();
 
@@ -567,6 +549,8 @@ export async function crearParteTrabajo(payload) {
     if ((ordenActual.equipo_id || null) !== equipoId) {
       throw new Error('El equipo del parte no coincide con el equipo de la orden seleccionada.');
     }
+
+    otNumero = ordenActual.numero_ticket || 'SIN-OT';
   } else {
     const ordenImprevista = await crearOrdenTrabajo({
       cliente_id: clienteId,
@@ -579,6 +563,7 @@ export async function crearParteTrabajo(payload) {
     });
 
     ordenIdTrabajo = ordenImprevista.id;
+    otNumero = ordenImprevista.numero_ticket || 'SIN-OT';
   }
 
   const materialesInventarioNormalizados = materialesInventarioEntrada.map((item, indice) => {
@@ -640,6 +625,8 @@ export async function crearParteTrabajo(payload) {
     firmaDataUrl: firmaEntrada,
     clienteId,
     tecnicoId,
+    otNumero,
+    parteId: ordenIdTrabajo,
   });
 
   if (!firmaUrl) {
@@ -651,6 +638,8 @@ export async function crearParteTrabajo(payload) {
     clienteId,
     tecnicoId,
     ordenId: ordenIdTrabajo,
+    otNumero,
+    parteId: ordenIdTrabajo,
   });
 
   const descripcionLibre = String(payload?.tareas_realizadas_libre || '').trim();

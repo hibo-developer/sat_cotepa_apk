@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { ToastEstado } from '../components/ToastEstado';
+import { BotonMicrofono } from '../components/BotonMicrofono';
+import { useSettings } from '../hooks/useSettings';
 import {
   obtenerClientes,
   obtenerEquiposPorCliente,
@@ -383,6 +385,7 @@ function limpiarBorradorParte() {
 export function ParteTrabajoView({ rolUsuario, sesion }) {
   const location = useLocation();
   const esTecnico = rolUsuario === 'tecnico';
+  const [settings] = useSettings();
   const prefillAplicadoRef = useRef(false);
   const borradorInicialRef = useRef();
   if (borradorInicialRef.current === undefined) {
@@ -2000,6 +2003,16 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
       || (!formulario.cliente_id && !(formulario.cliente_nombre || '').trim())
     );
 
+  const manejarTextoDictado = (texto) => {
+    if (!texto) return;
+    setFormulario((prev) => ({
+      ...prev,
+      tareas_realizadas_libre: prev.tareas_realizadas_libre
+        ? `${prev.tareas_realizadas_libre} ${texto}`
+        : texto,
+    }));
+  };
+
   if (!tieneConfiguracionSupabase()) {
     return (
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
@@ -2278,13 +2291,21 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
 
         <label className="block lg:col-span-2">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Tareas realizadas</span>
-          <textarea
-            rows={4}
-            value={formulario.tareas_realizadas_libre}
-            onChange={(e) => setFormulario((prev) => ({ ...prev, tareas_realizadas_libre: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-            placeholder="Describe el trabajo realizado (diagnóstico, acciones, sustituciones, pruebas, etc.)"
-          />
+          <div className="flex gap-2">
+            <textarea
+              rows={4}
+              value={formulario.tareas_realizadas_libre}
+              onChange={(e) => setFormulario((prev) => ({ ...prev, tareas_realizadas_libre: e.target.value }))}
+              className="flex-1 rounded-xl border border-slate-300 px-4 py-3 text-sm"
+              placeholder="Describe el trabajo realizado (diagnóstico, acciones, sustituciones, pruebas, etc.)"
+            />
+            <BotonMicrofono
+              onTextoReconocido={manejarTextoDictado}
+              grabarAudio={settings.grabarAudioDictado}
+              otId={formulario.orden_id}
+              disabled={guardando}
+            />
+          </div>
         </label>
 
         <label className="block lg:col-span-2">
