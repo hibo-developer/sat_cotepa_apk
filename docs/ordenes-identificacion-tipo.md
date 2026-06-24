@@ -31,6 +31,16 @@ Se añade una etiqueta (badge) junto al número de ticket en cada tarjeta de ord
 
 La etiqueta se renderiza con `flex-wrap` para mantener responsividad en pantallas pequeñas.
 
+## Filtro por tipo
+
+Además de la etiqueta, se añade un selector "Filtrar por tipo de orden" para poder listar:
+
+- Todas
+- Avería
+- PEM (Montaje + Puesta en marcha)
+- PEM · Montaje
+- PEM · Puesta en marcha
+
 ## Fuente de datos
 
 La vista consume `orden.tipoOrden` (normalizado en `useOrdenes`) que proviene de `ordenes_trabajo.tipo_orden` en Supabase.
@@ -40,4 +50,3 @@ La vista consume `orden.tipoOrden` (normalizado en `useOrdenes`) que proviene de
 - Verificar que todas las tarjetas muestren el badge.
 - Confirmar que las órdenes PEM muestran “PEM · …” y las de avería “Avería”.
 - Confirmar que el badge no rompe el layout en móvil y desktop (usa `flex-wrap`).
-

@@ -1731,6 +1731,7 @@ export function ListaOrdenesView({ rolUsuario }) {
   const [toast, setToast] = useState(null);
   const [exportandoZip, setExportandoZip] = useState(false);
   const [filtroClienteAnalisis, setFiltroClienteAnalisis] = useState('todos');
+  const [filtroTipoOrden, setFiltroTipoOrden] = useState('todos');
   const [busquedaOrdenes, setBusquedaOrdenes] = useState('');
   const [paginaActual, setPaginaActual] = useState(1);
   const busquedaOrdenesDebounce = useDebounce(busquedaOrdenes, 200);
@@ -1803,11 +1804,27 @@ export function ListaOrdenesView({ rolUsuario }) {
 
   useEffect(() => {
     setPaginaActual(1);
-  }, [filtroEstado, ordenes.length, busquedaOrdenesDebounce]);
+  }, [filtroEstado, filtroTipoOrden, ordenes.length, busquedaOrdenesDebounce]);
+
+  const ordenesFiltradasPorTipo = useMemo(() => {
+    if (filtroTipoOrden === 'todos') {
+      return ordenesFiltradas;
+    }
+
+    if (filtroTipoOrden === 'pem') {
+      return ordenesFiltradas.filter((orden) => ['montaje', 'puesta_en_marcha'].includes(orden.tipoOrden));
+    }
+
+    if (filtroTipoOrden === 'averia') {
+      return ordenesFiltradas.filter((orden) => !orden.tipoOrden || orden.tipoOrden === 'averia');
+    }
+
+    return ordenesFiltradas.filter((orden) => orden.tipoOrden === filtroTipoOrden);
+  }, [filtroTipoOrden, ordenesFiltradas]);
 
   const ordenesAnalisis = filtroClienteAnalisis === 'todos'
-    ? ordenesFiltradas
-    : ordenesFiltradas.filter((orden) => orden.clienteId === filtroClienteAnalisis);
+    ? ordenesFiltradasPorTipo
+    : ordenesFiltradasPorTipo.filter((orden) => orden.clienteId === filtroClienteAnalisis);
 
   const resumenAnalisis = ordenesAnalisis.reduce(
     (acc, orden) => {
@@ -1821,7 +1838,7 @@ export function ListaOrdenesView({ rolUsuario }) {
   const informesDisponibles = ordenesFinalizadas.filter((orden) => orden.informePdfUrl).length;
   const terminoBusqueda = busquedaOrdenesDebounce.trim().toLowerCase();
   const ordenesListado = terminoBusqueda
-    ? ordenesFiltradas.filter((orden) => {
+    ? ordenesFiltradasPorTipo.filter((orden) => {
       const campos = [
         orden.numero_ticket,
         orden.cliente,
@@ -1835,7 +1852,7 @@ export function ListaOrdenesView({ rolUsuario }) {
 
       return campos.includes(terminoBusqueda);
     })
-    : ordenesFiltradas;
+    : ordenesFiltradasPorTipo;
   const totalOrdenesFiltradas = ordenesListado.length;
   const totalPaginas = Math.max(1, Math.ceil(totalOrdenesFiltradas / ORDENES_POR_PAGINA));
   const paginaSegura = Math.min(paginaActual, totalPaginas);
@@ -2197,6 +2214,23 @@ export function ListaOrdenesView({ rolUsuario }) {
               {filtro}
             </button>
           ))}
+        </div>
+
+        <div className="mt-3">
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-slate-200">Filtrar por tipo de orden</span>
+            <select
+              value={filtroTipoOrden}
+              onChange={(evento) => setFiltroTipoOrden(evento.target.value)}
+              className="w-full rounded-lg border border-white/20 bg-marca-900 px-3 py-2 text-sm text-white"
+            >
+              <option value="todos">Todas</option>
+              <option value="averia">Avería</option>
+              <option value="pem">PEM (Montaje + Puesta en marcha)</option>
+              <option value="montaje">PEM · Montaje</option>
+              <option value="puesta_en_marcha">PEM · Puesta en marcha</option>
+            </select>
+          </label>
         </div>
 
         <div className="mt-3">
