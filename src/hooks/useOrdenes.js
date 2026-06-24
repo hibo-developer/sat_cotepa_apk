@@ -85,6 +85,7 @@ function adaptarOrdenSupabase(orden) {
   return {
     id: orden.id,
     numero_ticket: orden.numero_ticket,
+    tipoOrden: orden.tipo_orden || 'averia',
     clienteId: orden.clientes?.id || '',
     cliente: orden.clientes?.nombre || 'Cliente sin nombre',
     equipoId: orden.equipos?.id || '',
@@ -94,6 +95,9 @@ function adaptarOrdenSupabase(orden) {
     descripcion: orden.descripcion_averia,
     tareasRealizadas,
     fotoUrl: orden.foto_url || '',
+    firmaUrl: orden.firma_url || '',
+    fechaInstalacionIso: orden.fecha_instalacion ? new Date(orden.fecha_instalacion).toISOString() : null,
+    pemData: orden.pem_data ?? null,
     materiales,
     costeMateriales,
     costeMaterialesEditable: orden.coste_materiales_editable != null && Number.isFinite(Number(orden.coste_materiales_editable))

@@ -283,6 +283,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
     cliente_id: '',
     equipo_id: '',
     tecnico_id: '',
+    tipo_orden: 'averia',
     descripcion_averia: '',
     prioridad: 'media',
   });
@@ -405,6 +406,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
         cliente_id: '',
         equipo_id: '',
         tecnico_id: '',
+        tipo_orden: 'averia',
         descripcion_averia: '',
         prioridad: 'media',
       });
@@ -600,7 +602,42 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">Descripción de la avería *</span>
+        <span className="mb-1 block text-xs font-semibold text-slate-700">Tipo de orden *</span>
+        <select
+          required
+          name="tipo_orden"
+          value={formulario.tipo_orden}
+          onChange={(evento) => {
+            const siguiente = evento.target.value;
+            setFormulario((previo) => {
+              const defaults = {
+                averia: '',
+                montaje: 'PEM · Montaje',
+                puesta_en_marcha: 'PEM · Puesta en marcha',
+              };
+              const descripcionActual = String(previo.descripcion_averia || '');
+              const esDefaultPrevio = Object.values(defaults).includes(descripcionActual);
+              const siguienteDescripcion = esDefaultPrevio ? (defaults[siguiente] ?? descripcionActual) : descripcionActual;
+              return {
+                ...previo,
+                tipo_orden: siguiente,
+                descripcion_averia: siguienteDescripcion,
+              };
+            });
+          }}
+          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          disabled={formularioDeshabilitado}
+        >
+          <option value="averia">Avería</option>
+          <option value="montaje">Montaje</option>
+          <option value="puesta_en_marcha">Puesta en marcha</option>
+        </select>
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block text-xs font-semibold text-slate-700">
+          {formulario.tipo_orden === 'averia' ? 'Descripción de la avería *' : 'Descripción de la orden *'}
+        </span>
         <textarea
           required
           name="descripcion_averia"
@@ -608,7 +645,9 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           onChange={actualizarCampo}
           rows={3}
           className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-          placeholder="Describe el problema detectado"
+          placeholder={formulario.tipo_orden === 'averia'
+            ? 'Describe el problema detectado'
+            : 'Describe el montaje o la puesta en marcha'}
         />
       </label>
 
@@ -1799,13 +1838,15 @@ export function ListaOrdenesView({ rolUsuario }) {
     .toFixed(2);
 
   function irAParteDesdeOrden(orden) {
-    navigate('/parte', {
+    const ruta = orden.tipoOrden && orden.tipoOrden !== 'averia' ? '/parte-pem' : '/parte';
+    navigate(ruta, {
       state: {
         prefill: {
           orden_id: orden.id,
           cliente_id: orden.clienteId || '',
           equipo_id: orden.equipoId || '',
           tecnico_id: orden.tecnicoId || '',
+          tipo_orden: orden.tipoOrden || 'averia',
           descripcion_problema: orden.descripcion || '',
           prioridad: orden.prioridad || 'media',
           numero_ticket: orden.numero_ticket || '',

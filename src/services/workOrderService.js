@@ -376,6 +376,7 @@ export async function obtenerOrdenesTrabajo() {
       id,
       updated_at,
       numero_ticket,
+      tipo_orden,
       descripcion_averia,
       tareas_realizadas,
       tiempo_empleado_minutos,
@@ -399,6 +400,8 @@ export async function obtenerOrdenesTrabajo() {
       informe_pdf_url,
       fecha_inicio,
       fecha_fin,
+      fecha_instalacion,
+      pem_data,
       clientes ( id, nombre, direccion, telefono, lat, lng ),
       equipos ( id, nombre, marca, modelo ),
       tecnicos ( id, nombre ),
@@ -426,7 +429,13 @@ export async function crearOrdenTrabajo(ordenNueva) {
     throw new Error('Debes seleccionar un cliente para crear la orden.');
   }
 
-  const descripcionAveria = validarTextoRequerido(ordenNueva.descripcion_averia, 'La descripción de la avería', 8);
+  const tipoOrdenEntrada = limpiarTexto(ordenNueva.tipo_orden) || 'averia';
+  const tipoOrden = ['averia', 'montaje', 'puesta_en_marcha'].includes(tipoOrdenEntrada)
+    ? tipoOrdenEntrada
+    : 'averia';
+  const etiquetaDescripcion = tipoOrden === 'averia' ? 'La descripción de la avería' : 'La descripción de la orden';
+  const minDesc = tipoOrden === 'averia' ? 8 : 3;
+  const descripcionAveria = validarTextoRequerido(ordenNueva.descripcion_averia, etiquetaDescripcion, minDesc);
   const prioridad = validarPrioridad(ordenNueva.prioridad ?? 'media');
   const equipoId = limpiarTexto(ordenNueva.equipo_id) || null;
   const tecnicoId = limpiarTexto(ordenNueva.tecnico_id);
@@ -451,6 +460,7 @@ export async function crearOrdenTrabajo(ordenNueva) {
     equipo_id: equipoId,
     tecnico_id: tecnicoId,
     descripcion_averia: descripcionAveria,
+    tipo_orden: tipoOrden,
     tareas_realizadas: ordenNueva.tareas_realizadas ?? null,
     tiempo_empleado_minutos: ordenNueva.tiempo_empleado_minutos ?? null,
     estado: ordenNueva.estado ?? 'pendiente',
@@ -459,6 +469,8 @@ export async function crearOrdenTrabajo(ordenNueva) {
     firma_url: ordenNueva.firma_url ?? null,
     fecha_inicio: ordenNueva.fecha_inicio ?? new Date().toISOString(),
     fecha_fin: ordenNueva.fecha_fin ?? null,
+    fecha_instalacion: ordenNueva.fecha_instalacion ?? null,
+    pem_data: ordenNueva.pem_data ?? undefined,
   };
 
   const { data, error } = await supabase

@@ -421,8 +421,9 @@ export async function obtenerOrdenesAbiertasParaParte(filtros = {}) {
 
   let consulta = supabase
     .from('ordenes_trabajo')
-    .select('id, numero_ticket, cliente_id, equipo_id, tecnico_id, descripcion_averia, estado, prioridad, fecha_inicio')
+    .select('id, numero_ticket, cliente_id, equipo_id, tecnico_id, descripcion_averia, estado, prioridad, fecha_inicio, tipo_orden')
     .in('estado', ['pendiente', 'en_proceso', 'pausado'])
+    .eq('tipo_orden', 'averia')
     .order('fecha_inicio', { ascending: false });
 
   if (clienteId) {

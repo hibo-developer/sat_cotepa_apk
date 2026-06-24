@@ -15,6 +15,7 @@ import { ClientesView } from './views/ClientesView';
 import { InventarioView } from './views/InventarioView';
 import { ListaOrdenesView } from './views/ListaOrdenesView';
 import { ParteTrabajoView } from './views/ParteTrabajoView';
+import { PartePemView } from './views/PartePemView';
 
 const TITULOS = {
   ordenes: 'Panel SAT',
@@ -358,6 +359,7 @@ export default function App() {
             <Route path="/" element={<Navigate to="/ordenes" replace />} />
             <Route path="/ordenes" element={<ListaOrdenesView rolUsuario={rolUsuario} />} />
             <Route path="/parte" element={<ParteTrabajoView rolUsuario={rolUsuario} sesion={sesion} />} />
+            <Route path="/parte-pem" element={<PartePemView rolUsuario={rolUsuario} sesion={sesion} />} />
             <Route
               path="/clientes"
               element={puedeVerClientes ? <ClientesView rolUsuario={rolUsuario} /> : <Navigate to="/ordenes" replace />}
