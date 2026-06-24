@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, CircleCheckBig, Clock3, Download, Hammer, TriangleAlert, Wrench } from 'lucide-react';
+import { BarChart3, CircleCheckBig, Clock3, Download, Hammer, Rocket, TriangleAlert, Wrench } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { ToastEstado } from '../components/ToastEstado';
@@ -39,6 +39,29 @@ const OPCIONES_ESTADO_EDITABLE = [
   { value: 'en_proceso', label: 'En Proceso' },
   { value: 'pausado', label: 'Pausado' },
 ];
+
+function resolverEtiquetaTipoOrden(tipoOrden) {
+  const tipo = String(tipoOrden || '').trim();
+  if (tipo === 'montaje') {
+    return {
+      texto: 'PEM · Montaje',
+      icono: Hammer,
+      clase: 'border-indigo-200 bg-indigo-50 text-indigo-800',
+    };
+  }
+  if (tipo === 'puesta_en_marcha') {
+    return {
+      texto: 'PEM · Puesta en marcha',
+      icono: Rocket,
+      clase: 'border-purple-200 bg-purple-50 text-purple-800',
+    };
+  }
+  return {
+    texto: 'Avería',
+    icono: Wrench,
+    clase: 'border-rose-200 bg-rose-50 text-rose-800',
+  };
+}
 
 function obtenerFechaRegeneracionDesdeUrl(urlInforme) {
   const url = String(urlInforme || '');
@@ -986,6 +1009,8 @@ function TarjetaOrden({
 }) {
   const { icono: IconoEstado, clase } = estilosEstado[orden.estado] || estilosEstado.Pendiente;
   const fechaRegeneracionInforme = obtenerFechaRegeneracionDesdeUrl(orden.informePdfUrl);
+  const etiquetaTipo = resolverEtiquetaTipoOrden(orden.tipoOrden);
+  const IconoTipoOrden = etiquetaTipo.icono;
   const [mostrarEdicion, setMostrarEdicion] = useState(false);
   const [mostrarValoracion, setMostrarValoracion] = useState(false);
   const [mostrarEliminar, setMostrarEliminar] = useState(false);
@@ -1227,9 +1252,15 @@ function TarjetaOrden({
     <article className="rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-            {orden.numero_ticket ? `SAT-${orden.numero_ticket}` : orden.id}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              {orden.numero_ticket ? `SAT-${orden.numero_ticket}` : orden.id}
+            </p>
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold ${etiquetaTipo.clase}`}>
+              <IconoTipoOrden className="h-3.5 w-3.5" />
+              {etiquetaTipo.texto}
+            </span>
+          </div>
           <h3 className="mt-1 text-base font-bold text-slate-800">{orden.equipo}</h3>
         </div>
         <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${clase}`}>
@@ -1247,7 +1278,8 @@ function TarjetaOrden({
         </p>
         {orden.estado !== 'Finalizado' && (
           <p>
-            <span className="font-semibold text-slate-900">Avería:</span> {orden.descripcion}
+            <span className="font-semibold text-slate-900">{orden.tipoOrden === 'averia' ? 'Avería:' : 'Orden:'}</span>{' '}
+            {orden.descripcion}
           </p>
         )}
       </div>
