@@ -39,14 +39,4 @@ db.version(4).stores({
   meta: 'clave',
 });
 
-db.version(5).stores({
-  cache_ordenes: 'id, estado, updated_at',
-  pending_actions: '++id, tipo, ordenId, createdAt',
-  pending_partes: '++id, createdAt, intentos',
-  pending_gps: '++id, ordenId, createdAt',
-  pending_audio: '++id, ot_id, timestamp, created_at',
-  sync_conflicts: '++id, ordenId, createdAt',
-  meta: 'clave',
-});
-
 export default db;
