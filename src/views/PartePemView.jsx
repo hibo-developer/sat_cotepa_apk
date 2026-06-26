@@ -353,29 +353,6 @@ export function PartePemView({ rolUsuario, sesion }) {
     setToast({ id: Date.now(), ...siguienteToast });
   }
 
-  function iniciarIntervension() {
-    setError('');
-    setMensaje('');
-
-    const hoy = fechaHoyIso();
-    setFormulario((prev) => ({
-      ...prev,
-      fecha_instalacion: prev.fecha_instalacion || hoy,
-    }));
-    setIntervension((prev) => ({
-      ...prev,
-      inicioIso: prev.inicioIso || new Date().toISOString(),
-      finIso: null,
-    }));
-
-    if (!estaOnline()) {
-      setMensaje('Inicio registrado localmente (sin conexión). Para enviar el parte PEM necesitas conexión.');
-      return;
-    }
-
-    setMensaje('Inicio de intervención registrado.');
-  }
-
   async function abrirRutaCliente() {
     const cliente = clientes.find((c) => c.id === formulario.cliente_id);
     if (!cliente) {
@@ -426,19 +403,6 @@ export function PartePemView({ rolUsuario, sesion }) {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
-  function finalizarIntervension() {
-    if (!intervension.inicioIso) {
-      setError('Primero debes pulsar Inicio de intervención.');
-      return;
-    }
-    setIntervension((prev) => ({
-      ...prev,
-      finIso: new Date().toISOString(),
-    }));
-    setError('');
-    setMensaje('Fin de intervención registrado.');
-  }
-
   async function enviarParte(evento) {
     evento.preventDefault();
     setError('');
@@ -456,18 +420,26 @@ export function PartePemView({ rolUsuario, sesion }) {
 
     setEnviando(true);
     try {
+      // Registrar automáticamente fechas de intervención al cerrar el parte
+      const ahoraIso = new Date().toISOString();
+      const intervensionFinal = {
+        inicioIso: intervension.inicioIso || ahoraIso,
+        finIso: ahoraIso,
+      };
+      const fechaInstalacionFinal = formulario.fecha_instalacion || fechaHoyIso();
+
       const resultado = await crearPartePem({
         orden_id: formulario.orden_id || null,
         cliente_id: formulario.cliente_id,
         tecnico_id: formulario.tecnico_id,
         equipo_id: formulario.equipo_id,
         tipo_orden: formulario.tipo_orden,
-        fecha_instalacion: formulario.fecha_instalacion,
+        fecha_instalacion: fechaInstalacionFinal,
         equipo_matricula: formulario.equipo_matricula,
         notas_tecnico: formulario.notas_tecnico,
         notas_cliente: formulario.notas_cliente,
         checks,
-        intervension,
+        intervension: intervensionFinal,
         fotos_intervencion: fotosIntervencion,
         nombre_firmante: formulario.nombre_firmante,
         firma_url: firmaClienteDataUrl,
@@ -717,34 +689,11 @@ export function PartePemView({ rolUsuario, sesion }) {
             readOnly
             value={formulario.fecha_instalacion}
             className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm"
-            placeholder="Se autocompleta al pulsar Inicio de intervención"
+            placeholder="Se autocompleta automáticamente al enviar el parte"
           />
         </label>
 
-        <div className="flex flex-wrap gap-2 lg:col-span-2">
-          <button
-            type="button"
-            onClick={iniciarIntervension}
-            className="rounded-xl bg-marca-700 px-4 py-3 text-sm font-bold text-white active:scale-95 disabled:opacity-60"
-            disabled={enviando}
-          >
-            Inicio de intervención
-          </button>
-          <button
-            type="button"
-            onClick={finalizarIntervension}
-            className="rounded-xl bg-slate-700 px-4 py-3 text-sm font-bold text-white active:scale-95 disabled:opacity-60"
-            disabled={enviando}
-          >
-            Fin de intervención
-          </button>
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-            <span>Inicio:</span>
-            <span className="font-semibold">{intervension.inicioIso ? new Date(intervension.inicioIso).toLocaleString('es-ES') : '—'}</span>
-            <span className="ml-2">Fin:</span>
-            <span className="font-semibold">{intervension.finIso ? new Date(intervension.finIso).toLocaleString('es-ES') : '—'}</span>
-          </div>
-        </div>
+
 
         <label className="block lg:col-span-2">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Notas del técnico</span>
