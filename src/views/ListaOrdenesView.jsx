@@ -4,6 +4,13 @@ import { BarChart3, CircleCheckBig, Clock3, Download, Hammer, Rocket, TriangleAl
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { ToastEstado } from '../components/ToastEstado';
+import { ModalElegirNavegacion } from '../components/ModalElegirNavegacion';
+import {
+  getAppsNavegacionDisponibles,
+  getPreferenciaNav,
+  guardarPreferenciaNav,
+  navegarA,
+} from '../services/navegacion';
 import { useOrdenes } from '../hooks/useOrdenes';
 import { useDebounce } from '../hooks/useDebounce';
 import {
@@ -39,6 +46,23 @@ const OPCIONES_ESTADO_EDITABLE = [
   { value: 'en_proceso', label: 'En Proceso' },
   { value: 'pausado', label: 'Pausado' },
 ];
+
+function resolverUbicacionCliente(orden) {
+  const direccion = String(orden?.clienteDireccion || '').trim();
+  const lat = Number(orden?.clienteLat);
+  const lng = Number(orden?.clienteLng);
+  const tieneCoords =
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    !(lat === 0 && lng === 0);
+
+  return {
+    direccion,
+    lat: tieneCoords ? lat : null,
+    lng: tieneCoords ? lng : null,
+    tieneUbicacion: tieneCoords || Boolean(direccion),
+  };
+}
 
 function resolverEtiquetaTipoOrden(tipoOrden) {
   const tipo = String(tipoOrden || '').trim();
@@ -1002,6 +1026,7 @@ function TarjetaOrden({
   onEditarParteCompleto,
   onEliminar,
   onNotificar,
+  onIrACliente,
   onIrAParte,
   puedeEditarOrden,
   puedeValorarFinalizada,
@@ -1020,6 +1045,7 @@ function TarjetaOrden({
   const [mensajeEliminacion, setMensajeEliminacion] = useState('');
   const [descargandoInforme, setDescargandoInforme] = useState(false);
   const [horasManoObraEditadas, setHorasManoObraEditadas] = useState(false);
+  const ubicacionCliente = resolverUbicacionCliente(orden);
   const aplicaRecargoFestivoPorDefecto = typeof orden.aplicaRecargoFestivo === 'boolean'
     ? orden.aplicaRecargoFestivo
     : esFinDeSemana(orden.fechaInicioIso);
@@ -1273,6 +1299,20 @@ function TarjetaOrden({
         <p>
           <span className="font-semibold text-slate-900">Cliente:</span> {orden.cliente}
         </p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="min-w-0 flex-1">
+            <span className="font-semibold text-slate-900">Dirección:</span>{' '}
+            {ubicacionCliente.direccion || (ubicacionCliente.tieneUbicacion ? 'Ubicación registrada' : 'Sin ubicación')}
+          </p>
+          <button
+            type="button"
+            onClick={() => onIrACliente(orden)}
+            disabled={!ubicacionCliente.tieneUbicacion}
+            className="shrink-0 rounded-lg border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            🧭 Ir
+          </button>
+        </div>
         <p>
           <span className="font-semibold text-slate-900">Técnico:</span> {orden.tecnico || 'Sin técnico asignado'}
         </p>
@@ -1729,6 +1769,9 @@ export function ListaOrdenesView({ rolUsuario }) {
   const navigate = useNavigate();
   const [tecnicosActivos, setTecnicosActivos] = useState([]);
   const [toast, setToast] = useState(null);
+  const [modalNavAbierto, setModalNavAbierto] = useState(false);
+  const [appsNavDisponibles, setAppsNavDisponibles] = useState([]);
+  const [destinoNavPendiente, setDestinoNavPendiente] = useState(null);
   const [exportandoZip, setExportandoZip] = useState(false);
   const [filtroClienteAnalisis, setFiltroClienteAnalisis] = useState('todos');
   const [filtroTipoOrden, setFiltroTipoOrden] = useState('todos');
@@ -1774,6 +1817,12 @@ export function ListaOrdenesView({ rolUsuario }) {
       id: Date.now(),
       ...siguienteToast,
     });
+  }
+
+  function cerrarModalNavegacion() {
+    setModalNavAbierto(false);
+    setAppsNavDisponibles([]);
+    setDestinoNavPendiente(null);
   }
 
   const clientesAnalisis = useMemo(() => {
@@ -1902,6 +1951,64 @@ export function ListaOrdenesView({ rolUsuario }) {
         },
       },
     });
+  }
+
+  async function irAClienteDesdeOrden(orden) {
+    const ubicacion = resolverUbicacionCliente(orden);
+
+    if (!ubicacion.tieneUbicacion) {
+      notificar({
+        tipo: 'error',
+        titulo: 'Cliente sin ubicación',
+      });
+      return;
+    }
+
+    try {
+      const pref = await getPreferenciaNav();
+      const disponibles = await getAppsNavegacionDisponibles();
+
+      if (pref && disponibles.includes(pref)) {
+        await navegarA(ubicacion.lat, ubicacion.lng, ubicacion.direccion, pref);
+        return;
+      }
+
+      setDestinoNavPendiente(ubicacion);
+      setAppsNavDisponibles(disponibles);
+      setModalNavAbierto(true);
+    } catch (err) {
+      notificar({
+        tipo: 'error',
+        titulo: 'No se pudo abrir la navegación',
+        descripcion: err.message || 'Inténtalo de nuevo en unos segundos.',
+      });
+    }
+  }
+
+  async function seleccionarAppNavegacion(app, recordar) {
+    if (!destinoNavPendiente) {
+      cerrarModalNavegacion();
+      return;
+    }
+
+    try {
+      if (recordar) {
+        await guardarPreferenciaNav(app);
+      }
+      await navegarA(
+        destinoNavPendiente.lat,
+        destinoNavPendiente.lng,
+        destinoNavPendiente.direccion,
+        app,
+      );
+      cerrarModalNavegacion();
+    } catch (err) {
+      notificar({
+        tipo: 'error',
+        titulo: 'No se pudo abrir la navegación',
+        descripcion: err.message || 'Inténtalo de nuevo en unos segundos.',
+      });
+    }
   }
 
   async function exportarOrdenesExcel() {
@@ -2073,6 +2180,12 @@ export function ListaOrdenesView({ rolUsuario }) {
   return (
     <section className="space-y-4 lg:space-y-5">
       <ToastEstado toast={toast} onClose={() => setToast(null)} />
+      <ModalElegirNavegacion
+        isOpen={modalNavAbierto}
+        onClose={cerrarModalNavegacion}
+        onSelect={seleccionarAppNavegacion}
+        appsDisponibles={appsNavDisponibles}
+      />
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
@@ -2269,6 +2382,7 @@ export function ListaOrdenesView({ rolUsuario }) {
               onEditarParteCompleto={editarParteCompleto}
               onEliminar={eliminarOrden}
               onNotificar={notificar}
+              onIrACliente={irAClienteDesdeOrden}
               onIrAParte={irAParteDesdeOrden}
               puedeEditarOrden={puedeEditarOrden}
               puedeValorarFinalizada={puedeValorarFinalizada}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Capacitor } from '@capacitor/core';
 import { ToastEstado } from '../components/ToastEstado';
+import { ModalElegirNavegacion } from '../components/ModalElegirNavegacion';
 import {
   obtenerClientes,
   obtenerEquiposPorCliente,
@@ -28,7 +28,12 @@ import {
   suscribirSesionesParteUsuario,
   tieneProgresoSesionParte,
 } from '../services/parteSessionSyncService';
-import { abrirGoogleMaps } from '../services/externalNavigationService';
+import {
+  getAppsNavegacionDisponibles,
+  getPreferenciaNav,
+  guardarPreferenciaNav,
+  navegarA,
+} from '../services/navegacion';
 import { obtenerClienteSupabase, tieneConfiguracionSupabase } from '../services/supabaseClient';
 import {
   analizarConsistenciaKmCliente,
@@ -105,46 +110,6 @@ async function resolverNombreLugar(latitud, longitud) {
   }
 }
 
-function normalizarDireccion(direccion) {
-  return String(direccion || '')
-    .replace(/[·•]/g, ' ')
-    .replace(/N[º°]\s*/gi, 'N ')
-    .replace(/\s*,\s*/g, ', ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-async function geocodificarDireccion(direccion) {
-  const q = normalizarDireccion(direccion);
-  if (!q) return null;
-  try {
-    const respuesta = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(q)}`,
-      {
-        headers: {
-          Accept: 'application/json',
-          'Accept-Language': 'es',
-        },
-      },
-    );
-
-    if (!respuesta.ok) {
-      return null;
-    }
-
-    const data = await respuesta.json();
-    const primer = Array.isArray(data) ? data[0] : null;
-    const lat = primer?.lat ? Number(primer.lat) : null;
-    const lng = primer?.lon ? Number(primer.lon) : null;
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      return null;
-    }
-    return { lat, lng };
-  } catch {
-    return null;
-  }
-}
-
 // Distancia facturable estable entre dos puntos. Para evitar discrepancias
 // entre dias o dispositivos, la facturacion usa un calculo determinista
 // basado en coordenadas fijas y un factor de rodeo estable.
@@ -196,6 +161,23 @@ function parsearNumeroDecimal(valor) {
   return Number.isFinite(numero) ? numero : null;
 }
 
+function resolverUbicacionCliente(cliente) {
+  const direccion = String(cliente?.direccion || '').trim();
+  const lat = Number(cliente?.lat);
+  const lng = Number(cliente?.lng);
+  const tieneCoords =
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    !(lat === 0 && lng === 0);
+
+  return {
+    direccion,
+    lat: tieneCoords ? lat : null,
+    lng: tieneCoords ? lng : null,
+    tieneUbicacion: tieneCoords || Boolean(direccion),
+  };
+}
+
 async function obtenerAnalisisConsistenciaKmCliente(clienteId, kmActual, ordenIdActual = null) {
   if (!clienteId || !Number.isFinite(Number(kmActual)) || !tieneConfiguracionSupabase()) {
     return null;
@@ -232,33 +214,6 @@ async function obtenerAnalisisConsistenciaKmCliente(clienteId, kmActual, ordenId
   } catch {
     return null;
   }
-}
-
-function construirUrlRutaCliente({ lat, lng, direccion, modoNavegacion = false }) {
-  const latNum = Number(lat);
-  const lngNum = Number(lng);
-  if (Number.isFinite(latNum) && Number.isFinite(lngNum) && !(latNum === 0 && lngNum === 0)) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${latNum},${lngNum}&travelmode=driving${modoNavegacion ? '&dir_action=navigate' : ''}`;
-  }
-  const dir = normalizarDireccion(direccion);
-  if (dir) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dir)}&travelmode=driving${modoNavegacion ? '&dir_action=navigate' : ''}`;
-  }
-  return '';
-}
-
-function construirIntentRutaGoogleMaps({ lat, lng, direccion }) {
-  const latNum = Number(lat);
-  const lngNum = Number(lng);
-  const destino = (Number.isFinite(latNum) && Number.isFinite(lngNum))
-    ? `${latNum},${lngNum}`
-    : normalizarDireccion(direccion);
-
-  if (!destino) {
-    return '';
-  }
-
-  return `intent://maps.google.com/maps?daddr=${encodeURIComponent(destino)}&directionsmode=driving#Intent;scheme=https;package=com.google.android.apps.maps;end`;
 }
 
 async function comprimirImagenA1280(archivo, nombreFinal) {
@@ -464,6 +419,9 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
+  const [modalNavAbierto, setModalNavAbierto] = useState(false);
+  const [appsNavDisponibles, setAppsNavDisponibles] = useState([]);
+  const [destinoNavPendiente, setDestinoNavPendiente] = useState(null);
   const [sesionParteRemota, setSesionParteRemota] = useState(null);
   const canvasFirmaRef = useRef(null);
   const inputFotoAntesRef = useRef(null);
@@ -478,10 +436,25 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
   const hidratandoSesionParteRef = useRef(false);
   const ultimoSnapshotSesionRef = useRef('');
   const deviceInstanceIdRef = useRef(obtenerDeviceInstanceId());
+  const clienteSeleccionado = clientes.find((c) => c.id === formulario.cliente_id) || null;
+  const ubicacionCliente = resolverUbicacionCliente(clienteSeleccionado);
+
+  function notificarToast(siguienteToast) {
+    setToast({
+      id: Date.now(),
+      ...siguienteToast,
+    });
+  }
 
   function mostrarAvisoSincronizacion({ titulo, descripcion, tipo = 'error' }) {
     setToast({ titulo, descripcion, tipo });
     emitirNotificacionSesionParte({ titulo, descripcion }).catch(() => {});
+  }
+
+  function cerrarModalNavegacion() {
+    setModalNavAbierto(false);
+    setAppsNavDisponibles([]);
+    setDestinoNavPendiente(null);
   }
 
   function actualizarSesionParteRemota(nuevaSesion) {
@@ -1678,62 +1651,59 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
   }
 
   async function abrirRutaCliente() {
-    const cliente = clientes.find((c) => c.id === formulario.cliente_id);
-    const modoNavegacion = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
-    const direccion = normalizarDireccion(cliente?.direccion);
-    let lat = cliente?.lat ?? null;
-    let lng = cliente?.lng ?? null;
-    const latNumInicial = Number(lat);
-    const lngNumInicial = Number(lng);
-    const tieneCoordsInicial =
-      Number.isFinite(latNumInicial) &&
-      Number.isFinite(lngNumInicial) &&
-      !(latNumInicial === 0 && lngNumInicial === 0);
+    if (!ubicacionCliente.tieneUbicacion) {
+      notificarToast({
+        tipo: 'error',
+        titulo: 'Cliente sin ubicación',
+      });
+      return;
+    }
 
-    if (!tieneCoordsInicial && direccion) {
-      setError('');
-      setMensaje('Buscando dirección del cliente…');
-      const coords = await geocodificarDireccion(direccion);
-      if (coords) {
-        lat = coords.lat;
-        lng = coords.lng;
-      } else {
-        lat = null;
-        lng = null;
+    try {
+      const pref = await getPreferenciaNav();
+      const disponibles = await getAppsNavegacionDisponibles();
+
+      if (pref && disponibles.includes(pref)) {
+        await navegarA(ubicacionCliente.lat, ubicacionCliente.lng, ubicacionCliente.direccion, pref);
+        return;
       }
+
+      setDestinoNavPendiente(ubicacionCliente);
+      setAppsNavDisponibles(disponibles);
+      setModalNavAbierto(true);
+    } catch (err) {
+      notificarToast({
+        tipo: 'error',
+        titulo: 'No se pudo abrir la navegación',
+        descripcion: err.message || 'Inténtalo de nuevo en unos segundos.',
+      });
     }
-    const url = construirUrlRutaCliente({
-      lat,
-      lng,
-      direccion,
-      modoNavegacion,
-    });
-    if (!url) {
-      setError('El cliente no tiene coordenadas ni dirección para abrir la ruta.');
+  }
+
+  async function seleccionarAppNavegacion(app, recordar) {
+    if (!destinoNavPendiente) {
+      cerrarModalNavegacion();
       return;
     }
-    setError('');
-    setMensaje('');
-    if (modoNavegacion) {
-      try {
-        const rsp = await abrirGoogleMaps({ lat, lng, address: direccion });
-        if (rsp?.opened) return;
-      } catch { /* noop */ }
-      try {
-        window.location.href = url;
-      } catch {
-        // noop
+
+    try {
+      if (recordar) {
+        await guardarPreferenciaNav(app);
       }
-      setTimeout(() => {
-        try {
-          window.open(url, '_blank', 'noopener,noreferrer');
-        } catch {
-          // noop
-        }
-      }, 400);
-      return;
+      await navegarA(
+        destinoNavPendiente.lat,
+        destinoNavPendiente.lng,
+        destinoNavPendiente.direccion,
+        app,
+      );
+      cerrarModalNavegacion();
+    } catch (err) {
+      notificarToast({
+        tipo: 'error',
+        titulo: 'No se pudo abrir la navegación',
+        descripcion: err.message || 'Inténtalo de nuevo en unos segundos.',
+      });
     }
-    window.open(url, '_blank', 'noopener,noreferrer');
   }
 
   function resetearFormulario() {
@@ -2010,6 +1980,12 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
 
   return (
     <section className="space-y-4 pb-20 lg:pb-0">
+      <ModalElegirNavegacion
+        isOpen={modalNavAbierto}
+        onClose={cerrarModalNavegacion}
+        onSelect={seleccionarAppNavegacion}
+        appsDisponibles={appsNavDisponibles}
+      />
       <header className="rounded-2xl bg-marca-900 p-4 text-white shadow-lg lg:p-5">
         <h2 className="text-lg font-bold lg:text-xl">Parte de Trabajo</h2>
         <p className="mt-1 text-sm text-slate-200">Registro técnico para cierre operativo de averías.</p>
@@ -2038,15 +2014,20 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
 
         {formulario.cliente_id && (
           <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 lg:col-span-2">
-            <p className="text-xs font-semibold text-sky-900">Ruta al cliente</p>
-            <div className="mt-2 grid grid-cols-1 gap-2">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-sky-900">Dirección del cliente</p>
+                <p className="mt-1 text-sm text-slate-700">
+                  {ubicacionCliente.direccion || (ubicacionCliente.tieneUbicacion ? 'Ubicación registrada' : 'Sin ubicación')}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={abrirRutaCliente}
-                disabled={guardando}
-                className="w-full rounded-xl border border-sky-300 bg-white px-3 py-2 text-xs font-semibold text-sky-800 disabled:opacity-60"
+                disabled={guardando || !ubicacionCliente.tieneUbicacion}
+                className="shrink-0 rounded-xl border border-sky-300 bg-white px-3 py-2 text-xs font-semibold text-sky-800 disabled:opacity-60"
               >
-                Iniciar ruta al cliente
+                🧭 Ir
               </button>
             </div>
             <p className="mt-2 text-[11px] text-slate-600">
