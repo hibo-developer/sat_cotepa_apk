@@ -64,6 +64,8 @@ async function subirFirmaClienteStorage(supabase, { firmaDataUrl, clienteId, tec
   }
 
   const resultado = await subirArchivoSAT(blobFirma, {
+    clienteId,
+    tecnicoId,
     otNumero: otNumero || 'SIN-OT',
     parteId: parteId || 'sin-parte',
     tipo: 'firma-cliente',

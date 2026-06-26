@@ -5,6 +5,12 @@ const runtimeConfig =
 const supabaseUrl = runtimeConfig?.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = runtimeConfig?.SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
 const cacheSignedUrls = new Map();
+const bucketsPrivadosStorage = new Set([
+  'informes-partes',
+  'fotos-intervenciones',
+  'firmas-clientes',
+  'audios-clientes',
+]);
 
 function debeOmitirCacheUrlFirmada(bucket, opciones = {}) {
   return Boolean(opciones.forceRefresh || bucket === 'informes-partes');
@@ -20,12 +26,71 @@ function anadirCacheBust(urlTexto) {
   }
 }
 
+function normalizarUrlFirmadaStorage(urlTexto) {
+  const texto = String(urlTexto || '').trim();
+  if (!texto) return '';
+  if (texto.startsWith('http://') || texto.startsWith('https://')) return texto;
+  if (texto.startsWith('/') && supabaseUrl) {
+    try {
+      return new URL(texto, supabaseUrl).toString();
+    } catch {
+      return '';
+    }
+  }
+  return texto;
+}
+
 function esUrlHttpValida(urlTexto) {
   try {
     const url = new URL(String(urlTexto || '').trim());
     return url.protocol === 'http:' || url.protocol === 'https:';
   } catch {
     return false;
+  }
+}
+
+function esUrlFirmadaStorageValida(urlTexto, bucket) {
+  if (!esUrlHttpValida(urlTexto)) {
+    return false;
+  }
+
+  try {
+    const url = new URL(String(urlTexto || '').trim());
+    const pathname = url.pathname || '';
+    const pareceRutaStorage = pathname.includes('/storage/v1/object/');
+
+    if (!pareceRutaStorage) {
+      return true;
+    }
+
+    const esRutaFirmada = pathname.includes('/storage/v1/object/sign/');
+    const tieneToken = url.searchParams.has('token');
+    const bucketPrivado = bucketsPrivadosStorage.has(bucket);
+
+    if (bucketPrivado && !esRutaFirmada && !tieneToken) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function obtenerUrlFirmadaDirectaStorage(supabaseClient, ref, expiresIn) {
+  try {
+    const { data, error } = await supabaseClient.storage
+      .from(ref.bucket)
+      .createSignedUrl(ref.path, expiresIn);
+
+    if (error || !data?.signedUrl) {
+      return '';
+    }
+
+    const urlNormalizada = normalizarUrlFirmadaStorage(data.signedUrl);
+    return esUrlFirmadaStorageValida(urlNormalizada, ref.bucket) ? urlNormalizada : '';
+  } catch {
+    return '';
   }
 }
 
@@ -67,9 +132,18 @@ export function parsearReferenciaStorage(valor) {
     const idxObject = partes.indexOf('object');
     if (idxObject === -1) return null;
     const tipo = partes[idxObject + 1];
-    const bucket = partes[idxObject + 2];
-    if (!bucket || (tipo !== 'public' && tipo !== 'sign')) return null;
-    const path = partes.slice(idxObject + 3).join('/');
+
+    if (tipo === 'public' || tipo === 'sign') {
+      const bucket = partes[idxObject + 2];
+      if (!bucket) return null;
+      const path = partes.slice(idxObject + 3).join('/');
+      if (!path) return null;
+      return { bucket, path };
+    }
+
+    const bucket = tipo;
+    if (!bucket) return null;
+    const path = partes.slice(idxObject + 2).join('/');
     if (!path) return null;
     return { bucket, path };
   } catch {
@@ -93,20 +167,33 @@ export async function obtenerUrlFirmadaStorage(referencia, opciones = {}) {
   }
 
   const supabase = obtenerClienteSupabase();
+  const expiresInSeguro = Math.max(60, Math.min(3600, Number(expiresIn) || 600));
   const { data, error } = await supabase.functions.invoke('storage-signed-url', {
     body: {
       bucket: ref.bucket,
       path: ref.path,
-      expiresIn: Math.max(60, Math.min(3600, Number(expiresIn) || 600)),
+      expiresIn: expiresInSeguro,
     },
   });
 
-  if (error || !data?.url) {
+  let urlFirmada = '';
+  if (!error && data?.url) {
+    const urlNormalizada = normalizarUrlFirmadaStorage(data.url);
+    if (esUrlFirmadaStorageValida(urlNormalizada, ref.bucket)) {
+      urlFirmada = urlNormalizada;
+    }
+  }
+
+  if (!urlFirmada) {
+    urlFirmada = await obtenerUrlFirmadaDirectaStorage(supabase, ref, expiresInSeguro);
+  }
+
+  if (!urlFirmada) {
     return '';
   }
 
-  const expMs = (Math.max(60, Math.min(3600, Number(expiresIn) || 600)) * 1000);
-  const urlFinal = omitirCache ? anadirCacheBust(data.url) : data.url;
+  const expMs = expiresInSeguro * 1000;
+  const urlFinal = omitirCache ? anadirCacheBust(urlFirmada) : urlFirmada;
   if (!esUrlHttpValida(urlFinal)) {
     return '';
   }

@@ -1,4 +1,4 @@
-import { obtenerClienteSupabase } from './supabaseClient';
+import { obtenerClienteSupabase, parsearReferenciaStorage } from './supabaseClient';
 import {
   limpiarTexto,
   normalizarDescripcion,
@@ -38,6 +38,40 @@ function extraerNombreFirmanteDesdeTareas(tareasRealizadas) {
   const texto = String(tareasRealizadas || '');
   const coincidencia = /Firmado por:\s*([^|\n\r]+)/i.exec(texto);
   return coincidencia?.[1]?.trim() || 'Cliente';
+}
+
+function resolverContextoRutaStorage(...referencias) {
+  let clienteId = null;
+  let tecnicoId = null;
+
+  for (const referencia of referencias) {
+    const ref = parsearReferenciaStorage(referencia);
+    if (!ref?.path) {
+      continue;
+    }
+
+    const segmentos = String(ref.path)
+      .split('/')
+      .map((segmento) => segmento.trim())
+      .filter(Boolean);
+
+    if (segmentos.length < 2) {
+      continue;
+    }
+
+    if (!clienteId) {
+      clienteId = segmentos[0];
+    }
+    if (!tecnicoId) {
+      tecnicoId = segmentos[1];
+    }
+
+    if (clienteId && tecnicoId) {
+      break;
+    }
+  }
+
+  return { clienteId, tecnicoId };
 }
 
 // Parsea los bloques "Desplazamiento Cotepa a cliente" e "Intervención en cliente"
@@ -1204,13 +1238,27 @@ export async function editarParteFinalizado(ordenId, payload) {
     : [];
   const fotosConservadas = fotosActuales.filter((u) => !fotosAEliminar.includes(u));
 
+  const contextoRutaStorage = resolverContextoRutaStorage(
+    ...fotosConservadas,
+    ordenActual.foto_url,
+    ordenActual.firma_url,
+  );
+  const clienteIdStorage = ordenActual.cliente_id || contextoRutaStorage.clienteId;
+  const tecnicoIdStorage = ordenActual.tecnico_id || contextoRutaStorage.tecnicoId;
+
   let fotosNuevasUrls = [];
   const fotosNuevas = Array.isArray(payload.fotos_nuevas) ? payload.fotos_nuevas : [];
   if (fotosNuevas.length > 0) {
+    if (!clienteIdStorage || !tecnicoIdStorage) {
+      throw new Error(
+        'No se pudo determinar cliente/técnico para la ruta de Storage del parte. Revisa que la orden tenga cliente y técnico asignados.',
+      );
+    }
+
     fotosNuevasUrls = await subirFotosIntervencionStorage(supabase, {
       fotos: fotosNuevas,
-      clienteId: ordenActual.cliente_id,
-      tecnicoId: ordenActual.tecnico_id,
+      clienteId: clienteIdStorage,
+      tecnicoId: tecnicoIdStorage,
       ordenId: ordenActual.id,
     });
   }

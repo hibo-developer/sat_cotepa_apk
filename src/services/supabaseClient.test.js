@@ -1,11 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const invokeMock = vi.fn();
+const createSignedUrlMock = vi.fn();
 
 vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => ({
     functions: {
       invoke: (...args) => invokeMock(...args),
+    },
+    storage: {
+      from: () => ({
+        createSignedUrl: (...args) => createSignedUrlMock(...args),
+      }),
     },
   })),
 }));
@@ -13,6 +19,7 @@ vi.mock('@supabase/supabase-js', () => ({
 describe('obtenerUrlFirmadaStorage', () => {
   beforeEach(() => {
     invokeMock.mockReset();
+    createSignedUrlMock.mockReset();
     vi.resetModules();
     globalThis.window = {
       __APP_CONFIG__: {
@@ -59,10 +66,30 @@ describe('obtenerUrlFirmadaStorage', () => {
       data: null,
       error: { message: 'Failed to fetch' },
     });
+    createSignedUrlMock.mockResolvedValue({ data: null, error: { message: 'No autorizado' } });
 
     const mod = await import('./supabaseClient');
     const url = await mod.obtenerUrlFirmadaStorage('sb://informes-partes/cli/tec/ord/informe.pdf');
 
     expect(url).toBe('');
+  });
+
+  it('regenera la firma cuando la función devuelve una URL directa no firmada', async () => {
+    invokeMock.mockResolvedValue({
+      data: { url: 'https://example.supabase.co/storage/v1/object/informes-partes/cli/tec/ord/informe.pdf' },
+      error: null,
+    });
+    createSignedUrlMock.mockResolvedValue({
+      data: { signedUrl: '/storage/v1/object/sign/informes-partes/cli/tec/ord/informe.pdf?token=regen' },
+      error: null,
+    });
+
+    const mod = await import('./supabaseClient');
+    const url = await mod.obtenerUrlFirmadaStorage('sb://informes-partes/cli/tec/ord/informe.pdf');
+
+    expect(invokeMock).toHaveBeenCalledTimes(1);
+    expect(createSignedUrlMock).toHaveBeenCalledTimes(1);
+    expect(url).toContain('/storage/v1/object/sign/informes-partes/');
+    expect(url).toContain('token=regen');
   });
 });

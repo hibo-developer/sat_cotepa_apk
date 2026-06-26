@@ -63,6 +63,8 @@ async function dataUrlABlob(dataUrl: string): Promise<Blob> {
 }
 
 function construirRutaArchivo(params: {
+  clienteId?: string;
+  tecnicoId?: string;
   otNumero: string;
   parteId: string;
   tipo: TipoArchivoSAT;
@@ -70,11 +72,26 @@ function construirRutaArchivo(params: {
   timestamp: number;
   extension: string;
 }): string {
-  const { otNumero, parteId, tipo, indice, timestamp, extension } = params;
+  const { clienteId, tecnicoId, otNumero, parteId, tipo, indice, timestamp, extension } = params;
+  const nombreBase = `${tipo}-${indice}_${timestamp}.${extension}`;
+  const requiereRutaClienteTecnico = tipo !== 'pdf-parte';
+
+  if (requiereRutaClienteTecnico && (!clienteId || !tecnicoId)) {
+    throw new Error(
+      'No se pudo construir la ruta de Storage: faltan clienteId y tecnicoId para cumplir las políticas de seguridad.',
+    );
+  }
+
+  if (clienteId && tecnicoId) {
+    if (tipo === 'firma-cliente') {
+      return `${clienteId}/${tecnicoId}/${nombreBase}`;
+    }
+    return `${clienteId}/${tecnicoId}/${parteId}/${nombreBase}`;
+  }
+
   const fecha = new Date(timestamp);
   const yyyy = String(fecha.getFullYear());
   const mm = String(fecha.getMonth() + 1).padStart(2, '0');
-  const nombreBase = `${tipo}-${indice}_${timestamp}.${extension}`;
   return `${yyyy}/${mm}/SAT-${otNumero}/parte-${parteId}/${nombreBase}`;
 }
 
@@ -87,6 +104,8 @@ function construirRutaArchivo(params: {
 export async function subirArchivoSAT(
   archivo: Blob | File | string,
   params: {
+    clienteId?: string;
+    tecnicoId?: string;
     otNumero: string;
     parteId: string;
     tipo: TipoArchivoSAT;
@@ -94,7 +113,7 @@ export async function subirArchivoSAT(
   },
 ): Promise<{ path: string; bucket: string; registro: ArchivoParte }> {
   const supabase = obtenerClienteSupabase();
-  const { otNumero, parteId, tipo } = params;
+  const { clienteId, tecnicoId, otNumero, parteId, tipo } = params;
   const indice = params.indice ?? 0;
   const timestamp = Date.now();
 
@@ -132,6 +151,8 @@ export async function subirArchivoSAT(
 
   const bucket = BUCKET_POR_TIPO[tipo];
   const path = construirRutaArchivo({
+    clienteId,
+    tecnicoId,
     otNumero,
     parteId,
     tipo,
@@ -149,7 +170,7 @@ export async function subirArchivoSAT(
     });
 
   if (errorSubida) {
-    throw new Error(`No se pudo subir el archivo a Storage: ${errorSubida.message}`);
+    throw new Error(`No se pudo subir el archivo a Storage (${bucket}/${path}): ${errorSubida.message}`);
   }
 
   const { data: registro, error: errorInsert } = await supabase

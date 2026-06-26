@@ -31,7 +31,7 @@ describe('storageSat', () => {
     expect(BUCKET_AUDIOS).toBe('audios-clientes');
   });
 
-  it('construye rutas con formato YYYY/MM/SAT-{ot}/parte-{id}/{tipo}-{idx}_{ts}.{ext}', async () => {
+  it('construye rutas con formato clienteId/tecnicoId/parteId/{tipo}-{idx}_{ts}.{ext} si hay IDs', async () => {
     const { subirArchivoSAT } = await import('./storageSat');
 
     const blob = new Blob(['test'], { type: 'image/png' });
@@ -50,13 +50,15 @@ describe('storageSat', () => {
     });
 
     const result = await subirArchivoSAT(blob, {
+      clienteId: 'cli-123',
+      tecnicoId: 'tec-456',
       otNumero: 'SAT-123',
       parteId: 'parte-456',
       tipo: 'foto-evidencia',
       indice: 2,
     });
 
-    expect(result.path).toMatch(/^20\d{2}\/\d{2}\/SAT-SAT-123\/parte-parte-456\/foto-evidencia-2_\d+\.png$/);
+    expect(result.path).toMatch(/^cli-123\/tec-456\/parte-456\/foto-evidencia-2_\d+\.png$/);
     expect(result.bucket).toBe('fotos-intervenciones');
     expect(result.registro.id).toBe('test-id');
   });
@@ -65,6 +67,19 @@ describe('storageSat', () => {
     const { listarArchivosParte } = await import('./storageSat');
     const result = await listarArchivosParte('');
     expect(result).toEqual([]);
+  });
+
+  it('lanza error claro si faltan clienteId/tecnicoId al subir evidencias', async () => {
+    const { subirArchivoSAT } = await import('./storageSat');
+    const blob = new Blob(['test'], { type: 'image/png' });
+
+    await expect(
+      subirArchivoSAT(blob, {
+        otNumero: 'SAT-123',
+        parteId: 'parte-456',
+        tipo: 'foto-evidencia',
+      }),
+    ).rejects.toThrow(/clienteId y tecnicoId/i);
   });
 
   it('getUrlPublica delega a obtenerUrlFirmadaStorage', async () => {

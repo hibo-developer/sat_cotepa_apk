@@ -121,6 +121,44 @@ async function validarRutaFirma(
   verificacion: { userId: string; rol: RolSat },
 ) {
   const partes = trocearPath(path);
+  if (partes.length === 5) {
+    const [yyyy, mm, _otCarpeta, parteCarpeta, nombreArchivo] = partes;
+    const yyyyValido = /^\d{4}$/.test(yyyy);
+    const mmValido = /^\d{2}$/.test(mm);
+    const parteValida = /^parte-[a-zA-Z0-9\-_]+$/.test(parteCarpeta);
+    const archivoValido = Boolean(nombreArchivo && nombreArchivo.startsWith('firma-cliente'));
+
+    if (!yyyyValido || !mmValido || !parteValida || !archivoValido) {
+      return { ok: false, error: 'Ruta de firma no valida' };
+    }
+
+    const ordenId = parteCarpeta.slice('parte-'.length);
+    if (!esUuid(ordenId)) {
+      return { ok: false, error: 'Ruta de firma no valida' };
+    }
+
+    const { data: orden, error: ordenError } = await supabaseAdmin
+      .from('ordenes_trabajo')
+      .select('id, tecnico_id')
+      .eq('id', ordenId)
+      .maybeSingle();
+
+    if (ordenError || !orden?.id) {
+      return { ok: false, error: 'La ruta referencia una orden no valida' };
+    }
+
+    if (verificacion.rol !== 'tecnico') {
+      return { ok: true };
+    }
+
+    const tecnicoActualId = await obtenerTecnicoActualId(supabaseAdmin, verificacion.userId);
+    if (!tecnicoActualId || tecnicoActualId !== orden.tecnico_id) {
+      return { ok: false, error: 'Acceso denegado a la firma solicitada' };
+    }
+
+    return { ok: true };
+  }
+
   if (partes.length !== 3) {
     return { ok: false, error: 'Ruta de firma no valida' };
   }
@@ -157,6 +195,44 @@ async function validarRutaOrden(
   verificacion: { userId: string; rol: RolSat },
 ) {
   const partes = trocearPath(path);
+  if (partes.length === 5) {
+    const [yyyy, mm, _otCarpeta, parteCarpeta, nombreArchivo] = partes;
+    const yyyyValido = /^\d{4}$/.test(yyyy);
+    const mmValido = /^\d{2}$/.test(mm);
+    const parteValida = /^parte-[a-zA-Z0-9\-_]+$/.test(parteCarpeta);
+    const archivoValido = Boolean(nombreArchivo);
+
+    if (!yyyyValido || !mmValido || !parteValida || !archivoValido) {
+      return { ok: false, error: 'Ruta de archivo no valida' };
+    }
+
+    const ordenId = parteCarpeta.slice('parte-'.length);
+    if (!esUuid(ordenId)) {
+      return { ok: false, error: 'Ruta de archivo no valida' };
+    }
+
+    const { data: orden, error: ordenError } = await supabaseAdmin
+      .from('ordenes_trabajo')
+      .select('id, tecnico_id')
+      .eq('id', ordenId)
+      .maybeSingle();
+
+    if (ordenError || !orden?.id) {
+      return { ok: false, error: 'La ruta referencia una orden no valida' };
+    }
+
+    if (verificacion.rol !== 'tecnico') {
+      return { ok: true };
+    }
+
+    const tecnicoActualId = await obtenerTecnicoActualId(supabaseAdmin, verificacion.userId);
+    if (!tecnicoActualId || !orden.tecnico_id || tecnicoActualId !== orden.tecnico_id) {
+      return { ok: false, error: 'Acceso denegado al archivo solicitado' };
+    }
+
+    return { ok: true };
+  }
+
   if (partes.length !== 4) {
     return { ok: false, error: 'Ruta de archivo no valida' };
   }
@@ -227,10 +303,13 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-  const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const supabaseServiceRoleKey =
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    || Deno.env.get('SERVICE_ROLE_KEY')
+    || Deno.env.get('SERVICE_ROLE');
 
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
-    return jsonResponse({ error: 'Faltan variables SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY' }, 500, cors);
+    return jsonResponse({ error: 'Faltan variables SUPABASE_URL / SUPABASE_ANON_KEY / SERVICE_ROLE_KEY' }, 500, cors);
   }
 
   const verificacion = await verificarSesionYRol(req, supabaseUrl, supabaseAnonKey, cors);
