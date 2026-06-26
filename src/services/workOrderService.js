@@ -1023,7 +1023,6 @@ export async function actualizarValoracionOrdenFinalizada(ordenId, payload) {
       tareas_realizadas: ordenActual.tareas_realizadas || '',
       descripcion_averia: ordenActual.descripcion_averia || null,
       prioridad: ordenActual.prioridad || null,
-      numero_ticket: ordenActual.numero_ticket || 'SIN-OT',
     },
     formulario: {
       cliente_id: ordenActual.cliente_id,
@@ -1044,7 +1043,6 @@ export async function actualizarValoracionOrdenFinalizada(ordenId, payload) {
     fotosIntervencionUrls: extraerFotosIntervencionDesdeTareas(ordenActual.tareas_realizadas),
     secuencialDiario: secuencialInforme || undefined,
     fechaInformeIso: inicioInterv,
-    otNumero: ordenActual.numero_ticket || 'SIN-OT',
     valoracionEconomica: {
       costeMaterialesEditable,
       tarifaManoObraHora,
@@ -1422,7 +1420,6 @@ export async function editarParteFinalizado(ordenId, payload) {
       tareas_realizadas: nuevasTareasRealizadas || '',
       descripcion_averia: descripcionAveria || null,
       prioridad: ordenActual.prioridad || null,
-      numero_ticket: ordenActual.numero_ticket || 'SIN-OT',
       ...(esPem ? { pem_data: ordenActual.pem_data || null } : {}),
     },
     formulario: {
@@ -1444,7 +1441,6 @@ export async function editarParteFinalizado(ordenId, payload) {
     fotosIntervencionUrls: fotosFinales,
     secuencialDiario: secuencialInforme || undefined,
     fechaInformeIso: inicioInterv,
-    otNumero: ordenActual.numero_ticket || 'SIN-OT',
     valoracionEconomica,
     prefijoInforme: esPem ? 'PEM' : 'SAT',
     filtroTipoOrden: esPem ? 'pem' : 'averia',
