@@ -486,18 +486,18 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
     >
       <div className="flex items-center gap-2">
         <Wrench className="h-5 w-5 text-marca-700" />
-        <h3 className="text-base font-bold text-slate-800">Nueva Orden de Trabajo</h3>
+        <h3 className="text-base font-bold text-sat-text">Nueva Orden de Trabajo</h3>
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">Cliente *</span>
+        <span className="mb-1 block text-xs font-semibold text-sat-muted">Cliente *</span>
         <input
           value={busquedaCliente}
           onChange={(evento) => {
             setPaginaClientes(1);
             setBusquedaCliente(evento.target.value);
           }}
-          className="mb-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className="mb-2 w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
           placeholder="Buscar cliente por nombre"
           disabled={formularioDeshabilitado}
         />
@@ -519,7 +519,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               setBusquedaCliente(clienteSeleccionado.nombre);
             }
           }}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
           disabled={formularioDeshabilitado}
         >
           <option value="">Selecciona cliente</option>
@@ -530,13 +530,13 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           ))}
         </select>
         {!!busquedaClienteDebounce && clientes.length === 0 && (
-          <p className="mt-1 text-xs font-medium text-slate-500">No hay clientes que coincidan con la búsqueda.</p>
+          <p className="mt-1 text-xs font-medium text-sat-subtle">No hay clientes que coincidan con la búsqueda.</p>
         )}
         {hayMasClientes && (
           <button
             type="button"
             onClick={() => setPaginaClientes((previo) => previo + 1)}
-            className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700"
+            className="mt-2 w-full rounded-xl border border-sat-border px-3 py-2 text-xs font-bold text-sat-muted"
             disabled={cargandoClientes}
           >
             {cargandoClientes ? 'Cargando...' : 'Cargar más clientes'}
@@ -545,14 +545,14 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">Equipo</span>
+        <span className="mb-1 block text-xs font-semibold text-sat-muted">Equipo</span>
         <input
           value={busquedaEquipo}
           onChange={(evento) => {
             setPaginaEquipos(1);
             setBusquedaEquipo(evento.target.value);
           }}
-          className="mb-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className="mb-2 w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
           placeholder="Buscar equipo por nombre, marca o modelo"
           disabled={!formulario.cliente_id || formularioDeshabilitado}
         />
@@ -569,7 +569,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               setBusquedaEquipo(etiqueta);
             }
           }}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
           disabled={!formulario.cliente_id || formularioDeshabilitado}
         >
           <option value="">Sin equipo</option>
@@ -582,13 +582,13 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           ))}
         </select>
         {!!busquedaEquipoDebounce && equipos.length === 0 && (
-          <p className="mt-1 text-xs font-medium text-slate-500">No hay equipos que coincidan con la búsqueda.</p>
+          <p className="mt-1 text-xs font-medium text-sat-subtle">No hay equipos que coincidan con la búsqueda.</p>
         )}
         {hayMasEquipos && (
           <button
             type="button"
             onClick={() => setPaginaEquipos((previo) => previo + 1)}
-            className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700"
+            className="mt-2 w-full rounded-xl border border-sat-border px-3 py-2 text-xs font-bold text-sat-muted"
             disabled={cargandoEquipos}
           >
             {cargandoEquipos ? 'Cargando...' : 'Cargar más equipos'}
@@ -597,14 +597,14 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">Técnico *</span>
+        <span className="mb-1 block text-xs font-semibold text-sat-muted">Técnico *</span>
         <input
           value={busquedaTecnico}
           onChange={(evento) => {
             setPaginaTecnicos(1);
             setBusquedaTecnico(evento.target.value);
           }}
-          className="mb-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className="mb-2 w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
           placeholder="Buscar técnico por nombre o especialidad"
           disabled={formularioDeshabilitado}
         />
@@ -622,7 +622,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               setBusquedaTecnico(etiqueta);
             }
           }}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
           disabled={formularioDeshabilitado}
         >
           <option value="">Selecciona técnico</option>
@@ -634,13 +634,13 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           ))}
         </select>
         {!!busquedaTecnicoDebounce && tecnicos.length === 0 && (
-          <p className="mt-1 text-xs font-medium text-slate-500">No hay técnicos que coincidan con la búsqueda.</p>
+          <p className="mt-1 text-xs font-medium text-sat-subtle">No hay técnicos que coincidan con la búsqueda.</p>
         )}
         {hayMasTecnicos && (
           <button
             type="button"
             onClick={() => setPaginaTecnicos((previo) => previo + 1)}
-            className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700"
+            className="mt-2 w-full rounded-xl border border-sat-border px-3 py-2 text-xs font-bold text-sat-muted"
             disabled={cargandoTecnicos}
           >
             {cargandoTecnicos ? 'Cargando...' : 'Cargar más técnicos'}
@@ -649,7 +649,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">Tipo de orden *</span>
+        <span className="mb-1 block text-xs font-semibold text-sat-muted">Tipo de orden *</span>
         <select
           required
           name="tipo_orden"
@@ -672,7 +672,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               };
             });
           }}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
           disabled={formularioDeshabilitado}
         >
           <option value="averia">Avería</option>
@@ -682,7 +682,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">
+        <span className="mb-1 block text-xs font-semibold text-sat-muted">
           {formulario.tipo_orden === 'averia' ? 'Descripción de la avería *' : 'Descripción de la orden *'}
         </span>
         <textarea
@@ -691,7 +691,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           value={formulario.descripcion_averia}
           onChange={actualizarCampo}
           rows={3}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
           placeholder={formulario.tipo_orden === 'averia'
             ? 'Describe el problema detectado'
             : 'Describe el montaje o la puesta en marcha'}
@@ -699,12 +699,12 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">Prioridad</span>
+        <span className="mb-1 block text-xs font-semibold text-sat-muted">Prioridad</span>
         <select
           name="prioridad"
           value={formulario.prioridad}
           onChange={actualizarCampo}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
         >
           <option value="baja">Baja</option>
           <option value="media">Media</option>
@@ -727,9 +727,9 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               : 'Crear Orden'}
       </button>
 
-      {mensaje && <p className="text-xs font-semibold text-slate-600">{mensaje}</p>}
+      {mensaje && <p className="text-xs font-semibold text-sat-muted">{mensaje}</p>}
       {!puedeCrearOrdenes && (
-        <p className="text-xs font-semibold text-slate-600">
+        <p className="text-xs font-semibold text-sat-muted">
           Tu rol técnico no permite crear órdenes nuevas.
         </p>
       )}
@@ -865,34 +865,34 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
       {abierto && (
         <form onSubmit={guardar} className="space-y-3 rounded-xl border border-sky-200 bg-white p-3">
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-slate-700">Descripción de la avería</span>
+            <span className="mb-1 block text-xs font-semibold text-sat-muted">Descripción de la avería</span>
             <textarea
               rows={2}
               value={descripcionAveria}
               onChange={(e) => setDescripcionAveria(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
             />
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-slate-700">
+            <span className="mb-1 block text-xs font-semibold text-sat-muted">
               Tareas realizadas
             </span>
             <textarea
               rows={3}
               value={tareasLibre}
               onChange={(e) => setTareasLibre(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
             />
-            <span className="mt-1 block text-[10px] text-slate-500">
+            <span className="mt-1 block text-[10px] text-sat-subtle">
               Los marcadores técnicos (firma, fotos…) se conservan.
             </span>
           </label>
 
-          <fieldset className="space-y-2 rounded-lg border border-slate-200 p-2">
-            <legend className="px-1 text-xs font-bold text-slate-700">Materiales</legend>
+          <fieldset className="space-y-2 rounded-lg border border-sat-border-soft p-2">
+            <legend className="px-1 text-xs font-bold text-sat-muted">Materiales</legend>
             {materiales.length === 0 && (
-              <p className="text-xs text-slate-500">Sin materiales asociados.</p>
+              <p className="text-xs text-sat-subtle">Sin materiales asociados.</p>
             )}
             {materiales.map((m, i) => (
               <div key={i} className="grid grid-cols-12 gap-1">
@@ -901,7 +901,7 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
                   value={m.nombre_material}
                   onChange={(e) => actualizarMaterial(i, 'nombre_material', e.target.value)}
                   placeholder="Nombre"
-                  className="col-span-6 rounded border border-slate-300 px-2 py-1 text-xs"
+                  className="col-span-6 rounded border border-sat-border px-2 py-1 text-xs"
                 />
                 <input
                   type="number"
@@ -910,7 +910,7 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
                   value={m.cantidad}
                   onChange={(e) => actualizarMaterial(i, 'cantidad', e.target.value)}
                   placeholder="Cant."
-                  className="col-span-2 rounded border border-slate-300 px-2 py-1 text-xs"
+                  className="col-span-2 rounded border border-sat-border px-2 py-1 text-xs"
                 />
                 <input
                   type="number"
@@ -919,7 +919,7 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
                   value={m.precio_unitario}
                   onChange={(e) => actualizarMaterial(i, 'precio_unitario', e.target.value)}
                   placeholder="€/u"
-                  className="col-span-3 rounded border border-slate-300 px-2 py-1 text-xs"
+                  className="col-span-3 rounded border border-sat-border px-2 py-1 text-xs"
                 />
                 <button
                   type="button"
@@ -934,19 +934,19 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
             <button
               type="button"
               onClick={agregarMaterial}
-              className="w-full rounded-lg border border-dashed border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700"
+              className="w-full rounded-lg border border-dashed border-sat-border px-2 py-1 text-xs font-semibold text-sat-muted"
             >
               + Añadir material
             </button>
-            <p className="text-[10px] text-slate-500">
+            <p className="text-[10px] text-sat-subtle">
               No se ajusta el stock de inventario al editar; solo cambia el detalle del informe.
             </p>
           </fieldset>
 
-          <fieldset className="space-y-2 rounded-lg border border-slate-200 p-2">
-            <legend className="px-1 text-xs font-bold text-slate-700">Fotos del parte</legend>
+          <fieldset className="space-y-2 rounded-lg border border-sat-border-soft p-2">
+            <legend className="px-1 text-xs font-bold text-sat-muted">Fotos del parte</legend>
             {fotosActuales.length === 0 && (
-              <p className="text-xs text-slate-500">Sin fotos en el parte original.</p>
+              <p className="text-xs text-sat-subtle">Sin fotos en el parte original.</p>
             )}
             <div className="grid grid-cols-3 gap-2">
               {fotosActuales.map((url) => {
@@ -956,7 +956,7 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
                     key={url}
                     type="button"
                     onClick={() => alternarEliminarFoto(url)}
-                    className={`relative overflow-hidden rounded border-2 ${marcada ? 'border-red-500 opacity-50' : 'border-slate-200'}`}
+                    className={`relative overflow-hidden rounded border-2 ${marcada ? 'border-red-500 opacity-50' : 'border-sat-border-soft'}`}
                   >
                     <img src={mapaFotosVista[url] || ''} alt="Foto" className="h-20 w-full object-cover" />
                     {marcada && (
@@ -973,8 +973,8 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
                 {fotosAEliminar.length} foto(s) marcadas para eliminar.
               </p>
             )}
-            <div className="border-t border-slate-200 pt-2">
-              <span className="mb-1 block text-xs font-semibold text-slate-700">Añadir fotos nuevas</span>
+            <div className="border-t border-sat-border-soft pt-2">
+              <span className="mb-1 block text-xs font-semibold text-sat-muted">Añadir fotos nuevas</span>
               <input
                 type="file"
                 accept="image/*"
@@ -983,9 +983,9 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
                 className="block w-full text-xs"
               />
               {fotosNuevas.length > 0 && (
-                <ul className="mt-2 space-y-1 text-xs text-slate-700">
+                <ul className="mt-2 space-y-1 text-xs text-sat-muted">
                   {fotosNuevas.map((f, i) => (
-                    <li key={i} className="flex items-center justify-between rounded bg-slate-100 px-2 py-1">
+                    <li key={i} className="flex items-center justify-between rounded bg-sat-surface-alt px-2 py-1">
                       <span className="truncate">{f.name}</span>
                       <button
                         type="button"
@@ -1009,7 +1009,7 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
             {accionEnCurso ? 'Guardando y regenerando PDF...' : 'Guardar parte y regenerar informe'}
           </button>
 
-          {mensaje && <p className="text-xs font-semibold text-slate-600">{mensaje}</p>}
+          {mensaje && <p className="text-xs font-semibold text-sat-muted">{mensaje}</p>}
         </form>
       )}
     </>
@@ -1279,7 +1279,7 @@ function TarjetaOrden({
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-bold uppercase tracking-wide text-sat-subtle">
               {orden.numero_ticket ? `SAT-${orden.numero_ticket}` : orden.id}
             </p>
             <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold ${etiquetaTipo.clase}`}>
@@ -1287,7 +1287,7 @@ function TarjetaOrden({
               {etiquetaTipo.texto}
             </span>
           </div>
-          <h3 className="mt-1 text-base font-bold text-slate-800">{orden.equipo}</h3>
+          <h3 className="mt-1 text-base font-bold text-sat-text">{orden.equipo}</h3>
         </div>
         <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${clase}`}>
           <IconoEstado className="h-4 w-4" />
@@ -1295,13 +1295,13 @@ function TarjetaOrden({
         </span>
       </div>
 
-      <div className="space-y-2 text-sm text-slate-700">
+      <div className="space-y-2 text-sm text-sat-muted">
         <p>
-          <span className="font-semibold text-slate-900">Cliente:</span> {orden.cliente}
+          <span className="font-semibold text-sat-text">Cliente:</span> {orden.cliente}
         </p>
         <div className="flex items-start justify-between gap-2">
           <p className="min-w-0 flex-1">
-            <span className="font-semibold text-slate-900">Dirección:</span>{' '}
+            <span className="font-semibold text-sat-text">Dirección:</span>{' '}
             {ubicacionCliente.direccion || (ubicacionCliente.tieneUbicacion ? 'Ubicación registrada' : 'Sin ubicación')}
           </p>
           <button
@@ -1314,11 +1314,11 @@ function TarjetaOrden({
           </button>
         </div>
         <p>
-          <span className="font-semibold text-slate-900">Técnico:</span> {orden.tecnico || 'Sin técnico asignado'}
+          <span className="font-semibold text-sat-text">Técnico:</span> {orden.tecnico || 'Sin técnico asignado'}
         </p>
         {orden.estado !== 'Finalizado' && (
           <p>
-            <span className="font-semibold text-slate-900">{orden.tipoOrden === 'averia' ? 'Avería:' : 'Orden:'}</span>{' '}
+            <span className="font-semibold text-sat-text">{orden.tipoOrden === 'averia' ? 'Avería:' : 'Orden:'}</span>{' '}
             {orden.descripcion}
           </p>
         )}
@@ -1365,31 +1365,31 @@ function TarjetaOrden({
               {mostrarValoracion && (
                 <form onSubmit={guardarValoracion} className="space-y-2 rounded-xl border border-emerald-200 bg-white p-3">
                   <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-slate-700">Materiales (€)</span>
+                    <span className="mb-1 block text-xs font-semibold text-sat-muted">Materiales (€)</span>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
                       value={formularioValoracion.coste_materiales_editable}
                       onChange={(evento) => setFormularioValoracion((previo) => ({ ...previo, coste_materiales_editable: evento.target.value }))}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-slate-700">Tarifa mano de obra (€/h)</span>
+                    <span className="mb-1 block text-xs font-semibold text-sat-muted">Tarifa mano de obra (€/h)</span>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
                       value={formularioValoracion.tarifa_mano_obra_hora}
                       onChange={(evento) => setFormularioValoracion((previo) => ({ ...previo, tarifa_mano_obra_hora: evento.target.value }))}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-slate-700">Horas mano de obra</span>
+                    <span className="mb-1 block text-xs font-semibold text-sat-muted">Horas mano de obra</span>
                     <input
                       type="number"
                       min="0"
@@ -1399,25 +1399,25 @@ function TarjetaOrden({
                         setHorasManoObraEditadas(true);
                         setFormularioValoracion((previo) => ({ ...previo, horas_mano_obra: evento.target.value }));
                       }}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-slate-700">Mecánicos</span>
+                    <span className="mb-1 block text-xs font-semibold text-sat-muted">Mecánicos</span>
                     <input
                       type="number"
                       min="1"
                       step="1"
                       value={formularioValoracion.mecanicos_intervinieron}
                       onChange={(evento) => setFormularioValoracion((previo) => ({ ...previo, mecanicos_intervinieron: evento.target.value }))}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                     />
                   </label>
 
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                     <label className="block">
-                      <span className="mb-1 block text-xs font-semibold text-slate-700">Inicio intervención</span>
+                      <span className="mb-1 block text-xs font-semibold text-sat-muted">Inicio intervención</span>
                       <input
                         type="datetime-local"
                         value={formularioValoracion.fecha_inicio}
@@ -1434,11 +1434,11 @@ function TarjetaOrden({
                             return siguiente;
                           })
                         }
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                       />
                     </label>
                     <label className="block">
-                      <span className="mb-1 block text-xs font-semibold text-slate-700">Fin intervención</span>
+                      <span className="mb-1 block text-xs font-semibold text-sat-muted">Fin intervención</span>
                       <input
                         type="datetime-local"
                         value={formularioValoracion.fecha_fin}
@@ -1455,32 +1455,32 @@ function TarjetaOrden({
                             return siguiente;
                           })
                         }
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                       />
                     </label>
                   </div>
 
                   <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-slate-700">Tarifa desplazamiento (€/km)</span>
+                    <span className="mb-1 block text-xs font-semibold text-sat-muted">Tarifa desplazamiento (€/km)</span>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
                       value={formularioValoracion.tarifa_desplazamiento_km}
                       onChange={(evento) => setFormularioValoracion((previo) => ({ ...previo, tarifa_desplazamiento_km: evento.target.value }))}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-slate-700">Km desplazamiento facturables</span>
+                    <span className="mb-1 block text-xs font-semibold text-sat-muted">Km desplazamiento facturables</span>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
                       value={formularioValoracion.km_desplazamiento_facturables}
                       onChange={(evento) => setFormularioValoracion((previo) => ({ ...previo, km_desplazamiento_facturables: evento.target.value }))}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                     />
                   </label>
 
@@ -1489,7 +1489,7 @@ function TarjetaOrden({
                     <p>Horario estándar: 08:00 - 18:00</p>
                   </div>
 
-                  <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+                  <label className="flex items-center gap-2 rounded-lg border border-sat-border-soft bg-sat-surface px-3 py-2 text-xs font-semibold text-sat-muted">
                     <input
                       type="checkbox"
                       checked={Boolean(formularioValoracion.aplica_recargo_festivo)}
@@ -1499,18 +1499,18 @@ function TarjetaOrden({
                   </label>
 
                   <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-slate-700">Recargo festivo (%)</span>
+                    <span className="mb-1 block text-xs font-semibold text-sat-muted">Recargo festivo (%)</span>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
                       value={formularioValoracion.recargo_festivo_pct}
                       onChange={(evento) => setFormularioValoracion((previo) => ({ ...previo, recargo_festivo_pct: evento.target.value }))}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                     />
                   </label>
 
-                  <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+                  <label className="flex items-center gap-2 rounded-lg border border-sat-border-soft bg-sat-surface px-3 py-2 text-xs font-semibold text-sat-muted">
                     <input
                       type="checkbox"
                       checked={Boolean(formularioValoracion.aplica_recargo_fuera_horario)}
@@ -1520,18 +1520,18 @@ function TarjetaOrden({
                   </label>
 
                   <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-slate-700">Recargo fuera de horario (%)</span>
+                    <span className="mb-1 block text-xs font-semibold text-sat-muted">Recargo fuera de horario (%)</span>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
                       value={formularioValoracion.recargo_fuera_horario_pct}
                       onChange={(evento) => setFormularioValoracion((previo) => ({ ...previo, recargo_fuera_horario_pct: evento.target.value }))}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                     />
                   </label>
 
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
+                  <div className="rounded-lg border border-sat-border-soft bg-sat-surface p-2 text-xs text-sat-muted">
                     <p>Mano de obra base: {costeManoObraBasePreview.toFixed(2)} €</p>
                     <p>Recargo mano de obra ({porcentajeRecargoManoObraPreview.toFixed(2)}%): {recargoManoObraEurosPreview.toFixed(2)} €</p>
                     <p>Mano de obra total: {costeManoObraPreview.toFixed(2)} €</p>
@@ -1547,7 +1547,7 @@ function TarjetaOrden({
                     {accionEnCurso ? 'Guardando y regenerando...' : 'Guardar valoración y regenerar informe'}
                   </button>
 
-                  {mensajeValoracion && <p className="text-xs font-semibold text-slate-600">{mensajeValoracion}</p>}
+                  {mensajeValoracion && <p className="text-xs font-semibold text-sat-muted">{mensajeValoracion}</p>}
                 </form>
               )}
             </>
@@ -1589,7 +1589,7 @@ function TarjetaOrden({
                   setMostrarEdicion((previo) => !previo);
                   setMensajeEdicion('');
                 }}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-800 active:scale-95"
+                className="w-full rounded-xl border border-sat-border bg-white px-4 py-3 text-sm font-bold text-sat-text active:scale-95"
               >
                 {mostrarEdicion ? 'Cancelar edición' : 'Editar orden'}
               </button>
@@ -1613,14 +1613,14 @@ function TarjetaOrden({
           {mostrarEdicion && puedeEditarOrden && (
             <form onSubmit={guardarEdicion} className="space-y-2 rounded-xl border border-marca-100 bg-marca-50 p-3">
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-700">Técnico *</span>
+                <span className="mb-1 block text-xs font-semibold text-sat-muted">Técnico *</span>
                 <select
                   required
                   value={formularioEdicion.tecnico_id}
                   onChange={(evento) =>
                     setFormularioEdicion((previo) => ({ ...previo, tecnico_id: evento.target.value }))
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                 >
                   <option value="">Selecciona técnico</option>
                   {tecnicosActivos.map((tecnico) => (
@@ -1633,13 +1633,13 @@ function TarjetaOrden({
               </label>
 
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-700">Estado</span>
+                <span className="mb-1 block text-xs font-semibold text-sat-muted">Estado</span>
                 <select
                   value={formularioEdicion.estado}
                   onChange={(evento) =>
                     setFormularioEdicion((previo) => ({ ...previo, estado: evento.target.value }))
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                 >
                   {OPCIONES_ESTADO_EDITABLE.map((opcion) => (
                     <option key={opcion.value} value={opcion.value}>
@@ -1650,13 +1650,13 @@ function TarjetaOrden({
               </label>
 
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-700">Prioridad</span>
+                <span className="mb-1 block text-xs font-semibold text-sat-muted">Prioridad</span>
                 <select
                   value={formularioEdicion.prioridad}
                   onChange={(evento) =>
                     setFormularioEdicion((previo) => ({ ...previo, prioridad: evento.target.value }))
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                 >
                   <option value="baja">Baja</option>
                   <option value="media">Media</option>
@@ -1673,7 +1673,7 @@ function TarjetaOrden({
                 {accionEnCurso ? 'Guardando cambios...' : 'Guardar cambios'}
               </button>
 
-              {mensajeEdicion && <p className="text-xs font-semibold text-slate-600">{mensajeEdicion}</p>}
+              {mensajeEdicion && <p className="text-xs font-semibold text-sat-muted">{mensajeEdicion}</p>}
             </form>
           )}
 
@@ -1737,7 +1737,7 @@ function BloqueEliminarOrden({
               type="button"
               onClick={onDescargarInformePdf}
               disabled={!orden.informePdfUrl || accionEnCurso}
-              className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 font-bold ${orden.informePdfUrl ? 'border-rose-300 bg-white text-rose-700' : 'border-slate-300 bg-slate-100 text-slate-400 pointer-events-none'}`}
+              className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 font-bold ${orden.informePdfUrl ? 'border-rose-300 bg-white text-rose-700' : 'border-sat-border bg-sat-surface-alt text-sat-faint pointer-events-none'}`}
             >
               Descargar informe PDF
             </button>
@@ -2174,7 +2174,7 @@ export function ListaOrdenesView({ rolUsuario }) {
   }
 
   if (cargando) {
-    return <p className="text-sm font-semibold text-slate-600">Cargando órdenes...</p>;
+    return <p className="text-sm font-semibold text-sat-muted">Cargando órdenes...</p>;
   }
 
   return (
@@ -2391,7 +2391,7 @@ export function ListaOrdenesView({ rolUsuario }) {
           ))}
 
           {totalPaginas > 1 && (
-            <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-sat-border-soft bg-sat-surface px-3 py-2 text-sm text-sat-muted">
               <p className="text-xs font-semibold">
                 Página {paginaSegura} de {totalPaginas} · {totalOrdenesFiltradas} órdenes
               </p>
@@ -2400,7 +2400,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                   type="button"
                   disabled={paginaSegura === 1}
                   onClick={() => setPaginaActual(1)}
-                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-700 disabled:opacity-40"
+                  className="rounded-lg border border-sat-border bg-white px-2 py-1 text-xs font-bold text-sat-muted disabled:opacity-40"
                   title="Primera página"
                 >
                   «
@@ -2409,7 +2409,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                   type="button"
                   disabled={paginaSegura === 1}
                   onClick={() => setPaginaActual((p) => p - 1)}
-                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-700 disabled:opacity-40"
+                  className="rounded-lg border border-sat-border bg-white px-2 py-1 text-xs font-bold text-sat-muted disabled:opacity-40"
                   title="Página anterior"
                 >
                   ‹
@@ -2423,7 +2423,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                   }, [])
                   .map((p, idx) =>
                     p === '...' ? (
-                      <span key={`ellipsis-${idx}`} className="px-1 text-xs text-slate-400">…</span>
+                      <span key={`ellipsis-${idx}`} className="px-1 text-xs text-sat-faint">…</span>
                     ) : (
                       <button
                         key={p}
@@ -2432,7 +2432,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                         className={`rounded-lg border px-2 py-1 text-xs font-bold ${
                           p === paginaSegura
                             ? 'border-cotepa-rojo-500 bg-cotepa-rojo-500 text-white'
-                            : 'border-slate-300 bg-white text-slate-700'
+                            : 'border-sat-border bg-white text-sat-muted'
                         }`}
                       >
                         {p}
@@ -2443,7 +2443,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                   type="button"
                   disabled={paginaSegura === totalPaginas}
                   onClick={() => setPaginaActual((p) => p + 1)}
-                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-700 disabled:opacity-40"
+                  className="rounded-lg border border-sat-border bg-white px-2 py-1 text-xs font-bold text-sat-muted disabled:opacity-40"
                   title="Página siguiente"
                 >
                   ›
@@ -2452,7 +2452,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                   type="button"
                   disabled={paginaSegura === totalPaginas}
                   onClick={() => setPaginaActual(totalPaginas)}
-                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-700 disabled:opacity-40"
+                  className="rounded-lg border border-sat-border bg-white px-2 py-1 text-xs font-bold text-sat-muted disabled:opacity-40"
                   title="Última página"
                 >
                   »
@@ -2462,7 +2462,7 @@ export function ListaOrdenesView({ rolUsuario }) {
           )}
 
           {!ordenesListado.length && (
-            <div className="flex items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm font-medium text-slate-600">
+            <div className="flex items-center gap-2 rounded-xl border border-dashed border-sat-border bg-sat-surface p-3 text-sm font-medium text-sat-muted">
               <TriangleAlert className="h-4 w-4" />
               No hay órdenes disponibles con los filtros y búsqueda seleccionados.
             </div>

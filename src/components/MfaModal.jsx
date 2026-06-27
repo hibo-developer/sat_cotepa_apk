@@ -141,7 +141,7 @@ export function MfaModal({ abierto, onCerrar }) {
 
         {modo === 'lista' && (
           <div className="space-y-3">
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-sat-muted">
               Activa la verificacion en dos pasos con una app autenticadora (Google Authenticator, Microsoft
               Authenticator, etc.).
             </p>
@@ -190,7 +190,7 @@ export function MfaModal({ abierto, onCerrar }) {
 
         {modo === 'enroll' && (
           <form onSubmit={confirmar} className="space-y-3">
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-sat-muted">
               1) Escanea el QR con tu app autenticadora. 2) Introduce el codigo de 6 digitos para confirmar.
             </p>
 
@@ -219,13 +219,13 @@ export function MfaModal({ abierto, onCerrar }) {
             )}
 
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-700">Codigo 2FA</span>
+              <span className="mb-1 block text-xs font-semibold text-sat-muted">Codigo 2FA</span>
               <input
                 required
                 inputMode="numeric"
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm tracking-widest"
+                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm tracking-widest"
                 placeholder="123456"
                 autoComplete="one-time-code"
                 disabled={cargando}

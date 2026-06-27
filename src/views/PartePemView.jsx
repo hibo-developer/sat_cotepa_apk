@@ -708,7 +708,7 @@ export function PartePemView({ rolUsuario, sesion }) {
         </div>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Cliente *</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Cliente *</span>
           <select
             name="cliente_id"
             required
@@ -724,7 +724,7 @@ export function PartePemView({ rolUsuario, sesion }) {
               setOrdenesAbiertas([]);
               setEquipos([]);
             }}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             disabled={cargandoCatalogos}
           >
             <option value="">Selecciona cliente</option>
@@ -737,14 +737,14 @@ export function PartePemView({ rolUsuario, sesion }) {
           <button
             type="button"
             onClick={abrirRutaCliente}
-            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 active:scale-95 disabled:opacity-60"
+            className="mt-2 w-full rounded-xl border border-sat-border bg-white px-4 py-3 text-sm font-bold text-sat-muted active:scale-95 disabled:opacity-60"
             disabled={!formulario.cliente_id}
           >
             Iniciar ruta al cliente
           </button>
           {clienteSeleccionado && (
-            <div className="mt-2 space-y-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-              <p className="font-semibold text-slate-800">{clienteSeleccionado.nombre}</p>
+            <div className="mt-2 space-y-1 rounded-xl border border-sat-border-soft bg-sat-surface px-3 py-2 text-xs text-sat-muted">
+              <p className="font-semibold text-sat-text">{clienteSeleccionado.nombre}</p>
               {direccionCliente && (
                 <p>
                   <span className="font-semibold">Dirección:</span> {direccionCliente}
@@ -772,7 +772,7 @@ export function PartePemView({ rolUsuario, sesion }) {
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Técnico responsable *</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Técnico responsable *</span>
           <select
             name="tecnico_id"
             required
@@ -786,7 +786,7 @@ export function PartePemView({ rolUsuario, sesion }) {
               }));
               setOrdenesAbiertas([]);
             }}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             disabled={cargandoCatalogos}
           >
             <option value="">Selecciona técnico</option>
@@ -800,7 +800,7 @@ export function PartePemView({ rolUsuario, sesion }) {
         </label>
 
         <label className="block lg:col-span-2">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Orden PEM abierta (opcional)</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Orden PEM abierta (opcional)</span>
           <select
             name="orden_id"
             value={formulario.orden_id}
@@ -814,7 +814,7 @@ export function PartePemView({ rolUsuario, sesion }) {
                 tipo_orden: orden?.tipo_orden || prev.tipo_orden,
               }));
             }}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             disabled={!formulario.cliente_id || !formulario.tecnico_id}
           >
             <option value="">Sin orden previa (crear y cerrar en el envío)</option>
@@ -827,13 +827,13 @@ export function PartePemView({ rolUsuario, sesion }) {
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Equipo a intervenir *</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Equipo a intervenir *</span>
           <select
             name="equipo_id"
             required
             value={formulario.equipo_id}
             onChange={(e) => setFormulario((prev) => ({ ...prev, equipo_id: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             disabled={!formulario.cliente_id}
           >
             <option value="">Selecciona equipo</option>
@@ -848,25 +848,25 @@ export function PartePemView({ rolUsuario, sesion }) {
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Matrícula del equipo *</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Matrícula del equipo *</span>
           <input
             name="equipo_matricula"
             required
             value={formulario.equipo_matricula}
             onChange={(e) => setFormulario((prev) => ({ ...prev, equipo_matricula: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             placeholder="Ej: 1234-ABC"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Tipo de operación *</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Tipo de operación *</span>
           <select
             name="tipo_orden"
             required
             value={formulario.tipo_orden}
             onChange={(e) => setFormulario((prev) => ({ ...prev, tipo_orden: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
           >
             <option value="">Selecciona</option>
             <option value="montaje">Montaje</option>
@@ -875,13 +875,13 @@ export function PartePemView({ rolUsuario, sesion }) {
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Fecha de instalación *</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Fecha de instalación *</span>
           <input
             name="fecha_instalacion"
             required
             readOnly
             value={formulario.fecha_instalacion}
-            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border bg-sat-surface px-4 py-3 text-sm"
             placeholder="Se autocompleta automáticamente al enviar el parte"
           />
         </label>
@@ -889,25 +889,25 @@ export function PartePemView({ rolUsuario, sesion }) {
 
 
         <label className="block lg:col-span-2">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Notas del técnico</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Notas del técnico</span>
           <textarea
             name="notas_tecnico"
             value={formulario.notas_tecnico}
             onChange={(e) => setFormulario((prev) => ({ ...prev, notas_tecnico: e.target.value }))}
             rows={3}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             placeholder="Observaciones del montaje / puesta en marcha"
           />
         </label>
 
         <label className="block lg:col-span-2">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Notas del cliente</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Notas del cliente</span>
           <textarea
             name="notas_cliente"
             value={formulario.notas_cliente}
             onChange={(e) => setFormulario((prev) => ({ ...prev, notas_cliente: e.target.value }))}
             rows={3}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             placeholder="Comentarios del cliente"
           />
         </label>
@@ -923,8 +923,8 @@ export function PartePemView({ rolUsuario, sesion }) {
           <p className="text-xs font-bold uppercase tracking-wide text-marca-800">Sección 2 · Verificaciones</p>
         </div>
 
-        <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
-          <h3 className="text-sm font-bold text-slate-800">Acciones realizadas (obligatorias)</h3>
+        <div className="space-y-2 rounded-2xl border border-sat-border-soft bg-sat-surface p-4 lg:col-span-2">
+          <h3 className="text-sm font-bold text-sat-text">Acciones realizadas (obligatorias)</h3>
 
           {[
             ['verificacion_suministros', 'Verificación de suministros del equipo efectuada'],
@@ -934,13 +934,13 @@ export function PartePemView({ rolUsuario, sesion }) {
             ['instrucciones_mantenimiento', 'Instrucciones al cliente sobre normas de mantenimiento del equipo efectuadas'],
           ].map(([clave, etiqueta]) => (
             <label key={clave} className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-700">{etiqueta} *</span>
+              <span className="mb-1 block text-xs font-semibold text-sat-muted">{etiqueta} *</span>
               <select
                 name={clave}
                 required
                 value={checks[clave]}
                 onChange={(e) => setChecks((prev) => ({ ...prev, [clave]: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
               >
                 <option value="">Selecciona</option>
                 <option value="si">Sí</option>
@@ -962,8 +962,8 @@ export function PartePemView({ rolUsuario, sesion }) {
           <p className="text-xs font-bold uppercase tracking-wide text-marca-800">Sección 3 · Evidencias</p>
         </div>
 
-        <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-2">
-          <h3 className="text-sm font-bold text-slate-800">Fotos vinculadas a la intervención</h3>
+        <div className="space-y-2 rounded-2xl border border-sat-border-soft bg-white p-4 lg:col-span-2">
+          <h3 className="text-sm font-bold text-sat-text">Fotos vinculadas a la intervención</h3>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -973,7 +973,7 @@ export function PartePemView({ rolUsuario, sesion }) {
             >
               Tomar foto
             </button>
-            <label className="cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 active:scale-95">
+            <label className="cursor-pointer rounded-xl border border-sat-border bg-white px-4 py-3 text-sm font-bold text-sat-muted active:scale-95">
               Subir desde galería
               <input
                 type="file"
@@ -993,16 +993,16 @@ export function PartePemView({ rolUsuario, sesion }) {
             onChange={manejarSeleccionFotos}
             className="hidden"
           />
-          <p className="text-[11px] text-slate-600">
+          <p className="text-[11px] text-sat-muted">
             Máximo 10 fotos. En móvil, "Tomar foto" abre la cámara.
           </p>
           {fotosIntervencion.length > 0 && (
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-semibold text-slate-600">{fotosIntervencion.length} foto(s) seleccionadas</p>
+              <p className="text-xs font-semibold text-sat-muted">{fotosIntervencion.length} foto(s) seleccionadas</p>
               <button
                 type="button"
                 onClick={() => setFotosIntervencion([])}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                className="rounded-lg border border-sat-border bg-white px-3 py-2 text-xs font-bold text-sat-muted"
               >
                 Quitar todas
               </button>
@@ -1011,7 +1011,7 @@ export function PartePemView({ rolUsuario, sesion }) {
           {previewsFotos.length > 0 && (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               {previewsFotos.map((prev, indice) => (
-                <div key={prev.clave} className="rounded-xl border border-slate-200 bg-slate-50 p-2">
+                <div key={prev.clave} className="rounded-xl border border-sat-border-soft bg-sat-surface p-2">
                   <img src={prev.url} alt={prev.nombre} className="h-24 w-full rounded-lg object-cover" />
                   <button
                     type="button"
@@ -1038,31 +1038,31 @@ export function PartePemView({ rolUsuario, sesion }) {
         </div>
 
         <label className="block lg:col-span-2">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Nombre del cliente *</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Nombre del cliente *</span>
           <input
             name="nombre_firmante"
             required
             value={formulario.nombre_firmante}
             onChange={(e) => setFormulario((prev) => ({ ...prev, nombre_firmante: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             placeholder="Nombre y apellidos"
           />
         </label>
 
-        <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
-          <h3 className="text-sm font-bold text-slate-800">Aceptación por parte del cliente</h3>
-          <div className="whitespace-pre-line rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
+        <div className="space-y-2 rounded-2xl border border-sat-border-soft bg-sat-surface p-4 lg:col-span-2">
+          <h3 className="text-sm font-bold text-sat-text">Aceptación por parte del cliente</h3>
+          <div className="whitespace-pre-line rounded-xl border border-sat-border-soft bg-white p-3 text-xs text-sat-muted">
             {TEXTO_ACEPTACION_CLIENTE}
           </div>
         </div>
 
-        <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-2">
+        <div className="space-y-2 rounded-2xl border border-sat-border-soft bg-white p-4 lg:col-span-2">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-bold text-slate-800">Firma digital del cliente *</h3>
+            <h3 className="text-sm font-bold text-sat-text">Firma digital del cliente *</h3>
             <button
               type="button"
               onClick={limpiarFirma}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+              className="rounded-lg border border-sat-border bg-white px-3 py-2 text-xs font-bold text-sat-muted"
             >
               Limpiar firma
             </button>
@@ -1075,7 +1075,7 @@ export function PartePemView({ rolUsuario, sesion }) {
             onPointerMove={trazarFirma}
             onPointerUp={terminarTrazoFirma}
             onPointerLeave={terminarTrazoFirma}
-            className="h-40 w-full rounded-xl border border-slate-300 bg-white touch-none"
+            className="h-40 w-full rounded-xl border border-sat-border bg-white touch-none"
           />
           {!firmaClienteDataUrl && (
             <p className="text-xs font-semibold text-rose-700">

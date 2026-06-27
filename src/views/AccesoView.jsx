@@ -62,18 +62,18 @@ export function AccesoView({
 
       {mfaPendiente ? (
         <form onSubmit={enviarCodigoMfa} className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
-          <p className="text-sm font-semibold text-slate-800">
+          <p className="text-sm font-semibold text-sat-text">
             Verificacion en dos pasos activada. Introduce el codigo de tu app autenticadora.
           </p>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-slate-700">Codigo 2FA</span>
+            <span className="mb-1 block text-xs font-semibold text-sat-muted">Codigo 2FA</span>
             <input
               required
               inputMode="numeric"
               value={codigoMfa}
               onChange={(evento) => setCodigoMfa(evento.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm tracking-widest"
+              className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm tracking-widest"
               placeholder="123456"
               autoComplete="one-time-code"
               disabled={guardando || cargandoSesion}
@@ -101,13 +101,13 @@ export function AccesoView({
       ) : (
         <form onSubmit={enviarLogin} className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-slate-700">Email</span>
+            <span className="mb-1 block text-xs font-semibold text-sat-muted">Email</span>
             <input
               required
               type="email"
               value={email}
               onChange={(evento) => setEmail(evento.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+              className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
               placeholder="usuario@empresa.com"
               autoComplete="email"
               disabled={guardando || cargandoSesion}
@@ -115,13 +115,13 @@ export function AccesoView({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-slate-700">Contrasena</span>
+            <span className="mb-1 block text-xs font-semibold text-sat-muted">Contrasena</span>
             <input
               required
               type="password"
               value={password}
               onChange={(evento) => setPassword(evento.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+              className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
               placeholder="********"
               autoComplete="current-password"
               disabled={guardando || cargandoSesion}
