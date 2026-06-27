@@ -55,6 +55,15 @@ export function InventarioView({ rolUsuario }) {
   const sinConfiguracion = useMemo(() => !tieneConfiguracionSupabase(), []);
   const puedeEditarCatalogos = rolUsuario === 'admin' || rolUsuario === 'oficina';
   const modoSoloLectura = !puedeEditarCatalogos;
+  const totalActivos = materialesInventario.filter((material) => material.activo).length;
+  const totalInactivos = Math.max(0, materialesInventario.length - totalActivos);
+  const materialesConStock = materialesInventario.filter((material) => Number(material.stock_actual) > 0).length;
+  const resumenInventario = [
+    { etiqueta: 'Materiales', valor: materialesInventario.length, detalle: 'catalogo total' },
+    { etiqueta: 'Activos', valor: totalActivos, detalle: 'disponibles para uso' },
+    { etiqueta: 'Con stock', valor: materialesConStock, detalle: 'referencias con existencia' },
+    { etiqueta: 'Inactivos', valor: totalInactivos, detalle: 'fuera de operativa' },
+  ];
 
   const totalPaginasMateriales = Math.max(1, Math.ceil(materialesInventario.length / itemsPaginaMateriales));
   const materialesPaginados = useMemo(() => {
@@ -259,19 +268,22 @@ export function InventarioView({ rolUsuario }) {
           Gestión de materiales globales de almacén con seguimiento de stock, regularizaciones y movimientos recientes.
         </p>
 
-        <div className="mt-5 grid grid-cols-3 gap-2.5 text-center text-xs font-bold">
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
-            <p className="text-slate-300">Materiales</p>
-            <p className="mt-1 text-base text-white">{materialesInventario.length}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
-            <p className="text-slate-300">Movimientos</p>
-            <p className="mt-1 text-base text-white">{movimientosSoportados ? movimientosInventario.length : '-'}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
-            <p className="text-slate-300">Modo</p>
-            <p className="mt-1 text-base text-white">{modoSoloLectura ? 'Consulta' : 'Edicion'}</p>
-          </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {resumenInventario.map((item) => (
+            <div
+              key={item.etiqueta}
+              className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5 backdrop-blur-sm"
+            >
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-200">{item.etiqueta}</p>
+              <p className="mt-2 text-2xl font-bold text-white">{item.valor}</p>
+              <p className="mt-1 text-xs text-slate-200">{item.detalle}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-slate-200 shadow-lg shadow-black/5 backdrop-blur-sm">
+          {movimientosSoportados
+            ? `Historial activo con ${movimientosInventario.length} movimientos recientes y panel en modo ${modoSoloLectura ? 'consulta' : 'edicion'}.`
+            : 'Historial pendiente de soporte en base de datos. El resto del inventario permanece operativo.'}
         </div>
       </header>
 
@@ -499,10 +511,10 @@ export function InventarioView({ rolUsuario }) {
           </div>
         )}
 
-        <div className={`space-y-2 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
+        <div className={`space-y-3 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
           {cargando && <p className="text-sm font-semibold text-slate-600">Cargando materiales...</p>}
           {!cargando && materialesInventario.length > 0 && (
-            <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-700 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-xs font-semibold text-slate-700 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <span>Pagina {paginaMateriales} de {totalPaginasMateriales}</span>
                 <label className="flex items-center gap-1">
@@ -541,17 +553,49 @@ export function InventarioView({ rolUsuario }) {
               </div>
             </div>
           )}
+          {!cargando && materialesInventario.length > 0 && (
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Visibles</p>
+                <p className="mt-2 text-xl font-bold text-slate-900">{materialesPaginados.length}</p>
+                <p className="mt-1 text-xs text-slate-500">materiales en la página actual</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Historial</p>
+                <p className="mt-2 text-xl font-bold text-slate-900">{movimientosSoportados ? movimientosInventario.length : '-'}</p>
+                <p className="mt-1 text-xs text-slate-500">movimientos recientes cargados</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Modo</p>
+                <p className="mt-2 text-xl font-bold text-slate-900">{modoSoloLectura ? 'Consulta' : 'Edicion'}</p>
+                <p className="mt-1 text-xs text-slate-500">acceso del usuario actual</p>
+              </div>
+            </div>
+          )}
           {!cargando &&
             materialesPaginados.map((material) => (
-              <article key={material.id} className={claseTarjeta}>
-                <p className="text-sm font-bold text-slate-800">{material.nombre}</p>
-                <p className="text-xs text-slate-600">
-                  {material.descripcion || 'Sin descripcion'}
-                </p>
-                <p className="mt-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                  Stock: {material.stock_actual} {material.unidad || 'ud'} · Precio ref: {material.precio_ref ?? 'N/D'}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">Estado: {material.activo ? 'Activo' : 'Inactivo'}</p>
+              <article key={material.id} className={`${claseTarjeta} transition hover:border-marca-200 hover:shadow-md`}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">{material.nombre}</p>
+                    <p className="mt-1 text-xs text-slate-600">
+                      {material.descripcion || 'Sin descripcion'}
+                    </p>
+                  </div>
+                  <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${
+                    material.activo ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {material.activo ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                    Stock: {material.stock_actual} {material.unidad || 'ud'}
+                  </span>
+                  <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                    Precio ref: {material.precio_ref ?? 'N/D'}
+                  </span>
+                </div>
 
                 {puedeEditarCatalogos && (
                   <div className="mt-3 grid grid-cols-3 gap-2">
@@ -606,10 +650,10 @@ export function InventarioView({ rolUsuario }) {
       </div>
 
       <section className={`space-y-4 ${claseTarjeta}`}>
-        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h3 className="text-base font-bold text-slate-800">Historial de movimientos</h3>
-            <p className="text-xs text-slate-600">Entradas, salidas y regularizaciones con motivo.</p>
+            <p className="text-sm leading-6 text-slate-600">Entradas, salidas y regularizaciones con motivo para revisar el rastro operativo reciente.</p>
           </div>
 
           <div className="w-full max-w-xs">
@@ -631,6 +675,24 @@ export function InventarioView({ rolUsuario }) {
           </div>
         </div>
 
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Filtro</p>
+            <p className="mt-2 text-base font-bold text-slate-900">{filtroMaterialMovimientoId ? 'Especifico' : 'Todos'}</p>
+            <p className="mt-1 text-xs text-slate-500">alcance del historial visible</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Soporte</p>
+            <p className="mt-2 text-base font-bold text-slate-900">{movimientosSoportados ? 'Disponible' : 'Pendiente'}</p>
+            <p className="mt-1 text-xs text-slate-500">estado del registro de movimientos</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Resultados</p>
+            <p className="mt-2 text-base font-bold text-slate-900">{movimientosInventario.length}</p>
+            <p className="mt-1 text-xs text-slate-500">movimientos mostrados</p>
+          </div>
+        </div>
+
         {!movimientosSoportados && (
           <p className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
             El historial requiere la migracion de base de datos 14_inventario_movimientos_regularizacion.sql.
@@ -646,7 +708,7 @@ export function InventarioView({ rolUsuario }) {
         )}
 
         {!cargandoMovimientos && movimientosSoportados && movimientosInventario.length > 0 && (
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
             <table className="min-w-full divide-y divide-slate-200 text-xs">
               <thead className="bg-slate-50 text-slate-700">
                 <tr>

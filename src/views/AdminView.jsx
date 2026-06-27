@@ -35,6 +35,18 @@ export function AdminView() {
     (paginaUsuarios - 1) * USUARIOS_POR_PAGINA,
     (paginaUsuarios - 1) * USUARIOS_POR_PAGINA + USUARIOS_POR_PAGINA,
   );
+  const totalAdmins = usuarios.filter((usuario) => usuario.rol === 'admin').length;
+  const totalTecnicos = usuarios.filter((usuario) => usuario.rol === 'tecnico').length;
+  const clasePanel = 'space-y-4 rounded-3xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:p-5';
+  const claseEtiqueta = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600';
+  const claseInput = 'w-full rounded-2xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-marca-600 focus:outline-none focus:ring-4 focus:ring-marca-100 disabled:cursor-not-allowed disabled:bg-slate-100';
+  const claseBotonPrimario = 'w-full rounded-2xl bg-marca-900 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-marca-900/10 transition hover:bg-marca-800 focus:outline-none focus:ring-4 focus:ring-marca-100 disabled:opacity-60';
+  const claseBotonSecundario = 'w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:opacity-60';
+  const resumenAdmin = [
+    { etiqueta: 'Usuarios', valor: usuarios.length, detalle: 'Cuentas SAT registradas' },
+    { etiqueta: 'Admins', valor: totalAdmins, detalle: 'Control y permisos' },
+    { etiqueta: 'Tecnicos', valor: totalTecnicos, detalle: 'Perfiles operativos' },
+  ];
 
   useEffect(() => {
     async function inicializarGestionUsuarios() {
@@ -211,18 +223,37 @@ export function AdminView() {
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-200">
           Gestión de usuarios, roles SAT y control de acceso interno para tareas de oficina y administración.
         </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          {resumenAdmin.map((item) => (
+            <div
+              key={item.etiqueta}
+              className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5 backdrop-blur-sm"
+            >
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-200">{item.etiqueta}</p>
+              <p className="mt-2 text-2xl font-bold text-white">{item.valor}</p>
+              <p className="mt-1 text-xs text-slate-200">{item.detalle}</p>
+            </div>
+          ))}
+        </div>
       </header>
 
-      <section className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:p-5">
-        <header className="flex items-center gap-2">
-          <ShieldUser className="h-5 w-5 text-marca-700" />
-          <h3 className="text-base font-bold text-slate-800">Usuarios y Roles</h3>
+      <section className={clasePanel}>
+        <header className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <ShieldUser className="h-5 w-5 text-marca-700" />
+              <h3 className="text-base font-bold text-slate-800">Usuarios y Roles</h3>
+            </div>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              CRUD de usuarios autenticados y asignacion de rol SAT (admin, oficina, tecnico). Para rol tecnico se crea
+              automaticamente el registro de tecnico.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-right">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Acceso</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">Panel interno protegido</p>
+          </div>
         </header>
-
-        <p className="text-sm text-slate-600">
-          CRUD de usuarios autenticados y asignacion de rol SAT (admin, oficina, tecnico). Para rol tecnico se crea
-          automaticamente el registro de tecnico.
-        </p>
 
         {errorUsuarios && (
           <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800 shadow-sm">
@@ -246,21 +277,33 @@ export function AdminView() {
         )}
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-4">
-          <form onSubmit={guardarUsuario} className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
+          <form
+            onSubmit={guardarUsuario}
+            className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 lg:col-span-4 lg:sticky lg:top-5 lg:self-start"
+          >
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-slate-900">
+                {usuarioEditandoId ? 'Editar usuario existente' : 'Alta de usuario SAT'}
+              </p>
+              <p className="text-sm leading-6 text-slate-600">
+                Define credenciales, rol y datos del tecnico sin salir del panel de administracion.
+              </p>
+            </div>
+
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-700">Email *</span>
+              <span className={claseEtiqueta}>Email *</span>
               <input
                 required
                 type="email"
                 value={formUsuario.email}
                 onChange={(evento) => setFormUsuario((previo) => ({ ...previo, email: evento.target.value }))}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className={claseInput}
                 disabled={guardandoUsuario || !puedeAdministrar}
               />
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-700">
+              <span className={claseEtiqueta}>
                 {usuarioEditandoId ? 'Nueva contrasena (opcional)' : 'Contrasena inicial *'}
               </span>
               <input
@@ -269,7 +312,7 @@ export function AdminView() {
                 required={!usuarioEditandoId}
                 minLength={12}
                 onChange={(evento) => setFormUsuario((previo) => ({ ...previo, password: evento.target.value }))}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className={claseInput}
                 disabled={guardandoUsuario || !puedeAdministrar}
                 placeholder={usuarioEditandoId ? 'Dejar vacio para mantener la actual' : 'Minimo 12, con mayuscula, minuscula, numero y simbolo'}
               />
@@ -279,20 +322,20 @@ export function AdminView() {
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-700">Nombre visible</span>
+              <span className={claseEtiqueta}>Nombre visible</span>
               <input
                 type="text"
                 value={formUsuario.nombre_visible}
                 onChange={(evento) =>
                   setFormUsuario((previo) => ({ ...previo, nombre_visible: evento.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className={claseInput}
                 disabled={guardandoUsuario || !puedeAdministrar}
               />
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-700">Rol *</span>
+              <span className={claseEtiqueta}>Rol *</span>
               <select
                 value={formUsuario.rol}
                 onChange={(evento) =>
@@ -301,7 +344,7 @@ export function AdminView() {
                     rol: evento.target.value,
                   }))
                 }
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className={claseInput}
                 disabled={guardandoUsuario || !puedeAdministrar}
               >
                 <option value="admin">Admin</option>
@@ -313,28 +356,28 @@ export function AdminView() {
             {formUsuario.rol === 'tecnico' && (
               <>
                 <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-700">Nombre del tecnico</span>
+                  <span className={claseEtiqueta}>Nombre del tecnico</span>
                   <input
                     type="text"
                     value={formUsuario.tecnico_nombre}
                     onChange={(evento) =>
                       setFormUsuario((previo) => ({ ...previo, tecnico_nombre: evento.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className={claseInput}
                     disabled={guardandoUsuario || !puedeAdministrar}
                     placeholder="Si se deja vacio se usa el nombre visible"
                   />
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-700">Especialidad</span>
+                  <span className={claseEtiqueta}>Especialidad</span>
                   <input
                     type="text"
                     value={formUsuario.tecnico_especialidad}
                     onChange={(evento) =>
                       setFormUsuario((previo) => ({ ...previo, tecnico_especialidad: evento.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className={claseInput}
                     disabled={guardandoUsuario || !puedeAdministrar}
                     placeholder="Ej: Hornos industriales"
                   />
@@ -342,11 +385,11 @@ export function AdminView() {
               </>
             )}
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 type="submit"
                 disabled={guardandoUsuario || !puedeAdministrar}
-                className="w-full rounded-xl bg-marca-900 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+                className={claseBotonPrimario}
               >
                 {guardandoUsuario ? 'Guardando...' : usuarioEditandoId ? 'Actualizar usuario' : 'Crear usuario'}
               </button>
@@ -355,35 +398,38 @@ export function AdminView() {
                 type="button"
                 onClick={resetFormularioUsuario}
                 disabled={guardandoUsuario || !puedeAdministrar}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 disabled:opacity-60"
+                className={claseBotonSecundario}
               >
                 Limpiar formulario
               </button>
             </div>
           </form>
 
-          <div className="space-y-2 lg:col-span-8">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-slate-700">Usuarios registrados: {usuarios.length}</p>
+          <div className="space-y-3 lg:col-span-8">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Listado</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">Usuarios registrados: {usuarios.length}</p>
+              </div>
               <button
                 type="button"
                 onClick={recargarUsuarios}
                 disabled={cargandoUsuarios || guardandoUsuario || !puedeAdministrar}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 disabled:opacity-60"
+                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:opacity-60"
               >
                 {cargandoUsuarios ? 'Actualizando...' : 'Recargar'}
               </button>
             </div>
 
             {!cargandoUsuarios && usuarios.length > 0 && (
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+              <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-700">
                 <span>Pagina {paginaUsuarios} de {totalPaginasUsuarios}</span>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setPaginaUsuarios((previo) => Math.max(1, previo - 1))}
                     disabled={paginaUsuarios === 1}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 transition hover:bg-slate-100 disabled:opacity-50"
                   >
                     Anterior
                   </button>
@@ -391,7 +437,7 @@ export function AdminView() {
                     type="button"
                     onClick={() => setPaginaUsuarios((previo) => Math.min(totalPaginasUsuarios, previo + 1))}
                     disabled={paginaUsuarios === totalPaginasUsuarios}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 transition hover:bg-slate-100 disabled:opacity-50"
                   >
                     Siguiente
                   </button>
@@ -400,28 +446,44 @@ export function AdminView() {
             )}
 
             {cargandoUsuarios ? (
-              <p className="text-sm font-semibold text-slate-600">Cargando usuarios...</p>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+                Cargando usuarios...
+              </div>
+            ) : usuarios.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600 shadow-sm">
+                Aun no hay usuarios SAT disponibles para mostrar en este entorno.
+              </div>
             ) : (
               <ul className="space-y-2">
                 {usuariosPaginados.map((usuario) => (
-                  <li key={usuario.user_id} className="rounded-xl border border-slate-200 bg-white p-3">
-                    <p className="text-sm font-bold text-slate-800">{usuario.email}</p>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Rol: {usuario.rol}</p>
-                    <p className="mt-1 text-xs text-slate-600">
+                  <li key={usuario.user_id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-marca-200 hover:shadow-md">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">{usuario.email}</p>
+                        <p className="mt-1 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                          Rol: {usuario.rol}
+                        </p>
+                      </div>
+                      <div className="text-right text-xs text-slate-500">
+                        <p>Usuario SAT</p>
+                        <p className="mt-1 font-semibold text-slate-700">{usuario.nombre_visible || 'Sin alias'}</p>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-xs text-slate-600">
                       Nombre visible: {usuario.nombre_visible || 'Sin definir'}
                     </p>
                     {usuario.rol === 'tecnico' && (
-                      <p className="text-xs text-slate-600">
+                      <p className="mt-1 text-xs text-slate-600">
                         Tecnico: {usuario.tecnico_nombre || 'Sin nombre'}
                         {usuario.tecnico_especialidad ? ` · ${usuario.tecnico_especialidad}` : ''}
                       </p>
                     )}
 
-                    <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div className="mt-4 grid grid-cols-2 gap-3">
                       <button
                         type="button"
                         onClick={() => editarUsuario(usuario)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-4 focus:ring-slate-200"
                         disabled={guardandoUsuario || !puedeAdministrar}
                       >
                         Editar
@@ -430,7 +492,7 @@ export function AdminView() {
                       <button
                         type="button"
                         onClick={() => borrarUsuario(usuario.user_id)}
-                        className="rounded-lg bg-rose-600 px-3 py-2 text-xs font-bold text-white"
+                        className="rounded-xl bg-rose-600 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100"
                         disabled={guardandoUsuario || !puedeAdministrar}
                       >
                         Eliminar

@@ -64,6 +64,8 @@ export function ClientesView({ rolUsuario }) {
   const sinConfiguracion = useMemo(() => !tieneConfiguracionSupabase(), []);
   const puedeEditarCatalogos = rolUsuario === 'admin' || rolUsuario === 'oficina';
   const modoSoloLectura = !puedeEditarCatalogos;
+  const clientesConGps = clientes.filter((cliente) => cliente.lat != null && cliente.lng != null).length;
+  const equiposConRevision = equipos.filter((equipo) => Boolean(equipo.ultima_revision)).length;
 
   const equiposFiltrados = useMemo(() => {
     const termino = busquedaEquipo.trim().toLowerCase();
@@ -100,6 +102,12 @@ export function ClientesView({ rolUsuario }) {
     const inicio = (paginaEquipos - 1) * itemsPaginaEquipos;
     return equiposFiltrados.slice(inicio, inicio + itemsPaginaEquipos);
   }, [equiposFiltrados, paginaEquipos, itemsPaginaEquipos]);
+  const resumenCatalogos = [
+    { etiqueta: 'Clientes', valor: clientes.length, detalle: 'fichas activas' },
+    { etiqueta: 'Equipos', valor: equipos.length, detalle: 'referencias registradas' },
+    { etiqueta: 'GPS', valor: clientesConGps, detalle: 'clientes con coordenadas' },
+    { etiqueta: 'Revision', valor: equiposConRevision, detalle: 'equipos con fecha de control' },
+  ];
 
   useEffect(() => {
     if (paginaClientes > totalPaginasClientes) {
@@ -275,19 +283,20 @@ export function ClientesView({ rolUsuario }) {
           Gestión centralizada de clientes y equipos con acceso rápido a los datos base del servicio técnico.
         </p>
 
-        <div className="mt-5 grid grid-cols-3 gap-2.5 text-center text-xs font-bold">
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
-            <p className="text-slate-300">Clientes</p>
-            <p className="mt-1 text-base text-white">{clientes.length}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
-            <p className="text-slate-300">Equipos</p>
-            <p className="mt-1 text-base text-white">{equipos.length}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
-            <p className="text-slate-300">Modo</p>
-            <p className="mt-1 text-base text-white">{modoSoloLectura ? 'Consulta' : 'Edición'}</p>
-          </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {resumenCatalogos.map((item) => (
+            <div
+              key={item.etiqueta}
+              className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5 backdrop-blur-sm"
+            >
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-200">{item.etiqueta}</p>
+              <p className="mt-2 text-2xl font-bold text-white">{item.valor}</p>
+              <p className="mt-1 text-xs text-slate-200">{item.detalle}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-slate-200 shadow-lg shadow-black/5 backdrop-blur-sm">
+          Vista activa en modo {modoSoloLectura ? 'consulta' : 'edición'} con acceso rápido a clientes y equipos del catálogo SAT.
         </div>
       </header>
 
@@ -433,10 +442,10 @@ export function ClientesView({ rolUsuario }) {
             </form>
           )}
 
-          <div className={`space-y-2 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
+          <div className={`space-y-3 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
             {cargando && <p className="text-sm font-semibold text-slate-600">Cargando clientes...</p>}
             {!cargando && clientes.length > 0 && (
-              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-700 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-xs font-semibold text-slate-700 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <span>Página {paginaClientes} de {totalPaginasClientes}</span>
                   <label className="flex items-center gap-1">
@@ -475,17 +484,47 @@ export function ClientesView({ rolUsuario }) {
                 </div>
               </div>
             )}
+            {!cargando && clientes.length > 0 && (
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Visibles</p>
+                  <p className="mt-2 text-xl font-bold text-slate-900">{clientesPaginados.length}</p>
+                  <p className="mt-1 text-xs text-slate-500">clientes en la página actual</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Geolocalizados</p>
+                  <p className="mt-2 text-xl font-bold text-slate-900">{clientesConGps}</p>
+                  <p className="mt-1 text-xs text-slate-500">clientes con coordenadas útiles</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Modo</p>
+                  <p className="mt-2 text-xl font-bold text-slate-900">{modoSoloLectura ? 'Consulta' : 'Edición'}</p>
+                  <p className="mt-1 text-xs text-slate-500">permiso del usuario actual</p>
+                </div>
+              </div>
+            )}
 
             {!cargando &&
               clientesPaginados.map((cliente) => (
-                <article key={cliente.id} className={claseTarjeta}>
-                  <p className="text-sm font-bold text-slate-800">{cliente.nombre}</p>
-                  <p className="text-xs text-slate-600">{cliente.telefono || 'Sin teléfono'} · {cliente.email || 'Sin email'}</p>
-                  <p className="mt-1 text-xs text-slate-500">{cliente.direccion || 'Sin dirección'}</p>
+                <article key={cliente.id} className={`${claseTarjeta} transition hover:border-marca-200 hover:shadow-md`}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{cliente.nombre}</p>
+                      <p className="mt-1 text-xs text-slate-600">{cliente.telefono || 'Sin teléfono'} · {cliente.email || 'Sin email'}</p>
+                    </div>
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${
+                      cliente.lat != null && cliente.lng != null ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
+                    }`}>
+                      {cliente.lat != null && cliente.lng != null ? 'GPS listo' : 'Sin GPS'}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-xs text-slate-500">{cliente.direccion || 'Sin dirección'}</p>
                   {(cliente.lat != null && cliente.lng != null) && (
-                    <p className="mt-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                      GPS: {Number(cliente.lat).toFixed(5)}, {Number(cliente.lng).toFixed(5)}
-                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                        GPS: {Number(cliente.lat).toFixed(5)}, {Number(cliente.lng).toFixed(5)}
+                      </p>
+                    </div>
                   )}
 
                   {puedeEditarCatalogos && (
@@ -614,9 +653,21 @@ export function ClientesView({ rolUsuario }) {
             </form>
           )}
 
-          <div className={`space-y-2 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
+          <div className={`space-y-3 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-              <label className="block">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Búsqueda de equipos</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Filtra por cliente, nombre, marca, modelo o número de serie para localizar equipos con rapidez.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-right shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Resultados</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{equiposFiltrados.length}</p>
+                </div>
+              </div>
+              <label className="mt-4 block">
                 <span className={claseEtiqueta}>Buscar equipo</span>
                 <input
                   value={busquedaEquipo}
@@ -628,7 +679,7 @@ export function ClientesView({ rolUsuario }) {
             </div>
             {cargando && <p className="text-sm font-semibold text-slate-600">Cargando equipos...</p>}
             {!cargando && equiposFiltrados.length > 0 && (
-              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-700 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-xs font-semibold text-slate-700 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <span>Página {paginaEquipos} de {totalPaginasEquipos}</span>
                   <label className="flex items-center gap-1">
@@ -667,20 +718,50 @@ export function ClientesView({ rolUsuario }) {
                 </div>
               </div>
             )}
+            {!cargando && equiposFiltrados.length > 0 && (
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Visibles</p>
+                  <p className="mt-2 text-xl font-bold text-slate-900">{equiposPaginados.length}</p>
+                  <p className="mt-1 text-xs text-slate-500">equipos en la página actual</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Revisados</p>
+                  <p className="mt-2 text-xl font-bold text-slate-900">{equiposConRevision}</p>
+                  <p className="mt-1 text-xs text-slate-500">equipos con fecha de revisión</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Filtro</p>
+                  <p className="mt-2 text-xl font-bold text-slate-900">{busquedaEquipo.trim() ? 'Activo' : 'Global'}</p>
+                  <p className="mt-1 text-xs text-slate-500">{busquedaEquipo.trim() || 'sin término aplicado'}</p>
+                </div>
+              </div>
+            )}
 
             {!cargando &&
               equiposPaginados.map((equipo) => (
-                <article key={equipo.id} className={claseTarjeta}>
-                  <p className="text-sm font-bold text-slate-800">{equipo.nombre}</p>
-                  <p className="text-xs text-slate-600">
-                    {(equipo.clientes && equipo.clientes.nombre) || 'Cliente no disponible'}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
+                <article key={equipo.id} className={`${claseTarjeta} transition hover:border-marca-200 hover:shadow-md`}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{equipo.nombre}</p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        {(equipo.clientes && equipo.clientes.nombre) || 'Cliente no disponible'}
+                      </p>
+                    </div>
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${
+                      equipo.ultima_revision ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
+                    }`}>
+                      {equipo.ultima_revision ? 'Revisado' : 'Pendiente'}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-xs text-slate-500">
                     {equipo.marca || 'Sin marca'} · {equipo.modelo || 'Sin modelo'} · {equipo.numero_serie || 'Sin serie'}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Última revisión: {equipo.ultima_revision || 'No registrada'}
-                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                      Última revisión: {equipo.ultima_revision || 'No registrada'}
+                    </p>
+                  </div>
 
                   {puedeEditarCatalogos && (
                     <div className="mt-3 grid grid-cols-2 gap-2">

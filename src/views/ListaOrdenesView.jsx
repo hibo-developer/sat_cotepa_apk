@@ -345,6 +345,9 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
   const busquedaTecnicoDebounce = useDebounce(busquedaTecnico, 250);
   const cargandoCatalogos = cargandoClientes || cargandoEquipos || cargandoTecnicos;
   const formularioDeshabilitado = !puedeCrearOrdenes || !tieneConfiguracionSupabase() || cargandoCatalogos;
+  const claseInput = 'w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-marca-600 focus:outline-none focus:ring-4 focus:ring-marca-100 disabled:cursor-not-allowed disabled:bg-slate-100';
+  const claseEtiqueta = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600';
+  const claseBotonCargarMas = 'mt-2 w-full rounded-2xl border border-slate-300 bg-white px-3 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:opacity-60';
 
   useEffect(() => {
     async function cargarClientes() {
@@ -482,22 +485,35 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
   return (
     <form
       onSubmit={enviarFormulario}
-      className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta"
+      className="space-y-4 rounded-3xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:p-5"
     >
-      <div className="flex items-center gap-2">
-        <Wrench className="h-5 w-5 text-marca-700" />
-        <h3 className="text-base font-bold text-slate-800">Nueva Orden de Trabajo</h3>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Wrench className="h-5 w-5 text-marca-700" />
+            <h3 className="text-base font-bold text-slate-800">Nueva Orden de Trabajo</h3>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Registra una nueva orden SAT con cliente, técnico, prioridad y tipo de intervención.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-right">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Alta rápida</p>
+          <p className="mt-1 text-sm font-semibold text-slate-900">
+            {cargandoCatalogos ? 'Catálogos cargando' : 'Catálogos listos'}
+          </p>
+        </div>
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">Cliente *</span>
+        <span className={claseEtiqueta}>Cliente *</span>
         <input
           value={busquedaCliente}
           onChange={(evento) => {
             setPaginaClientes(1);
             setBusquedaCliente(evento.target.value);
           }}
-          className="mb-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className={`${claseInput} mb-2`}
           placeholder="Buscar cliente por nombre"
           disabled={formularioDeshabilitado}
         />
@@ -519,7 +535,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               setBusquedaCliente(clienteSeleccionado.nombre);
             }
           }}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className={claseInput}
           disabled={formularioDeshabilitado}
         >
           <option value="">Selecciona cliente</option>
@@ -536,7 +552,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           <button
             type="button"
             onClick={() => setPaginaClientes((previo) => previo + 1)}
-            className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700"
+            className={claseBotonCargarMas}
             disabled={cargandoClientes}
           >
             {cargandoClientes ? 'Cargando...' : 'Cargar más clientes'}
@@ -545,14 +561,14 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">Equipo</span>
+        <span className={claseEtiqueta}>Equipo</span>
         <input
           value={busquedaEquipo}
           onChange={(evento) => {
             setPaginaEquipos(1);
             setBusquedaEquipo(evento.target.value);
           }}
-          className="mb-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className={`${claseInput} mb-2`}
           placeholder="Buscar equipo por nombre, marca o modelo"
           disabled={!formulario.cliente_id || formularioDeshabilitado}
         />
@@ -569,7 +585,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               setBusquedaEquipo(etiqueta);
             }
           }}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className={claseInput}
           disabled={!formulario.cliente_id || formularioDeshabilitado}
         >
           <option value="">Sin equipo</option>
@@ -588,7 +604,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           <button
             type="button"
             onClick={() => setPaginaEquipos((previo) => previo + 1)}
-            className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700"
+            className={claseBotonCargarMas}
             disabled={cargandoEquipos}
           >
             {cargandoEquipos ? 'Cargando...' : 'Cargar más equipos'}
@@ -597,14 +613,14 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">Técnico *</span>
+        <span className={claseEtiqueta}>Técnico *</span>
         <input
           value={busquedaTecnico}
           onChange={(evento) => {
             setPaginaTecnicos(1);
             setBusquedaTecnico(evento.target.value);
           }}
-          className="mb-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className={`${claseInput} mb-2`}
           placeholder="Buscar técnico por nombre o especialidad"
           disabled={formularioDeshabilitado}
         />
@@ -622,7 +638,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               setBusquedaTecnico(etiqueta);
             }
           }}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className={claseInput}
           disabled={formularioDeshabilitado}
         >
           <option value="">Selecciona técnico</option>
@@ -640,7 +656,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           <button
             type="button"
             onClick={() => setPaginaTecnicos((previo) => previo + 1)}
-            className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700"
+            className={claseBotonCargarMas}
             disabled={cargandoTecnicos}
           >
             {cargandoTecnicos ? 'Cargando...' : 'Cargar más técnicos'}
@@ -649,7 +665,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">Tipo de orden *</span>
+        <span className={claseEtiqueta}>Tipo de orden *</span>
         <select
           required
           name="tipo_orden"
@@ -672,7 +688,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               };
             });
           }}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className={claseInput}
           disabled={formularioDeshabilitado}
         >
           <option value="averia">Avería</option>
@@ -682,7 +698,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">
+        <span className={claseEtiqueta}>
           {formulario.tipo_orden === 'averia' ? 'Descripción de la avería *' : 'Descripción de la orden *'}
         </span>
         <textarea
@@ -691,7 +707,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           value={formulario.descripcion_averia}
           onChange={actualizarCampo}
           rows={3}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className={`${claseInput} min-h-[96px]`}
           placeholder={formulario.tipo_orden === 'averia'
             ? 'Describe el problema detectado'
             : 'Describe el montaje o la puesta en marcha'}
@@ -699,12 +715,12 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-slate-700">Prioridad</span>
+        <span className={claseEtiqueta}>Prioridad</span>
         <select
           name="prioridad"
           value={formulario.prioridad}
           onChange={actualizarCampo}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          className={claseInput}
         >
           <option value="baja">Baja</option>
           <option value="media">Media</option>
@@ -712,6 +728,15 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           <option value="urgente">Urgente</option>
         </select>
       </label>
+
+      <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+        <div>
+          <p className="font-semibold text-slate-900">Sugerencia</p>
+          <p className="mt-1 leading-6">
+            Selecciona primero cliente y técnico para cargar el resto de catálogos con mayor rapidez.
+          </p>
+        </div>
+      </div>
 
       <button
         type="submit"
@@ -1934,6 +1959,11 @@ export function ListaOrdenesView({ rolUsuario }) {
   const costeTotalMateriales = ordenesFinalizadas
     .reduce((acc, orden) => acc + Number(orden.costeMateriales || 0), 0)
     .toFixed(2);
+  const resumenListado = [
+    { etiqueta: 'Listado visible', valor: totalOrdenesFiltradas, detalle: 'tras filtros y búsqueda' },
+    { etiqueta: 'Página actual', valor: paginaSegura, detalle: `de ${totalPaginas}` },
+    { etiqueta: 'Búsqueda', valor: terminoBusqueda ? 'Activa' : 'Global', detalle: terminoBusqueda || 'sin texto aplicado' },
+  ];
 
   function irAParteDesdeOrden(orden) {
     const ruta = orden.tipoOrden && orden.tipoOrden !== 'averia' ? '/parte-pem' : '/parte';
@@ -2320,7 +2350,20 @@ export function ListaOrdenesView({ rolUsuario }) {
         </div>
 
         <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 p-4 shadow-lg shadow-black/5 backdrop-blur-sm">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">Filtros de trabajo</p>
+              <p className="mt-1 text-sm text-slate-200">
+                Ajusta estado, tipo y búsqueda para centrar la operativa del día.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-right">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-200">Contexto</p>
+              <p className="mt-1 text-sm font-semibold text-white">{totalOrdenesFiltradas} órdenes visibles</p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
             {FILTROS_ESTADO.map((filtro) => (
               <button
                 key={filtro}
@@ -2335,24 +2378,22 @@ export function ListaOrdenesView({ rolUsuario }) {
             ))}
           </div>
 
-          <div className="mt-4">
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-slate-200">Filtrar por tipo de orden</span>
-            <select
-              value={filtroTipoOrden}
-              onChange={(evento) => setFiltroTipoOrden(evento.target.value)}
-              className="w-full rounded-xl border border-white/20 bg-marca-900/80 px-3 py-2.5 text-sm text-white transition focus:outline-none focus:ring-2 focus:ring-white/60"
-            >
-              <option value="todos">Todas</option>
-              <option value="averia">Avería</option>
-              <option value="pem">PEM (Montaje + Puesta en marcha)</option>
-              <option value="montaje">PEM · Montaje</option>
-              <option value="puesta_en_marcha">PEM · Puesta en marcha</option>
-            </select>
-          </label>
-          </div>
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-slate-200">Filtrar por tipo de orden</span>
+              <select
+                value={filtroTipoOrden}
+                onChange={(evento) => setFiltroTipoOrden(evento.target.value)}
+                className="w-full rounded-xl border border-white/20 bg-marca-900/80 px-3 py-2.5 text-sm text-white transition focus:outline-none focus:ring-2 focus:ring-white/60"
+              >
+                <option value="todos">Todas</option>
+                <option value="averia">Avería</option>
+                <option value="pem">PEM (Montaje + Puesta en marcha)</option>
+                <option value="montaje">PEM · Montaje</option>
+                <option value="puesta_en_marcha">PEM · Puesta en marcha</option>
+              </select>
+            </label>
 
-          <div className="mt-4">
             <label className="block">
               <span className="mb-1 block text-xs font-semibold text-slate-200">Buscar orden</span>
               <input
@@ -2377,6 +2418,16 @@ export function ListaOrdenesView({ rolUsuario }) {
         </div>
 
         <div className="space-y-3 pb-20 lg:col-span-8 lg:pb-0">
+          <div className="grid gap-3 md:grid-cols-3">
+            {resumenListado.map((item) => (
+              <div key={item.etiqueta} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{item.etiqueta}</p>
+                <p className="mt-2 text-xl font-bold text-slate-900">{item.valor}</p>
+                <p className="mt-1 text-xs text-slate-500">{item.detalle}</p>
+              </div>
+            ))}
+          </div>
+
           {ordenesPaginadas.map((orden) => (
             <TarjetaOrden
               key={orden.id}
@@ -2398,16 +2449,16 @@ export function ListaOrdenesView({ rolUsuario }) {
           ))}
 
           {totalPaginas > 1 && (
-            <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm">
               <p className="text-xs font-semibold">
                 Página {paginaSegura} de {totalPaginas} · {totalOrdenesFiltradas} órdenes
               </p>
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
                   disabled={paginaSegura === 1}
                   onClick={() => setPaginaActual(1)}
-                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-700 disabled:opacity-40"
+                  className="rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40"
                   title="Primera página"
                 >
                   «
@@ -2416,7 +2467,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                   type="button"
                   disabled={paginaSegura === 1}
                   onClick={() => setPaginaActual((p) => p - 1)}
-                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-700 disabled:opacity-40"
+                  className="rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40"
                   title="Página anterior"
                 >
                   ‹
@@ -2436,10 +2487,10 @@ export function ListaOrdenesView({ rolUsuario }) {
                         key={p}
                         type="button"
                         onClick={() => setPaginaActual(p)}
-                        className={`rounded-lg border px-2 py-1 text-xs font-bold ${
+                        className={`rounded-xl border px-2.5 py-1.5 text-xs font-bold ${
                           p === paginaSegura
                             ? 'border-cotepa-rojo-500 bg-cotepa-rojo-500 text-white'
-                            : 'border-slate-300 bg-white text-slate-700'
+                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
                         }`}
                       >
                         {p}
@@ -2450,7 +2501,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                   type="button"
                   disabled={paginaSegura === totalPaginas}
                   onClick={() => setPaginaActual((p) => p + 1)}
-                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-700 disabled:opacity-40"
+                  className="rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40"
                   title="Página siguiente"
                 >
                   ›
@@ -2459,7 +2510,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                   type="button"
                   disabled={paginaSegura === totalPaginas}
                   onClick={() => setPaginaActual(totalPaginas)}
-                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-700 disabled:opacity-40"
+                  className="rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40"
                   title="Última página"
                 >
                   »
@@ -2469,9 +2520,14 @@ export function ListaOrdenesView({ rolUsuario }) {
           )}
 
           {!ordenesListado.length && (
-            <div className="flex items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm font-medium text-slate-600">
-              <TriangleAlert className="h-4 w-4" />
-              No hay órdenes disponibles con los filtros y búsqueda seleccionados.
+            <div className="flex items-start gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600 shadow-sm">
+              <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+              <div>
+                <p className="font-semibold text-slate-800">Sin órdenes para el criterio actual</p>
+                <p className="mt-1">
+                  No hay órdenes disponibles con los filtros y la búsqueda seleccionados. Ajusta el estado, el tipo o el texto de búsqueda para ampliar resultados.
+                </p>
+              </div>
             </div>
           )}
         </div>
