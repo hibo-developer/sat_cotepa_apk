@@ -14,12 +14,14 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-      DONDOMINIO_FTP_SERVER: ${{ secrets.DONDOMINIO_FTP_SERVER }}
-      DONDOMINIO_FTP_USERNAME: ${{ secrets.DONDOMINIO_FTP_USERNAME }}
-      DONDOMINIO_FTP_PASSWORD: ${{ secrets.DONDOMINIO_FTP_PASSWORD }}
-      DONDOMINIO_FTP_SERVER_DIR: ${{ secrets.DONDOMINIO_FTP_SERVER_DIR }}
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
+      DONDOMINIO_FTP_SERVER: ${{ secrets.DONDOMINIO_FTP_SERVER || vars.DONDOMINIO_FTP_SERVER }}
+      DONDOMINIO_FTP_USERNAME: ${{ secrets.DONDOMINIO_FTP_USERNAME || vars.DONDOMINIO_FTP_USERNAME }}
+      DONDOMINIO_FTP_PASSWORD: ${{ secrets.DONDOMINIO_FTP_PASSWORD || vars.DONDOMINIO_FTP_PASSWORD }}
+      DONDOMINIO_FTP_SERVER_DIR: ${{ secrets.DONDOMINIO_FTP_SERVER_DIR || vars.DONDOMINIO_FTP_SERVER_DIR }}
+      DONDOMINIO_FTP_PROTOCOL: ${{ secrets.DONDOMINIO_FTP_PROTOCOL || vars.DONDOMINIO_FTP_PROTOCOL || 'ftp' }}
+      DONDOMINIO_FTP_PORT: ${{ secrets.DONDOMINIO_FTP_PORT || vars.DONDOMINIO_FTP_PORT || '21' }}
 
     steps:
       - name: Checkout
@@ -47,6 +49,41 @@ jobs:
             echo "Faltan secrets requeridos: ${missing[*]}"
             exit 1
           fi
+
+      - name: Normalize FTP connection inputs
+        id: ftp
+        shell: bash
+        run: |
+          raw_server="${DONDOMINIO_FTP_SERVER}"
+          server="${raw_server#ftp://}"
+          server="${server#ftps://}"
+          server="${server%%/*}"
+
+          server_dir="${DONDOMINIO_FTP_SERVER_DIR}"
+          if [ -z "${server_dir}" ]; then
+            server_dir="/"
+          fi
+          case "${server_dir}" in
+            /*) ;;
+            *) server_dir="/${server_dir}" ;;
+          esac
+          case "${server_dir}" in
+            */) ;;
+            *) server_dir="${server_dir}/" ;;
+          esac
+
+          protocol="${DONDOMINIO_FTP_PROTOCOL}"
+          port="${DONDOMINIO_FTP_PORT}"
+
+          if [ -z "${server}" ]; then
+            echo "DONDOMINIO_FTP_SERVER no es valido tras normalizar"
+            exit 1
+          fi
+
+          echo "server=${server}" >> "$GITHUB_OUTPUT"
+          echo "server_dir=${server_dir}" >> "$GITHUB_OUTPUT"
+          echo "protocol=${protocol}" >> "$GITHUB_OUTPUT"
+          echo "port=${port}" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
         run: npm ci
@@ -87,10 +124,12 @@ jobs:
       - name: Deploy to DonDominio by FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ env.DONDOMINIO_FTP_SERVER }}
+          server: ${{ steps.ftp.outputs.server }}
+          protocol: ${{ steps.ftp.outputs.protocol }}
+          port: ${{ steps.ftp.outputs.port }}
           username: ${{ env.DONDOMINIO_FTP_USERNAME }}
           password: ${{ env.DONDOMINIO_FTP_PASSWORD }}
-          server-dir: ${{ env.DONDOMINIO_FTP_SERVER_DIR }}
+          server-dir: ${{ steps.ftp.outputs.server_dir }}
           local-dir: ${{ steps.package.outputs.path }}/
           exclude: |
             **/.git*
