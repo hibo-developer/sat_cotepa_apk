@@ -307,11 +307,11 @@ const SEGUIMIENTO_INICIAL = {
 const CACHE_KEY_PARTE_BORRADOR = 'sat_cache_parte_borrador_v1';
 const MAX_EDAD_BORRADOR_MS = 1000 * 60 * 60 * 24 * 7;
 const SECCIONES_PARTE_TRABAJO = [
-  { id: 'pt-intervencion', label: 'Intervención' },
-  { id: 'pt-datos', label: 'Datos base' },
-  { id: 'pt-materiales', label: 'Materiales' },
-  { id: 'pt-evidencias', label: 'Evidencias' },
-  { id: 'pt-firma-envio', label: 'Firma y envío' },
+  { id: 'pt-intervencion', label: 'Intervención', shortLabel: 'Intervención' },
+  { id: 'pt-datos', label: 'Datos base', shortLabel: 'Datos' },
+  { id: 'pt-materiales', label: 'Materiales', shortLabel: 'Materiales' },
+  { id: 'pt-evidencias', label: 'Evidencias', shortLabel: 'Evidencias' },
+  { id: 'pt-firma-envio', label: 'Firma y envío', shortLabel: 'Firma' },
 ];
 
 function leerBorradorParte() {

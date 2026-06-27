@@ -293,12 +293,12 @@ export default function App() {
         </div>
 
         <div className="border-t border-marca-100 px-3 py-3 lg:px-5 lg:py-4">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <h1 className="text-2xl font-extrabold text-marca-900 lg:text-3xl">
               {tituloActual}
             </h1>
             {requiereLogin && sesion && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap">
                 <button
                   type="button"
                   onClick={() => setMostrarCambiarPassword(true)}
@@ -345,7 +345,7 @@ export default function App() {
       {!accesoBloqueado && (
         <nav
           aria-label="Navegación fija de secciones principales"
-          className="sticky top-[calc(0.45rem+env(safe-area-inset-top))] z-40 mb-4 rounded-2xl border border-marca-100 bg-white/95 p-2 shadow-md backdrop-blur"
+          className="mb-4 hidden rounded-2xl border border-marca-100 bg-white/95 p-2 shadow-md backdrop-blur lg:sticky lg:top-[calc(0.45rem+env(safe-area-inset-top))] lg:z-40 lg:block"
         >
           <ul className="flex items-center gap-2 overflow-x-auto pb-1">
             {navItemsVisibles.map((item) => {

@@ -97,10 +97,10 @@ Haber asistido a los controles de funcionalidad.
 Por último, SE COMPROMETE a atenerse a las instrucciones contenidas en el manual relativas al uso y mantenimiento de la instalación.`;
 
 const SECCIONES_PARTE_PEM = [
-  { id: 'pem-datos', label: 'Datos PEM' },
-  { id: 'pem-checks', label: 'Verificaciones' },
-  { id: 'pem-evidencias', label: 'Evidencias' },
-  { id: 'pem-firma-envio', label: 'Firma y cierre' },
+  { id: 'pem-datos', label: 'Datos PEM', shortLabel: 'Datos' },
+  { id: 'pem-checks', label: 'Verificaciones', shortLabel: 'Checks' },
+  { id: 'pem-evidencias', label: 'Evidencias', shortLabel: 'Evidencias' },
+  { id: 'pem-firma-envio', label: 'Firma y cierre', shortLabel: 'Firma' },
 ];
 
 export function PartePemView({ rolUsuario, sesion }) {
