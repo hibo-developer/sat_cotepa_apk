@@ -16,6 +16,10 @@ jobs:
     env:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      DONDOMINIO_FTP_SERVER: ${{ secrets.DONDOMINIO_FTP_SERVER }}
+      DONDOMINIO_FTP_USERNAME: ${{ secrets.DONDOMINIO_FTP_USERNAME }}
+      DONDOMINIO_FTP_PASSWORD: ${{ secrets.DONDOMINIO_FTP_PASSWORD }}
+      DONDOMINIO_FTP_SERVER_DIR: ${{ secrets.DONDOMINIO_FTP_SERVER_DIR }}
 
     steps:
       - name: Checkout
@@ -24,8 +28,25 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          missing=()
+
+          [ -z "${VITE_SUPABASE_URL}" ] && missing+=("VITE_SUPABASE_URL")
+          [ -z "${VITE_SUPABASE_ANON_KEY}" ] && missing+=("VITE_SUPABASE_ANON_KEY")
+          [ -z "${DONDOMINIO_FTP_SERVER}" ] && missing+=("DONDOMINIO_FTP_SERVER")
+          [ -z "${DONDOMINIO_FTP_USERNAME}" ] && missing+=("DONDOMINIO_FTP_USERNAME")
+          [ -z "${DONDOMINIO_FTP_PASSWORD}" ] && missing+=("DONDOMINIO_FTP_PASSWORD")
+          [ -z "${DONDOMINIO_FTP_SERVER_DIR}" ] && missing+=("DONDOMINIO_FTP_SERVER_DIR")
+
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "Faltan secrets requeridos: ${missing[*]}"
+            exit 1
+          fi
 
       - name: Install dependencies
         run: npm ci
@@ -66,10 +87,10 @@ jobs:
       - name: Deploy to DonDominio by FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.DONDOMINIO_FTP_SERVER }}
-          username: ${{ secrets.DONDOMINIO_FTP_USERNAME }}
-          password: ${{ secrets.DONDOMINIO_FTP_PASSWORD }}
-          server-dir: ${{ secrets.DONDOMINIO_FTP_SERVER_DIR }}
+          server: ${{ env.DONDOMINIO_FTP_SERVER }}
+          username: ${{ env.DONDOMINIO_FTP_USERNAME }}
+          password: ${{ env.DONDOMINIO_FTP_PASSWORD }}
+          server-dir: ${{ env.DONDOMINIO_FTP_SERVER_DIR }}
           local-dir: ${{ steps.package.outputs.path }}/
           exclude: |
             **/.git*
