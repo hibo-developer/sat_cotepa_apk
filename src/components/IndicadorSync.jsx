@@ -78,34 +78,41 @@ export function IndicadorSync() {
   return (
     <div
       role="status"
-      className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs font-semibold shadow-sm ${colorBase}`}
+      className={`rounded-2xl border px-3 py-3 text-xs font-semibold shadow-sm ${colorBase}`}
     >
-      <div className="flex items-center gap-2">
-        <span
-          className={`inline-block h-2.5 w-2.5 rounded-full ${offline ? 'bg-amber-500 animate-pulse' : 'bg-sky-500'}`}
-          aria-hidden="true"
-        />
-        <span>
-          {offline ? 'Sin conexión · trabajando en local' : 'Cambios pendientes de sincronizar'}
-          {estado.pendientes > 0 && (
-            <span className="ml-1 inline-flex items-center justify-center rounded-full bg-white/70 px-1.5 py-0.5 text-[10px] font-bold">
-              {estado.pendientes}
-            </span>
-          )}
-          {detallePartes}
-          {detalleGps}
-        </span>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex items-start gap-3">
+          <span
+            className={`mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full ${offline ? 'bg-amber-500 animate-pulse' : 'bg-sky-500'}`}
+            aria-hidden="true"
+          />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span>{offline ? 'Sin conexión · trabajando en local' : 'Cambios pendientes de sincronizar'}</span>
+              {estado.pendientes > 0 && (
+                <span className="inline-flex items-center justify-center rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-bold">
+                  {estado.pendientes}
+                </span>
+              )}
+            </div>
+            {(detallePartes || detalleGps) && (
+              <p className="mt-1 text-[11px] font-medium text-current/80">
+                {[detallePartes, detalleGps].filter(Boolean).join('')}
+              </p>
+            )}
+          </div>
+        </div>
+        {!offline && estado.pendientes > 0 && (
+          <button
+            type="button"
+            onClick={sincronizarAhora}
+            disabled={sincronizando}
+            className="shrink-0 rounded-xl bg-white/85 px-3 py-1.5 text-[11px] font-bold text-sky-700 shadow-sm transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 disabled:opacity-60"
+          >
+            {sincronizando ? 'Sincronizando…' : 'Sincronizar ahora'}
+          </button>
+        )}
       </div>
-      {!offline && estado.pendientes > 0 && (
-        <button
-          type="button"
-          onClick={sincronizarAhora}
-          disabled={sincronizando}
-          className="rounded-lg bg-white/80 px-2.5 py-1 text-[11px] font-bold text-sky-700 transition hover:bg-white disabled:opacity-60"
-        >
-          {sincronizando ? 'Sincronizando…' : 'Sincronizar ahora'}
-        </button>
-      )}
     </div>
   );
 }

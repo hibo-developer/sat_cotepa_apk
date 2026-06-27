@@ -2188,23 +2188,28 @@ export function ListaOrdenesView({ rolUsuario }) {
       />
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-          {error}
+        <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800 shadow-sm">
+          <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+          <p>{error}</p>
         </div>
       )}
 
-      <header className="rounded-2xl bg-marca-900 p-4 text-white shadow-lg lg:p-5">
+      <header className="overflow-hidden rounded-3xl border border-marca-700/40 bg-marca-900 p-5 text-white shadow-xl lg:p-6">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h2 className="text-lg font-bold">Órdenes de Trabajo</h2>
-            <p className="mt-1 text-sm text-slate-200">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-100">
+              <Wrench className="h-3.5 w-3.5" />
+              Operativa diaria
+            </div>
+            <h2 className="mt-4 text-xl font-bold lg:text-2xl">Órdenes de Trabajo</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-200">
               Consulta, crea y actualiza el estado de cada avería desde el móvil.
             </p>
           </div>
         </div>
 
-        <div className={`mt-4 grid gap-2 ${esTecnico ? 'grid-cols-2' : 'grid-cols-3'}`}>
-          <article className="rounded-xl border border-white/20 bg-white/10 p-3">
+        <div className={`mt-5 grid gap-3 ${esTecnico ? 'grid-cols-2' : 'grid-cols-3'}`}>
+          <article className="rounded-2xl border border-white/15 bg-white/10 p-4 shadow-lg shadow-black/5 backdrop-blur-sm">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">Informes PDF</p>
               <Download className="h-4 w-4 text-white" />
@@ -2215,14 +2220,14 @@ export function ListaOrdenesView({ rolUsuario }) {
               type="button"
               onClick={exportarInformesZip}
               disabled={exportandoZip}
-              className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-white px-3 py-2 text-xs font-bold text-marca-900 disabled:opacity-60"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-bold text-marca-900 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-marca-900 disabled:opacity-60"
             >
               {exportandoZip ? 'Generando ZIP...' : 'Descargar ZIP de informes'}
             </button>
           </article>
 
           {!esTecnico && (
-            <article className="rounded-xl border border-white/20 bg-white/10 p-3">
+            <article className="rounded-2xl border border-white/15 bg-white/10 p-4 shadow-lg shadow-black/5 backdrop-blur-sm">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">KPI</p>
                 <BarChart3 className="h-4 w-4 text-white" />
@@ -2232,14 +2237,14 @@ export function ListaOrdenesView({ rolUsuario }) {
               <button
                 type="button"
                 onClick={exportarKpisExcel}
-                className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-white px-3 py-2 text-xs font-bold text-marca-900"
+                className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-bold text-marca-900 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-marca-900"
               >
                 Descargar KPI Excel
               </button>
             </article>
           )}
 
-          <article className="rounded-xl border border-white/20 bg-white/10 p-3">
+          <article className="rounded-2xl border border-white/15 bg-white/10 p-4 shadow-lg shadow-black/5 backdrop-blur-sm">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">Órdenes</p>
               <Download className="h-4 w-4 text-white" />
@@ -2249,14 +2254,14 @@ export function ListaOrdenesView({ rolUsuario }) {
             <button
               type="button"
               onClick={exportarOrdenesExcel}
-              className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-white px-3 py-2 text-xs font-bold text-marca-900"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-bold text-marca-900 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-marca-900"
             >
               Descargar Excel de órdenes
             </button>
           </article>
         </div>
 
-        <div className="mt-3 rounded-xl border border-white/15 bg-white/10 p-3">
+        <div className="mt-4 rounded-2xl border border-white/15 bg-white/10 p-4 shadow-lg shadow-black/5 backdrop-blur-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">Ámbito de análisis</p>
             <span className="text-[11px] font-semibold text-slate-300">{ordenesAnalisis.length} órdenes en análisis</span>
@@ -2266,7 +2271,7 @@ export function ListaOrdenesView({ rolUsuario }) {
             <select
               value={filtroClienteAnalisis}
               onChange={(evento) => setFiltroClienteAnalisis(evento.target.value)}
-              className="w-full rounded-lg border border-white/20 bg-marca-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl border border-white/20 bg-marca-900/80 px-3 py-2.5 text-sm text-white transition focus:outline-none focus:ring-2 focus:ring-white/60"
             >
               <option value="todos">Todos los clientes</option>
               {clientesAnalisis.map((cliente) => (
@@ -2279,63 +2284,64 @@ export function ListaOrdenesView({ rolUsuario }) {
         </div>
 
         {!esTecnico && (
-          <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs font-bold lg:grid-cols-4">
-            <div className="rounded-xl bg-white/10 p-2">
+          <div className="mt-4 grid grid-cols-2 gap-2.5 text-center text-xs font-bold lg:grid-cols-4">
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
               <p className="text-slate-300">MTTR</p>
               <p className="text-base text-white">{mttrMinutos} min</p>
             </div>
-            <div className="rounded-xl bg-white/10 p-2">
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
               <p className="text-slate-300">SLA 48h</p>
               <p className="text-base text-white">{cumplimientoSla48h}%</p>
             </div>
-            <div className="rounded-xl bg-white/10 p-2">
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
               <p className="text-slate-300">FTF proxy</p>
               <p className="text-base text-white">{firstTimeFixProxy}%</p>
             </div>
-            <div className="rounded-xl bg-white/10 p-2">
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
               <p className="text-slate-300">Coste mat.</p>
               <p className="text-base text-white">{costeTotalMateriales} €</p>
             </div>
           </div>
         )}
 
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs font-bold">
-          <div className="rounded-xl bg-white/10 p-2">
+        <div className="mt-4 grid grid-cols-3 gap-2.5 text-center text-xs font-bold">
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
             <p className="text-slate-300">Pendientes</p>
             <p className="text-base text-white">{resumenAnalisis.Pendiente}</p>
           </div>
-          <div className="rounded-xl bg-white/10 p-2">
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
             <p className="text-slate-300">En Proceso</p>
             <p className="text-base text-white">{resumenAnalisis['En Proceso']}</p>
           </div>
-          <div className="rounded-xl bg-white/10 p-2">
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
             <p className="text-slate-300">Finalizadas</p>
             <p className="text-base text-white">{resumenAnalisis.Finalizado}</p>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {FILTROS_ESTADO.map((filtro) => (
-            <button
-              key={filtro}
-              type="button"
-              onClick={() => setFiltroEstado(filtro)}
-              className={`rounded-full px-3 py-2 text-xs font-bold transition ${
-                filtroEstado === filtro ? 'bg-cotepa-rojo-500 text-white' : 'bg-white/10 text-white'
-              }`}
-            >
-              {filtro}
-            </button>
-          ))}
-        </div>
+        <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 p-4 shadow-lg shadow-black/5 backdrop-blur-sm">
+          <div className="flex flex-wrap gap-2">
+            {FILTROS_ESTADO.map((filtro) => (
+              <button
+                key={filtro}
+                type="button"
+                onClick={() => setFiltroEstado(filtro)}
+                className={`rounded-full px-3.5 py-2 text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-marca-900 ${
+                  filtroEstado === filtro ? 'bg-cotepa-rojo-500 text-white shadow-md' : 'bg-white/10 text-white hover:bg-white/15'
+                }`}
+              >
+                {filtro}
+              </button>
+            ))}
+          </div>
 
-        <div className="mt-3">
+          <div className="mt-4">
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-slate-200">Filtrar por tipo de orden</span>
             <select
               value={filtroTipoOrden}
               onChange={(evento) => setFiltroTipoOrden(evento.target.value)}
-              className="w-full rounded-lg border border-white/20 bg-marca-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl border border-white/20 bg-marca-900/80 px-3 py-2.5 text-sm text-white transition focus:outline-none focus:ring-2 focus:ring-white/60"
             >
               <option value="todos">Todas</option>
               <option value="averia">Avería</option>
@@ -2344,18 +2350,19 @@ export function ListaOrdenesView({ rolUsuario }) {
               <option value="puesta_en_marcha">PEM · Puesta en marcha</option>
             </select>
           </label>
-        </div>
+          </div>
 
-        <div className="mt-3">
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-slate-200">Buscar orden</span>
-            <input
-              value={busquedaOrdenes}
-              onChange={(evento) => setBusquedaOrdenes(evento.target.value)}
-              className="w-full rounded-lg border border-white/20 bg-marca-900 px-3 py-2 text-sm text-white placeholder:text-slate-300"
-              placeholder="Ticket, cliente, equipo o técnico"
-            />
-          </label>
+          <div className="mt-4">
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-slate-200">Buscar orden</span>
+              <input
+                value={busquedaOrdenes}
+                onChange={(evento) => setBusquedaOrdenes(evento.target.value)}
+                className="w-full rounded-xl border border-white/20 bg-marca-900/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-300 transition focus:outline-none focus:ring-2 focus:ring-white/60"
+                placeholder="Ticket, cliente, equipo o técnico"
+              />
+            </label>
+          </div>
         </div>
       </header>
 

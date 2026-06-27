@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ShieldUser } from 'lucide-react';
+import { CircleCheckBig, ShieldAlert, ShieldUser, TriangleAlert } from 'lucide-react';
 import { obtenerClienteSupabase, tieneConfiguracionSupabase } from '../services/supabaseClient';
 import {
   actualizarUsuarioSat,
@@ -202,13 +202,14 @@ export function AdminView() {
 
   return (
     <section className="space-y-4 pb-20 lg:pb-0">
-      <header className="rounded-2xl bg-marca-900 p-4 text-white shadow-lg lg:p-5">
-        <div className="flex items-center gap-2">
-          <ShieldUser className="h-5 w-5" />
-          <h2 className="text-lg font-bold">Administración</h2>
+      <header className="rounded-3xl border border-marca-700/40 bg-marca-900 p-5 text-white shadow-xl lg:p-6">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-100">
+          <ShieldUser className="h-3.5 w-3.5" />
+          Administración
         </div>
-        <p className="mt-2 text-sm text-slate-300">
-          Gestión de usuarios y roles del sistema SAT.
+        <h2 className="mt-4 text-xl font-bold">Administración</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-200">
+          Gestión de usuarios, roles SAT y control de acceso interno para tareas de oficina y administración.
         </p>
       </header>
 
@@ -224,21 +225,24 @@ export function AdminView() {
         </p>
 
         {errorUsuarios && (
-          <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-            {errorUsuarios}
-          </p>
+          <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800 shadow-sm">
+            <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+            <p>{errorUsuarios}</p>
+          </div>
         )}
 
         {mensajeUsuarios && (
-          <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">
-            {mensajeUsuarios}
-          </p>
+          <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800 shadow-sm">
+            <CircleCheckBig className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+            <p>{mensajeUsuarios}</p>
+          </div>
         )}
 
         {puedeAdministrar === false && (
-          <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
-            Esta sección solo está disponible para usuarios con rol admin.
-          </p>
+          <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900 shadow-sm">
+            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <p>Esta sección solo está disponible para usuarios con rol admin.</p>
+          </div>
         )}
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-4">

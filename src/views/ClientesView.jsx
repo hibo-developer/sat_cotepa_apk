@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { CircleCheckBig, Package, ShieldAlert, TriangleAlert, Users } from 'lucide-react';
 import {
   actualizarCliente,
   crearCliente,
@@ -257,43 +258,60 @@ export function ClientesView({ rolUsuario }) {
 
   return (
     <section className="space-y-4 pb-20 lg:pb-0">
-      <header className="rounded-2xl bg-marca-900 p-4 text-white shadow-lg lg:p-5">
-        <h2 className="text-lg font-bold">Catálogos SAT</h2>
-        <p className="mt-1 text-sm text-slate-200">Gestión de clientes y equipos.</p>
+      <header className="rounded-3xl border border-marca-700/40 bg-marca-900 p-5 text-white shadow-xl lg:p-6">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-100">
+          <Users className="h-3.5 w-3.5" />
+          Catálogos
+        </div>
+        <h2 className="mt-4 text-xl font-bold">Catálogos SAT</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-200">
+          Gestión centralizada de clientes y equipos con acceso rápido a los datos base del servicio técnico.
+        </p>
       </header>
 
       {modoSoloLectura && (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          Tu rol técnico solo tiene acceso de consulta a catálogos. La edición está reservada a administración/oficina.
-        </p>
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm">
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <p>
+            Tu rol técnico solo tiene acceso de consulta a catálogos. La edición está reservada a administración/oficina.
+          </p>
+        </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2 rounded-2xl border border-marca-100 bg-marca-50 p-1">
+      <div className="grid grid-cols-2 gap-2 rounded-3xl border border-marca-100 bg-marca-50 p-1.5 shadow-sm">
         <button
           type="button"
           onClick={() => setTabActiva('clientes')}
-          className={`rounded-xl px-3 py-3 text-sm font-bold ${
-            tabActiva === 'clientes' ? 'bg-cotepa-rojo-500 text-white shadow' : 'text-marca-700'
+          className={`inline-flex items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-marca-100 ${
+            tabActiva === 'clientes' ? 'bg-cotepa-rojo-500 text-white shadow shadow-red-200' : 'text-marca-700'
           }`}
         >
+          <Users className="h-4 w-4" />
           Clientes
         </button>
         <button
           type="button"
           onClick={() => setTabActiva('equipos')}
-          className={`rounded-xl px-3 py-3 text-sm font-bold ${
-            tabActiva === 'equipos' ? 'bg-cotepa-rojo-500 text-white shadow' : 'text-marca-700'
+          className={`inline-flex items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-marca-100 ${
+            tabActiva === 'equipos' ? 'bg-cotepa-rojo-500 text-white shadow shadow-red-200' : 'text-marca-700'
           }`}
         >
+          <Package className="h-4 w-4" />
           Equipos
         </button>
       </div>
 
-      {error && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {error && (
+        <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 shadow-sm">
+          <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+          <p>{error}</p>
+        </div>
+      )}
       {mensaje && (
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-          {mensaje}
-        </p>
+        <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 shadow-sm">
+          <CircleCheckBig className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+          <p>{mensaje}</p>
+        </div>
       )}
 
       {tabActiva === 'clientes' && (
