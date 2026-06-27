@@ -204,6 +204,13 @@ npm test
 
 ---
 
+## Trazabilidad UX
+
+- Refactor de navegación por secciones, barra fija y retorno rápido:
+- `docs/navegacion-secciones-ux-2026-06-27.md`
+
+---
+
 ## Estructura principal
 
 ```

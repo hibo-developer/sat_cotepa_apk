@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ToastEstado } from '../components/ToastEstado';
 import { ModalElegirNavegacion } from '../components/ModalElegirNavegacion';
+import { ControlesFlujoSecciones, NavegacionSecciones } from '../components/NavegacionSecciones';
 import {
   obtenerClientes,
   obtenerEquiposPorCliente,
@@ -43,6 +44,7 @@ import {
   resolverDestinoFacturable,
   UBICACION_COTEPA,
 } from '../services/distanciaClienteService';
+import { registrarErrorValidacion, registrarNavegacionSeccion } from '../services/navegacionMetricasService';
 
 function obtenerUbicacionActual() {
   return new Promise((resolve, reject) => {
@@ -304,6 +306,13 @@ const SEGUIMIENTO_INICIAL = {
 
 const CACHE_KEY_PARTE_BORRADOR = 'sat_cache_parte_borrador_v1';
 const MAX_EDAD_BORRADOR_MS = 1000 * 60 * 60 * 24 * 7;
+const SECCIONES_PARTE_TRABAJO = [
+  { id: 'pt-intervencion', label: 'Intervención' },
+  { id: 'pt-datos', label: 'Datos base' },
+  { id: 'pt-materiales', label: 'Materiales' },
+  { id: 'pt-evidencias', label: 'Evidencias' },
+  { id: 'pt-firma-envio', label: 'Firma y envío' },
+];
 
 function leerBorradorParte() {
   try {
@@ -423,6 +432,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
   const [appsNavDisponibles, setAppsNavDisponibles] = useState([]);
   const [destinoNavPendiente, setDestinoNavPendiente] = useState(null);
   const [sesionParteRemota, setSesionParteRemota] = useState(null);
+  const [seccionActiva, setSeccionActiva] = useState(SECCIONES_PARTE_TRABAJO[0].id);
   const canvasFirmaRef = useRef(null);
   const inputFotoAntesRef = useRef(null);
   const inputFotoDespuesRef = useRef(null);
@@ -438,6 +448,45 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
   const deviceInstanceIdRef = useRef(obtenerDeviceInstanceId());
   const clienteSeleccionado = clientes.find((c) => c.id === formulario.cliente_id) || null;
   const ubicacionCliente = resolverUbicacionCliente(clienteSeleccionado);
+
+  function irASeccionFormulario(id) {
+    const inicioMs = performance.now();
+    const anterior = seccionActiva;
+    const nodo = document.getElementById(id);
+    if (nodo) {
+      nodo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setSeccionActiva(id);
+      window.setTimeout(() => {
+        registrarNavegacionSeccion({
+          vista: 'parte_trabajo',
+          desde: anterior,
+          hacia: id,
+          origen: 'interna',
+          duracionMs: performance.now() - inicioMs,
+        });
+      }, 450);
+    }
+  }
+
+  function resolverSeccionPorCampo(campo) {
+    if (!campo) return SECCIONES_PARTE_TRABAJO[0].id;
+    if (['nombre_firmante'].includes(campo)) return 'pt-firma-envio';
+    if (['materialesTexto', 'materialSeleccionadoId', 'materialSeleccionadoCantidad'].includes(campo)) return 'pt-materiales';
+    if (['fotosIntervencion'].includes(campo)) return 'pt-evidencias';
+    if (['cliente_id', 'cliente_nombre', 'equipo_id', 'equipo_nombre', 'tecnico_id', 'orden_id', 'descripcion_problema', 'tareas_realizadas_libre', 'tiempo_empleado', 'prioridad', 'mecanicos_intervinieron'].includes(campo)) {
+      return 'pt-datos';
+    }
+    return 'pt-intervencion';
+  }
+
+  function manejarErrorValidacion(evento) {
+    const campo = evento?.target?.name || evento?.target?.id || '';
+    const seccion = resolverSeccionPorCampo(campo);
+    registrarErrorValidacion({ vista: 'parte_trabajo', campo, seccion });
+    if (seccionActiva !== seccion) {
+      irASeccionFormulario(seccion);
+    }
+  }
 
   function notificarToast(siguienteToast) {
     setToast({
@@ -591,6 +640,35 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
       };
     });
   }, [esTecnico, tecnicos]);
+
+  useEffect(() => {
+    const observables = SECCIONES_PARTE_TRABAJO
+      .map((seccion) => document.getElementById(seccion.id))
+      .filter(Boolean);
+
+    if (observables.length === 0) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibles = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visibles[0]?.target?.id) {
+          setSeccionActiva(visibles[0].target.id);
+        }
+      },
+      {
+        threshold: [0.35, 0.6],
+        rootMargin: '-120px 0px -40% 0px',
+      },
+    );
+
+    observables.forEach((nodo) => observer.observe(nodo));
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (ignorarGuardadoBorradorRef.current) {
@@ -2003,7 +2081,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         </p>
       )}
 
-      <form onSubmit={enviarParte} className="grid gap-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:grid-cols-2 lg:gap-4 lg:p-5">
+      <form onSubmit={enviarParte} onInvalidCapture={manejarErrorValidacion} className="grid gap-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:grid-cols-2 lg:gap-4 lg:p-5">
         <h2 className="text-lg font-bold text-marca-900 lg:col-span-2">Detalle del parte</h2>
         <p className="text-xs text-slate-600 lg:col-span-2">
           El parte puede vincularse a una orden abierta o registrarse como imprevisto sin orden previa.
@@ -2011,6 +2089,17 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         <p className="text-xs text-slate-500 lg:col-span-2">
           Al guardarlo, la orden vinculada se finaliza. Si no hay orden, se crea una orden imprevista y se finaliza en el mismo paso.
         </p>
+
+        <NavegacionSecciones
+          secciones={SECCIONES_PARTE_TRABAJO}
+          seccionActiva={seccionActiva}
+          onIrSeccion={irASeccionFormulario}
+          className="lg:col-span-2"
+        />
+
+        <div id="pt-intervencion" className="scroll-mt-44 rounded-xl border border-marca-200 bg-marca-50 px-3 py-2 lg:col-span-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-marca-800">Sección 1 · Intervención</p>
+        </div>
 
         {formulario.cliente_id && (
           <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 lg:col-span-2">
@@ -2125,9 +2214,21 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
           </p>
         </div>
 
+        <ControlesFlujoSecciones
+          secciones={SECCIONES_PARTE_TRABAJO}
+          seccionActiva={seccionActiva}
+          onIrSeccion={irASeccionFormulario}
+          className="lg:col-span-2"
+        />
+
+        <div id="pt-datos" className="scroll-mt-44 rounded-xl border border-marca-200 bg-marca-50 px-3 py-2 lg:col-span-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-marca-800">Sección 2 · Datos base</p>
+        </div>
+
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Cliente *</span>
           <select
+            name="cliente_id"
             value={formulario.cliente_id}
             onChange={(e) => {
               const clienteId = e.target.value;
@@ -2151,6 +2252,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
             ))}
           </select>
           <input
+            name="cliente_nombre"
             type="text"
             value={formulario.cliente_nombre}
             onChange={(e) =>
@@ -2168,6 +2270,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Equipo</span>
           <select
+            name="equipo_id"
             value={formulario.equipo_id}
             onChange={(e) => {
               const equipoId = e.target.value;
@@ -2189,6 +2292,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
             ))}
           </select>
           <input
+            name="equipo_nombre"
             type="text"
             value={formulario.equipo_nombre}
             onChange={(e) => setFormulario((prev) => ({ ...prev, equipo_nombre: e.target.value }))}
@@ -2200,6 +2304,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Técnico *</span>
           <select
+            name="tecnico_id"
             required
             value={formulario.tecnico_id}
             onChange={(e) => setFormulario((prev) => ({ ...prev, tecnico_id: e.target.value, orden_id: '' }))}
@@ -2218,6 +2323,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Orden abierta (opcional)</span>
           <select
+            name="orden_id"
             value={formulario.orden_id}
             onChange={(e) => {
               const ordenId = e.target.value;
@@ -2248,6 +2354,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         <label className="block lg:col-span-2">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Descripción del problema *</span>
           <textarea
+            name="descripcion_problema"
             required
             rows={4}
             value={formulario.descripcion_problema}
@@ -2260,6 +2367,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         <label className="block lg:col-span-2">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Tareas realizadas</span>
           <textarea
+            name="tareas_realizadas_libre"
             rows={4}
             value={formulario.tareas_realizadas_libre}
             onChange={(e) => setFormulario((prev) => ({ ...prev, tareas_realizadas_libre: e.target.value }))}
@@ -2268,9 +2376,21 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
           />
         </label>
 
+        <ControlesFlujoSecciones
+          secciones={SECCIONES_PARTE_TRABAJO}
+          seccionActiva={seccionActiva}
+          onIrSeccion={irASeccionFormulario}
+          className="lg:col-span-2"
+        />
+
+        <div id="pt-materiales" className="scroll-mt-44 rounded-xl border border-marca-200 bg-marca-50 px-3 py-2 lg:col-span-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-marca-800">Sección 3 · Materiales</p>
+        </div>
+
         <label className="block lg:col-span-2">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Materiales utilizados</span>
           <textarea
+            name="materialesTexto"
             rows={4}
             value={formulario.materialesTexto}
             onChange={(e) => setFormulario((prev) => ({ ...prev, materialesTexto: e.target.value }))}
@@ -2339,9 +2459,21 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
           </p>
         </div>
 
+        <ControlesFlujoSecciones
+          secciones={SECCIONES_PARTE_TRABAJO}
+          seccionActiva={seccionActiva}
+          onIrSeccion={irASeccionFormulario}
+          className="lg:col-span-2"
+        />
+
+        <div id="pt-evidencias" className="scroll-mt-44 rounded-xl border border-marca-200 bg-marca-50 px-3 py-2 lg:col-span-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-marca-800">Sección 4 · Evidencias</p>
+        </div>
+
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Tiempo empleado (min) *</span>
           <input
+            name="tiempo_empleado"
             required
             min="1"
             type="number"
@@ -2354,6 +2486,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Prioridad</span>
           <select
+            name="prioridad"
             value={formulario.prioridad}
             onChange={(e) => setFormulario((prev) => ({ ...prev, prioridad: e.target.value }))}
             className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
@@ -2375,6 +2508,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Mecánicos en la intervención</span>
           <input
+            name="mecanicos_intervinieron"
             min="1"
             type="number"
             value={formulario.mecanicos_intervinieron}
@@ -2460,10 +2594,22 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
           )}
         </div>
 
+        <ControlesFlujoSecciones
+          secciones={SECCIONES_PARTE_TRABAJO}
+          seccionActiva={seccionActiva}
+          onIrSeccion={irASeccionFormulario}
+          className="lg:col-span-2"
+        />
+
+        <div id="pt-firma-envio" className="scroll-mt-44 rounded-xl border border-marca-200 bg-marca-50 px-3 py-2 lg:col-span-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-marca-800">Sección 5 · Firma y envío</p>
+        </div>
+
         <div className="rounded-xl border border-slate-300 bg-slate-50 p-3">
           <label className="mb-3 block">
             <span className="mb-1 block text-xs font-semibold text-slate-700">Nombre de quien firma *</span>
             <input
+              name="nombre_firmante"
               required
               type="text"
               value={formulario.nombre_firmante}
@@ -2527,6 +2673,14 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         >
           {guardando ? 'Guardando parte...' : 'Registrar parte de trabajo'}
         </button>
+
+        <div className="lg:col-span-2">
+          <ControlesFlujoSecciones
+            secciones={SECCIONES_PARTE_TRABAJO}
+            seccionActiva={seccionActiva}
+            onIrSeccion={irASeccionFormulario}
+          />
+        </div>
       </form>
       <ToastEstado toast={toast} onClose={() => setToast(null)} />
     </section>

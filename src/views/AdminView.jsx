@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, ShieldUser } from 'lucide-react';
+import { BarChart3, RefreshCw, ShieldUser, Trash2 } from 'lucide-react';
 import { obtenerClienteSupabase, tieneConfiguracionSupabase } from '../services/supabaseClient';
+import {
+  limpiarMetricasNavegacion,
+  obtenerMetricasNavegacion,
+} from '../services/navegacionMetricasService';
 import {
   actualizarUsuarioSat,
   crearUsuarioSat,
@@ -19,6 +23,46 @@ const FORM_USUARIO_INICIAL = {
 
 const USUARIOS_POR_PAGINA = 10;
 
+const RANGOS_METRICAS = [
+  { id: '1h', label: 'Ultima hora', ms: 1000 * 60 * 60 },
+  { id: '24h', label: 'Ultimas 24h', ms: 1000 * 60 * 60 * 24 },
+  { id: '7d', label: 'Ultimos 7 dias', ms: 1000 * 60 * 60 * 24 * 7 },
+  { id: '30d', label: 'Ultimos 30 dias', ms: 1000 * 60 * 60 * 24 * 30 },
+  { id: 'todo', label: 'Todo', ms: null },
+];
+
+function filtrarMetricasPorRango(metricas, rangoId) {
+  const rango = RANGOS_METRICAS.find((item) => item.id === rangoId);
+  if (!rango || !Number.isFinite(rango.ms)) {
+    return metricas;
+  }
+
+  const umbral = Date.now() - rango.ms;
+  return metricas.filter((item) => {
+    const ts = new Date(item.timestamp || '').getTime();
+    return Number.isFinite(ts) && ts >= umbral;
+  });
+}
+
+function calcularResumenMetricas(metricas) {
+  const navegaciones = metricas.filter((item) => item.tipo === 'navegacion_seccion');
+  const errores = metricas.filter((item) => item.tipo === 'error_validacion');
+  const retornos = metricas.filter((item) => item.tipo === 'retorno_rapido');
+  const mediaNavMs = navegaciones.length
+    ? Math.round(
+      navegaciones.reduce((acc, item) => acc + (Number(item.duracionMs) || 0), 0) / navegaciones.length,
+    )
+    : null;
+
+  return {
+    totalRegistros: metricas.length,
+    navegaciones: navegaciones.length,
+    erroresValidacion: errores.length,
+    retornosRapidos: retornos.length,
+    mediaNavegacionMs: mediaNavMs,
+  };
+}
+
 export function AdminView() {
   const [usuarios, setUsuarios] = useState([]);
   const [puedeAdministrar, setPuedeAdministrar] = useState(null);
@@ -29,6 +73,10 @@ export function AdminView() {
   const [usuarioEditandoId, setUsuarioEditandoId] = useState('');
   const [formUsuario, setFormUsuario] = useState(FORM_USUARIO_INICIAL);
   const [paginaUsuarios, setPaginaUsuarios] = useState(1);
+  const [metricas, setMetricas] = useState(() => obtenerMetricasNavegacion());
+  const [filtroVistaMetricas, setFiltroVistaMetricas] = useState('todas');
+  const [filtroRangoMetricas, setFiltroRangoMetricas] = useState('7d');
+  const [filtroTipoMetricas, setFiltroTipoMetricas] = useState('todos');
 
   const totalPaginasUsuarios = Math.max(1, Math.ceil(usuarios.length / USUARIOS_POR_PAGINA));
   const usuariosPaginados = usuarios.slice(
@@ -191,6 +239,27 @@ export function AdminView() {
       setPaginaUsuarios(totalPaginasUsuarios);
     }
   }, [paginaUsuarios, totalPaginasUsuarios]);
+
+  function refrescarMetricas() {
+    setMetricas(obtenerMetricasNavegacion());
+  }
+
+  function limpiarMetricas() {
+    limpiarMetricasNavegacion();
+    refrescarMetricas();
+  }
+
+  const vistasMetricasDisponibles = Array.from(
+    new Set(metricas.map((item) => item.vista || 'global')),
+  );
+  const metricasPorRango = filtrarMetricasPorRango(metricas, filtroRangoMetricas);
+  const metricasFiltradas = metricasPorRango.filter((item) => {
+    const cumpleVista = filtroVistaMetricas === 'todas' || (item.vista || 'global') === filtroVistaMetricas;
+    const cumpleTipo = filtroTipoMetricas === 'todos' || item.tipo === filtroTipoMetricas;
+    return cumpleVista && cumpleTipo;
+  });
+  const resumenMetricas = calcularResumenMetricas(metricasFiltradas);
+  const metricasRecientes = metricasFiltradas.slice(-15).reverse();
 
   if (!tieneConfiguracionSupabase()) {
     return (
@@ -437,6 +506,124 @@ export function AdminView() {
               </ul>
             )}
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:p-5">
+        <header className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-marca-700" />
+            <h3 className="text-base font-bold text-slate-800">Métricas UX de navegación</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={refrescarMetricas}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refrescar
+            </button>
+            <button
+              type="button"
+              onClick={limpiarMetricas}
+              className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700"
+            >
+              <Trash2 className="h-4 w-4" />
+              Limpiar
+            </button>
+          </div>
+        </header>
+
+        <div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 lg:grid-cols-3">
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Vista</span>
+            <select
+              value={filtroVistaMetricas}
+              onChange={(evento) => setFiltroVistaMetricas(evento.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+            >
+              <option value="todas">Todas</option>
+              {vistasMetricasDisponibles.map((vista) => (
+                <option key={vista} value={vista}>{vista}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Rango temporal</span>
+            <select
+              value={filtroRangoMetricas}
+              onChange={(evento) => setFiltroRangoMetricas(evento.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+            >
+              {RANGOS_METRICAS.map((rango) => (
+                <option key={rango.id} value={rango.id}>{rango.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Tipo de evento</span>
+            <select
+              value={filtroTipoMetricas}
+              onChange={(evento) => setFiltroTipoMetricas(evento.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+            >
+              <option value="todos">Todos</option>
+              <option value="navegacion_seccion">Navegación por sección</option>
+              <option value="error_validacion">Error de validación</option>
+              <option value="retorno_rapido">Retorno rápido</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Registros</p>
+            <p className="mt-1 text-lg font-extrabold text-slate-800">{resumenMetricas.totalRegistros || 0}</p>
+          </article>
+          <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Saltos sección</p>
+            <p className="mt-1 text-lg font-extrabold text-slate-800">{resumenMetricas.navegaciones || 0}</p>
+          </article>
+          <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Errores validación</p>
+            <p className="mt-1 text-lg font-extrabold text-slate-800">{resumenMetricas.erroresValidacion || 0}</p>
+          </article>
+          <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Retornos rápidos</p>
+            <p className="mt-1 text-lg font-extrabold text-slate-800">{resumenMetricas.retornosRapidos || 0}</p>
+          </article>
+          <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Media salto</p>
+            <p className="mt-1 text-lg font-extrabold text-slate-800">
+              {Number.isFinite(resumenMetricas.mediaNavegacionMs) ? `${resumenMetricas.mediaNavegacionMs} ms` : 'N/A'}
+            </p>
+          </article>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="mb-2 text-xs font-semibold text-slate-700">Últimos eventos</p>
+          {metricasRecientes.length === 0 ? (
+            <p className="text-xs text-slate-500">No hay eventos registrados todavía.</p>
+          ) : (
+            <ul className="space-y-2">
+              {metricasRecientes.map((evento, indice) => (
+                <li key={`${evento.timestamp}-${evento.tipo}-${indice}`} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700">
+                  <p className="font-semibold text-slate-800">{evento.tipo} · {evento.vista || 'global'}</p>
+                  <p className="mt-1">
+                    {evento.desde ? `de ${evento.desde} ` : ''}
+                    {evento.hacia ? `a ${evento.hacia} ` : ''}
+                    {evento.campo ? `campo ${evento.campo} ` : ''}
+                    {evento.seccion ? `sección ${evento.seccion} ` : ''}
+                    {Number.isFinite(Number(evento.duracionMs)) ? `· ${Math.round(Number(evento.duracionMs))} ms` : ''}
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">{new Date(evento.timestamp).toLocaleString('es-ES')}</p>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
     </section>

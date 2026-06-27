@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { ToastEstado } from '../components/ToastEstado';
+import { ControlesFlujoSecciones, NavegacionSecciones } from '../components/NavegacionSecciones';
 import {
   obtenerClientes,
   obtenerEquiposPorCliente,
@@ -11,6 +12,7 @@ import { crearPartePem, obtenerOrdenesAbiertasParaPartePem } from '../services/p
 import { estaOnline } from '../services/offlineSyncService';
 import { abrirGoogleMaps } from '../services/externalNavigationService';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
+import { registrarErrorValidacion, registrarNavegacionSeccion } from '../services/navegacionMetricasService';
 
 async function comprimirImagenA1280(archivo, nombreFinal) {
   if (!archivo) return null;
@@ -94,6 +96,13 @@ Haber recibido las instrucciones para el correcto funcionamiento, mantenimiento,
 Haber asistido a los controles de funcionalidad.
 Por último, SE COMPROMETE a atenerse a las instrucciones contenidas en el manual relativas al uso y mantenimiento de la instalación.`;
 
+const SECCIONES_PARTE_PEM = [
+  { id: 'pem-datos', label: 'Datos PEM' },
+  { id: 'pem-checks', label: 'Verificaciones' },
+  { id: 'pem-evidencias', label: 'Evidencias' },
+  { id: 'pem-firma-envio', label: 'Firma y cierre' },
+];
+
 export function PartePemView({ rolUsuario, sesion }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -105,6 +114,7 @@ export function PartePemView({ rolUsuario, sesion }) {
   const [ordenesAbiertas, setOrdenesAbiertas] = useState([]);
   const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
   const [toast, setToast] = useState(null);
+  const [seccionActiva, setSeccionActiva] = useState(SECCIONES_PARTE_PEM[0].id);
 
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
@@ -157,6 +167,48 @@ export function PartePemView({ rolUsuario, sesion }) {
     Number.isFinite(latCliente) &&
     Number.isFinite(lngCliente) &&
     !(latCliente === 0 && lngCliente === 0);
+
+  function irASeccionFormulario(id) {
+    const inicioMs = performance.now();
+    const anterior = seccionActiva;
+    const nodo = document.getElementById(id);
+    if (nodo) {
+      nodo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setSeccionActiva(id);
+      window.setTimeout(() => {
+        registrarNavegacionSeccion({
+          vista: 'parte_pem',
+          desde: anterior,
+          hacia: id,
+          origen: 'interna',
+          duracionMs: performance.now() - inicioMs,
+        });
+      }, 450);
+    }
+  }
+
+  function resolverSeccionPorCampo(campo) {
+    if (!campo) return SECCIONES_PARTE_PEM[0].id;
+    if (['verificacion_suministros', 'verificacion_funcionamiento', 'verificacion_seguridades', 'instrucciones_funcionamiento', 'instrucciones_mantenimiento'].includes(campo)) {
+      return 'pem-checks';
+    }
+    if (['nombre_firmante'].includes(campo)) {
+      return 'pem-firma-envio';
+    }
+    if (['cliente_id', 'tecnico_id', 'orden_id', 'equipo_id', 'equipo_matricula', 'tipo_orden', 'fecha_instalacion', 'notas_tecnico', 'notas_cliente'].includes(campo)) {
+      return 'pem-datos';
+    }
+    return 'pem-firma-envio';
+  }
+
+  function manejarErrorValidacion(evento) {
+    const campo = evento?.target?.name || evento?.target?.id || '';
+    const seccion = resolverSeccionPorCampo(campo);
+    registrarErrorValidacion({ vista: 'parte_pem', campo, seccion });
+    if (seccionActiva !== seccion) {
+      irASeccionFormulario(seccion);
+    }
+  }
 
   useEffect(() => {
     if (!tieneConfiguracionSupabase()) {
@@ -247,6 +299,35 @@ export function PartePemView({ rolUsuario, sesion }) {
       URL.revokeObjectURL(url);
     }
     mapa.clear();
+  }, []);
+
+  useEffect(() => {
+    const observables = SECCIONES_PARTE_PEM
+      .map((seccion) => document.getElementById(seccion.id))
+      .filter(Boolean);
+
+    if (observables.length === 0) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibles = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visibles[0]?.target?.id) {
+          setSeccionActiva(visibles[0].target.id);
+        }
+      },
+      {
+        threshold: [0.35, 0.6],
+        rootMargin: '-120px 0px -40% 0px',
+      },
+    );
+
+    observables.forEach((nodo) => observer.observe(nodo));
+    return () => observer.disconnect();
   }, []);
 
   function prepararCanvasFirma() {
@@ -518,12 +599,24 @@ export function PartePemView({ rolUsuario, sesion }) {
         </p>
       )}
 
-      <form onSubmit={enviarParte} className="grid gap-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:grid-cols-2 lg:gap-4 lg:p-5">
+      <form onSubmit={enviarParte} onInvalidCapture={manejarErrorValidacion} className="grid gap-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:grid-cols-2 lg:gap-4 lg:p-5">
         <h2 className="text-lg font-bold text-marca-900 lg:col-span-2">Detalle del parte PEM</h2>
+
+        <NavegacionSecciones
+          secciones={SECCIONES_PARTE_PEM}
+          seccionActiva={seccionActiva}
+          onIrSeccion={irASeccionFormulario}
+          className="lg:col-span-2"
+        />
+
+        <div id="pem-datos" className="scroll-mt-44 rounded-xl border border-marca-200 bg-marca-50 px-3 py-2 lg:col-span-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-marca-800">Sección 1 · Datos PEM</p>
+        </div>
 
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Cliente *</span>
           <select
+            name="cliente_id"
             required
             value={formulario.cliente_id}
             onChange={(e) => {
@@ -587,6 +680,7 @@ export function PartePemView({ rolUsuario, sesion }) {
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Técnico responsable *</span>
           <select
+            name="tecnico_id"
             required
             value={formulario.tecnico_id}
             onChange={(e) => {
@@ -614,6 +708,7 @@ export function PartePemView({ rolUsuario, sesion }) {
         <label className="block lg:col-span-2">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Orden PEM abierta (opcional)</span>
           <select
+            name="orden_id"
             value={formulario.orden_id}
             onChange={(e) => {
               const ordenId = e.target.value;
@@ -640,6 +735,7 @@ export function PartePemView({ rolUsuario, sesion }) {
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Equipo a intervenir *</span>
           <select
+            name="equipo_id"
             required
             value={formulario.equipo_id}
             onChange={(e) => setFormulario((prev) => ({ ...prev, equipo_id: e.target.value }))}
@@ -660,6 +756,7 @@ export function PartePemView({ rolUsuario, sesion }) {
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Matrícula del equipo *</span>
           <input
+            name="equipo_matricula"
             required
             value={formulario.equipo_matricula}
             onChange={(e) => setFormulario((prev) => ({ ...prev, equipo_matricula: e.target.value }))}
@@ -671,6 +768,7 @@ export function PartePemView({ rolUsuario, sesion }) {
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Tipo de operación *</span>
           <select
+            name="tipo_orden"
             required
             value={formulario.tipo_orden}
             onChange={(e) => setFormulario((prev) => ({ ...prev, tipo_orden: e.target.value }))}
@@ -685,6 +783,7 @@ export function PartePemView({ rolUsuario, sesion }) {
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Fecha de instalación *</span>
           <input
+            name="fecha_instalacion"
             required
             readOnly
             value={formulario.fecha_instalacion}
@@ -698,6 +797,7 @@ export function PartePemView({ rolUsuario, sesion }) {
         <label className="block lg:col-span-2">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Notas del técnico</span>
           <textarea
+            name="notas_tecnico"
             value={formulario.notas_tecnico}
             onChange={(e) => setFormulario((prev) => ({ ...prev, notas_tecnico: e.target.value }))}
             rows={3}
@@ -709,6 +809,7 @@ export function PartePemView({ rolUsuario, sesion }) {
         <label className="block lg:col-span-2">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Notas del cliente</span>
           <textarea
+            name="notas_cliente"
             value={formulario.notas_cliente}
             onChange={(e) => setFormulario((prev) => ({ ...prev, notas_cliente: e.target.value }))}
             rows={3}
@@ -716,6 +817,17 @@ export function PartePemView({ rolUsuario, sesion }) {
             placeholder="Comentarios del cliente"
           />
         </label>
+
+        <ControlesFlujoSecciones
+          secciones={SECCIONES_PARTE_PEM}
+          seccionActiva={seccionActiva}
+          onIrSeccion={irASeccionFormulario}
+          className="lg:col-span-2"
+        />
+
+        <div id="pem-checks" className="scroll-mt-44 rounded-xl border border-marca-200 bg-marca-50 px-3 py-2 lg:col-span-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-marca-800">Sección 2 · Verificaciones</p>
+        </div>
 
         <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
           <h3 className="text-sm font-bold text-slate-800">Acciones realizadas (obligatorias)</h3>
@@ -730,6 +842,7 @@ export function PartePemView({ rolUsuario, sesion }) {
             <label key={clave} className="block">
               <span className="mb-1 block text-xs font-semibold text-slate-700">{etiqueta} *</span>
               <select
+                name={clave}
                 required
                 value={checks[clave]}
                 onChange={(e) => setChecks((prev) => ({ ...prev, [clave]: e.target.value }))}
@@ -742,6 +855,17 @@ export function PartePemView({ rolUsuario, sesion }) {
               </select>
             </label>
           ))}
+        </div>
+
+        <ControlesFlujoSecciones
+          secciones={SECCIONES_PARTE_PEM}
+          seccionActiva={seccionActiva}
+          onIrSeccion={irASeccionFormulario}
+          className="lg:col-span-2"
+        />
+
+        <div id="pem-evidencias" className="scroll-mt-44 rounded-xl border border-marca-200 bg-marca-50 px-3 py-2 lg:col-span-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-marca-800">Sección 3 · Evidencias</p>
         </div>
 
         <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-2">
@@ -808,9 +932,21 @@ export function PartePemView({ rolUsuario, sesion }) {
           )}
         </div>
 
+        <ControlesFlujoSecciones
+          secciones={SECCIONES_PARTE_PEM}
+          seccionActiva={seccionActiva}
+          onIrSeccion={irASeccionFormulario}
+          className="lg:col-span-2"
+        />
+
+        <div id="pem-firma-envio" className="scroll-mt-44 rounded-xl border border-marca-200 bg-marca-50 px-3 py-2 lg:col-span-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-marca-800">Sección 4 · Firma y cierre</p>
+        </div>
+
         <label className="block lg:col-span-2">
           <span className="mb-1 block text-xs font-semibold text-slate-700">Nombre del cliente *</span>
           <input
+            name="nombre_firmante"
             required
             value={formulario.nombre_firmante}
             onChange={(e) => setFormulario((prev) => ({ ...prev, nombre_firmante: e.target.value }))}
@@ -861,6 +997,14 @@ export function PartePemView({ rolUsuario, sesion }) {
         >
           {enviando ? 'Enviando parte PEM...' : 'Cerrar orden y registrar parte PEM'}
         </button>
+
+        <div className="lg:col-span-2">
+          <ControlesFlujoSecciones
+            secciones={SECCIONES_PARTE_PEM}
+            seccionActiva={seccionActiva}
+            onIrSeccion={irASeccionFormulario}
+          />
+        </div>
       </form>
 
       <ToastEstado toast={toast} onClose={() => setToast(null)} />

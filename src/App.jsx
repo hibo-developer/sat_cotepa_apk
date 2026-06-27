@@ -4,10 +4,12 @@ import { NavbarInferior } from './components/NavbarInferior';
 import { IndicadorSync } from './components/IndicadorSync';
 import { CambiarPasswordModal } from './components/CambiarPasswordModal';
 import { MfaModal } from './components/MfaModal';
+import { BotonVolverArriba } from './components/BotonVolverArriba';
 import { useAuthSession } from './hooks/useAuthSession';
 import { precargarCatalogosOffline } from './services/catalogosService';
 import { estaOnline } from './services/offlineSyncService';
 import { obtenerClienteSupabase, tieneConfiguracionSupabase } from './services/supabaseClient';
+import { registrarRetornoRapido } from './services/navegacionMetricasService';
 import logoCotepa from './assets/cotepa.jpg';
 import { AdminView } from './views/AdminView';
 import { AccesoView } from './views/AccesoView';
@@ -94,6 +96,7 @@ export default function App() {
   const [rolUsuario, setRolUsuario] = useState(null);
   const [nombreVisibleUsuario, setNombreVisibleUsuario] = useState('');
   const [verificandoRol, setVerificandoRol] = useState(false);
+  const [mostrarVolverArriba, setMostrarVolverArriba] = useState(false);
   const [mostrarCambiarPassword, setMostrarCambiarPassword] = useState(false);
   const [mostrarMfa, setMostrarMfa] = useState(false);
   const location = useLocation();
@@ -220,6 +223,16 @@ export default function App() {
     };
   }, [requiereLogin, sesion?.user?.id]);
 
+  useEffect(() => {
+    function onScroll() {
+      setMostrarVolverArriba(window.scrollY > 420);
+    }
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   function cambiarVistaSegura(siguienteVista) {
     if (siguienteVista === 'admin' && !esAdmin) {
       return;
@@ -234,6 +247,17 @@ export default function App() {
     }
 
     navigate(RUTA_POR_VISTA[siguienteVista] || '/ordenes');
+  }
+
+  function volverArriba() {
+    const origen = window.scrollY;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    registrarRetornoRapido({
+      vista: vistaActiva,
+      accion: 'volver_arriba',
+      scrollOrigen: origen,
+      scrollDestino: 0,
+    });
   }
 
   const navItemsVisibles = NAV_ITEMS.filter((item) => {
@@ -311,33 +335,41 @@ export default function App() {
           )}
 
           {!accesoBloqueado && (
-            <div className="mt-4 hidden lg:block">
-              <nav aria-label="Navegación principal escritorio">
-                <ul className="flex flex-wrap items-center gap-2">
-                  {navItemsVisibles.map((item) => {
-                    const activo = vistaActiva === item.key;
-                    return (
-                      <li key={item.key}>
-                        <button
-                          type="button"
-                          onClick={() => cambiarVistaSegura(item.key)}
-                          className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
-                            activo
-                              ? 'bg-cotepa-rojo-500 text-white shadow-md'
-                              : 'bg-marca-50 text-marca-700 hover:bg-marca-100'
-                          }`}
-                        >
-                          {item.label}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </nav>
-            </div>
+            <p className="mt-3 text-xs font-semibold text-marca-700 lg:text-sm">
+              Ubicación actual: {navItemsVisibles.find((item) => item.key === vistaActiva)?.label || 'Órdenes'}
+            </p>
           )}
         </div>
       </header>
+
+      {!accesoBloqueado && (
+        <nav
+          aria-label="Navegación fija de secciones principales"
+          className="sticky top-[calc(0.45rem+env(safe-area-inset-top))] z-40 mb-4 rounded-2xl border border-marca-100 bg-white/95 p-2 shadow-md backdrop-blur"
+        >
+          <ul className="flex items-center gap-2 overflow-x-auto pb-1">
+            {navItemsVisibles.map((item) => {
+              const activo = vistaActiva === item.key;
+              return (
+                <li key={item.key}>
+                  <button
+                    type="button"
+                    onClick={() => cambiarVistaSegura(item.key)}
+                    className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold transition lg:px-4 lg:text-sm ${
+                      activo
+                        ? 'bg-cotepa-rojo-500 text-white shadow-md'
+                        : 'bg-marca-50 text-marca-700 hover:bg-marca-100'
+                    }`}
+                    aria-current={activo ? 'page' : undefined}
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      )}
 
       <main className="lg:rounded-2xl lg:border lg:border-marca-100 lg:bg-white lg:p-5 lg:shadow-tarjeta">
         {!accesoBloqueado && (
@@ -393,6 +425,8 @@ export default function App() {
         abierto={mostrarMfa}
         onCerrar={() => setMostrarMfa(false)}
       />
+
+      <BotonVolverArriba visible={mostrarVolverArriba} onClick={volverArriba} />
     </div>
   );
 }
