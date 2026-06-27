@@ -41,14 +41,14 @@ export function ToastEstado({ toast, onClose }) {
   const Icono = estilo.icono;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center px-4">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4">
       <div
-        className={`pointer-events-auto relative flex w-full max-w-lg items-start gap-3 overflow-hidden rounded-[1.75rem] border px-4 py-3.5 shadow-2xl backdrop-blur-md ${estilo.contenedor}`}
+        className={`pointer-events-auto relative flex w-full max-w-lg items-start gap-3 overflow-hidden rounded-[1.75rem] border px-4 py-3.5 shadow-2xl ring-1 ring-slate-950/5 backdrop-blur-md ${estilo.contenedor}`}
         role="status"
         aria-live="polite"
       >
         <span className={`absolute inset-y-0 left-0 w-1 ${estilo.franja}`} aria-hidden="true" />
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-black/[0.03]">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/70 bg-black/[0.03] shadow-sm">
           <Icono className={`h-5 w-5 ${estilo.iconoClase}`} />
         </div>
         <div className="min-w-0 flex-1">
@@ -56,14 +56,14 @@ export function ToastEstado({ toast, onClose }) {
             <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${estilo.badge}`}>
               {toast.tipo === 'error' ? 'Error' : 'Correcto'}
             </span>
-            <p className="text-sm font-bold leading-5">{toast.titulo}</p>
+            <p className="text-sm font-bold leading-5 tracking-tight">{toast.titulo}</p>
           </div>
           {toast.descripcion && <p className={`mt-1.5 text-sm leading-5 ${estilo.descripcion}`}>{toast.descripcion}</p>}
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full p-1.5 text-slate-500 transition hover:bg-black/5 hover:text-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200"
+          className="rounded-full border border-transparent p-1.5 text-slate-500 transition hover:border-slate-200 hover:bg-black/5 hover:text-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200"
           aria-label="Cerrar aviso"
         >
           <X className="h-4 w-4" />
