@@ -41,26 +41,26 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-md sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-navegacion-titulo"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-3xl border border-marca-100 bg-white p-5 shadow-2xl"
+        className="w-full max-w-md rounded-[1.75rem] border border-marca-100/90 bg-white/95 p-5 shadow-2xl shadow-slate-300/60 ring-1 ring-black/5"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-marca-100 bg-marca-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-marca-700">
+            <div className="inline-flex items-center gap-2 rounded-full border border-marca-100 bg-marca-50/90 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-marca-700 shadow-sm">
               <Compass className="h-3.5 w-3.5" />
               Navegación
             </div>
-            <p id="modal-navegacion-titulo" className="text-lg font-bold text-slate-900">
+            <p id="modal-navegacion-titulo" className="mt-3 text-lg font-extrabold text-slate-900">
               Elegir navegación
             </p>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm leading-6 text-slate-600">
               Selecciona la app que quieres usar para ir al cliente.
             </p>
           </div>
@@ -84,13 +84,13 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
                 key={app}
                 type="button"
                 onClick={() => onSelect(app, recordar)}
-                className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-left transition hover:border-marca-300 hover:bg-marca-50 focus:outline-none focus:ring-4 focus:ring-marca-100"
+                className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-marca-300 hover:bg-marca-50 focus:outline-none focus:ring-4 focus:ring-marca-100"
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 shadow-sm">
                   <Icono className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-slate-800">{meta.nombre}</span>
+                  <span className="block text-sm font-bold text-slate-800">{meta.nombre}</span>
                   <span className="block text-xs text-slate-500">
                     {app === 'system' ? 'Usar la app disponible en el dispositivo' : 'Abrir directamente esta aplicación'}
                   </span>
@@ -100,7 +100,7 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
           })}
         </div>
 
-        <label className="mt-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+        <label className="mt-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-3 text-sm text-slate-700">
           <input
             type="checkbox"
             checked={recordar}
