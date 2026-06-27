@@ -306,6 +306,7 @@ const SEGUIMIENTO_INICIAL = {
 
 const CACHE_KEY_PARTE_BORRADOR = 'sat_cache_parte_borrador_v1';
 const MAX_EDAD_BORRADOR_MS = 1000 * 60 * 60 * 24 * 7;
+const RESTORE_KEY_PARTE_TRABAJO = 'sat_restore_parte_trabajo_v1';
 const SECCIONES_PARTE_TRABAJO = [
   { id: 'pt-intervencion', label: 'Intervención', shortLabel: 'Intervención' },
   { id: 'pt-datos', label: 'Datos base', shortLabel: 'Datos' },
@@ -433,6 +434,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
   const [destinoNavPendiente, setDestinoNavPendiente] = useState(null);
   const [sesionParteRemota, setSesionParteRemota] = useState(null);
   const [seccionActiva, setSeccionActiva] = useState(SECCIONES_PARTE_TRABAJO[0].id);
+  const [seccionesConErrorManual, setSeccionesConErrorManual] = useState([]);
   const canvasFirmaRef = useRef(null);
   const inputFotoAntesRef = useRef(null);
   const inputFotoDespuesRef = useRef(null);
@@ -483,6 +485,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
     const campo = evento?.target?.name || evento?.target?.id || '';
     const seccion = resolverSeccionPorCampo(campo);
     registrarErrorValidacion({ vista: 'parte_trabajo', campo, seccion });
+    setSeccionesConErrorManual((prev) => (prev.includes(seccion) ? prev : [...prev, seccion]));
     if (seccionActiva !== seccion) {
       irASeccionFormulario(seccion);
     }
@@ -669,6 +672,62 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
     observables.forEach((nodo) => observer.observe(nodo));
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (location.state?.prefill) {
+      return;
+    }
+
+    try {
+      const raw = sessionStorage.getItem(RESTORE_KEY_PARTE_TRABAJO);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (!parsed || typeof parsed !== 'object') {
+        return;
+      }
+
+      const seccionGuardada = parsed.seccionActiva;
+      const scrollGuardado = Number(parsed.scrollY);
+
+      window.requestAnimationFrame(() => {
+        if (seccionGuardada && SECCIONES_PARTE_TRABAJO.some((item) => item.id === seccionGuardada)) {
+          irASeccionFormulario(seccionGuardada);
+        }
+        if (Number.isFinite(scrollGuardado) && scrollGuardado > 0) {
+          window.scrollTo({ top: scrollGuardado, behavior: 'auto' });
+        }
+      });
+    } catch {
+      // noop
+    }
+  }, [location.state?.prefill]);
+
+  useEffect(() => {
+    function guardarPosicion() {
+      try {
+        sessionStorage.setItem(RESTORE_KEY_PARTE_TRABAJO, JSON.stringify({
+          seccionActiva,
+          scrollY: window.scrollY,
+          ts: Date.now(),
+        }));
+      } catch {
+        // noop
+      }
+    }
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        guardarPosicion();
+      }
+    };
+
+    window.addEventListener('beforeunload', guardarPosicion);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      guardarPosicion();
+      window.removeEventListener('beforeunload', guardarPosicion);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [seccionActiva]);
 
   useEffect(() => {
     if (ignorarGuardadoBorradorRef.current) {
@@ -1813,6 +1872,8 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
     setMaterialSeleccionadoId('');
     setMaterialSeleccionadoCantidad('1');
     setFotosIntervencion([]);
+    setSeccionActiva(SECCIONES_PARTE_TRABAJO[0].id);
+    setSeccionesConErrorManual([]);
     limpiarBorradorParte();
   }
 
@@ -1833,31 +1894,43 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
     setError('');
 
     if (!desplazamiento.inicioIso || !desplazamiento.finIso) {
+      setSeccionesConErrorManual((prev) => (prev.includes('pt-intervencion') ? prev : [...prev, 'pt-intervencion']));
+      irASeccionFormulario('pt-intervencion');
       setError('Debes completar el desplazamiento (Inicio y Fin) antes de guardar el parte.');
       return;
     }
 
     if (!intervension.inicioIso || !intervension.finIso) {
+      setSeccionesConErrorManual((prev) => (prev.includes('pt-intervencion') ? prev : [...prev, 'pt-intervencion']));
+      irASeccionFormulario('pt-intervencion');
       setError('Debes completar la intervención (Inicio y Fin) antes de guardar el parte.');
       return;
     }
 
     if (intervension.pausaComidaActiva?.inicioIso) {
+      setSeccionesConErrorManual((prev) => (prev.includes('pt-intervencion') ? prev : [...prev, 'pt-intervencion']));
+      irASeccionFormulario('pt-intervencion');
       setError('Debes finalizar la pausa de comida activa antes de guardar el parte.');
       return;
     }
 
     if (!firmaClienteDataUrl) {
+      setSeccionesConErrorManual((prev) => (prev.includes('pt-firma-envio') ? prev : [...prev, 'pt-firma-envio']));
+      irASeccionFormulario('pt-firma-envio');
       setError('La firma del cliente es obligatoria para registrar el parte.');
       return;
     }
 
     if (!(formulario.nombre_firmante || '').trim()) {
+      setSeccionesConErrorManual((prev) => (prev.includes('pt-firma-envio') ? prev : [...prev, 'pt-firma-envio']));
+      irASeccionFormulario('pt-firma-envio');
       setError('Debes indicar el nombre de la persona que firma el parte.');
       return;
     }
 
     if (!formulario.orden_id && !formulario.cliente_id && !(formulario.cliente_nombre || '').trim()) {
+      setSeccionesConErrorManual((prev) => (prev.includes('pt-datos') ? prev : [...prev, 'pt-datos']));
+      irASeccionFormulario('pt-datos');
       setError('En partes sin orden, selecciona un cliente o escribe su nombre para crearlo/usarlo.');
       return;
     }
@@ -2048,6 +2121,37 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
       || (!formulario.cliente_id && !(formulario.cliente_nombre || '').trim())
     );
 
+  const checksProgreso = [
+    { seccion: 'pt-intervencion', ok: Boolean(desplazamiento.inicioIso) },
+    { seccion: 'pt-intervencion', ok: Boolean(desplazamiento.finIso) },
+    { seccion: 'pt-intervencion', ok: Boolean(intervension.inicioIso) },
+    { seccion: 'pt-intervencion', ok: Boolean(intervension.finIso) },
+    { seccion: 'pt-intervencion', ok: !Boolean(intervension.pausaComidaActiva?.inicioIso) },
+    { seccion: 'pt-datos', ok: Boolean(formulario.tecnico_id) },
+    { seccion: 'pt-datos', ok: Boolean((formulario.descripcion_problema || '').trim()) },
+    { seccion: 'pt-datos', ok: Boolean(formulario.cliente_id || (formulario.cliente_nombre || '').trim()) },
+    { seccion: 'pt-evidencias', ok: Number(formulario.tiempo_empleado) > 0 },
+    { seccion: 'pt-firma-envio', ok: Boolean(firmaClienteDataUrl) },
+    { seccion: 'pt-firma-envio', ok: Boolean((formulario.nombre_firmante || '').trim()) },
+  ];
+  const totalChecks = checksProgreso.length;
+  const checksCompletados = checksProgreso.filter((item) => item.ok).length;
+  const porcentajeCompletado = totalChecks > 0 ? Math.round((checksCompletados / totalChecks) * 100) : 0;
+  const seccionesConCheckIncompleto = Array.from(new Set(checksProgreso.filter((item) => !item.ok).map((item) => item.seccion)));
+  const seccionesCompletadas = SECCIONES_PARTE_TRABAJO
+    .filter((seccion) => {
+      const checksSeccion = checksProgreso.filter((item) => item.seccion === seccion.id);
+      return checksSeccion.length === 0 || checksSeccion.every((item) => item.ok);
+    })
+    .map((item) => item.id);
+  const seccionesConError = Array.from(
+    new Set([
+      ...seccionesConErrorManual.filter((item) => seccionesConCheckIncompleto.includes(item)),
+      ...seccionesConCheckIncompleto,
+    ]),
+  );
+  const indiceSeccionActual = Math.max(1, SECCIONES_PARTE_TRABAJO.findIndex((item) => item.id === seccionActiva) + 1);
+
   if (!tieneConfiguracionSupabase()) {
     return (
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
@@ -2094,6 +2198,13 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
           secciones={SECCIONES_PARTE_TRABAJO}
           seccionActiva={seccionActiva}
           onIrSeccion={irASeccionFormulario}
+          seccionesConError={seccionesConError}
+          seccionesCompletadas={seccionesCompletadas}
+          resumenProgreso={{
+            indiceActual: indiceSeccionActual,
+            totalSecciones: SECCIONES_PARTE_TRABAJO.length,
+            porcentaje: porcentajeCompletado,
+          }}
           className="lg:col-span-2"
         />
 

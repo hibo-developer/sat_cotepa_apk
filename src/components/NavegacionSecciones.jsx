@@ -9,8 +9,14 @@ export function NavegacionSecciones({
   secciones,
   seccionActiva,
   onIrSeccion,
+  seccionesConError = [],
+  seccionesCompletadas = [],
+  resumenProgreso = null,
   className = '',
 }) {
+  const conError = new Set(seccionesConError);
+  const completadas = new Set(seccionesCompletadas);
+
   return (
     <nav
       aria-label="Navegacion por secciones"
@@ -24,14 +30,20 @@ export function NavegacionSecciones({
               <button
                 type="button"
                 onClick={() => onIrSeccion(seccion.id)}
-                className={`whitespace-nowrap rounded-xl px-2 py-1.5 text-[11px] font-bold transition sm:px-3 sm:py-2 sm:text-xs ${
+                className={`whitespace-nowrap rounded-xl border px-2 py-1.5 text-[11px] font-bold transition sm:px-3 sm:py-2 sm:text-xs ${
                   activa
-                    ? 'bg-cotepa-rojo-500 text-white shadow'
-                    : 'bg-marca-50 text-marca-700 hover:bg-marca-100'
+                    ? 'border-cotepa-rojo-500 bg-cotepa-rojo-500 text-white shadow'
+                    : conError.has(seccion.id)
+                      ? 'border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100'
+                      : completadas.has(seccion.id)
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                        : 'border-transparent bg-marca-50 text-marca-700 hover:bg-marca-100'
                 }`}
                 aria-current={activa ? 'page' : undefined}
               >
                 {seccion.shortLabel || seccion.label}
+                {conError.has(seccion.id) && <span className="ml-1">!</span>}
+                {!conError.has(seccion.id) && completadas.has(seccion.id) && <span className="ml-1">OK</span>}
               </button>
             </li>
           );
@@ -43,6 +55,11 @@ export function NavegacionSecciones({
           {secciones.find((seccion) => seccion.id === seccionActiva)?.label || secciones[0]?.label}
         </span>
       </p>
+      {resumenProgreso && (
+        <p className="px-1 pt-1 text-[11px] text-slate-600">
+          {`Sección ${resumenProgreso.indiceActual} de ${resumenProgreso.totalSecciones} · ${resumenProgreso.porcentaje}% completado`}
+        </p>
+      )}
     </nav>
   );
 }

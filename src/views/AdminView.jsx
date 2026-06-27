@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BarChart3, RefreshCw, ShieldUser, Trash2 } from 'lucide-react';
+import { BarChart3, Download, RefreshCw, ShieldUser, Trash2 } from 'lucide-react';
 import { obtenerClienteSupabase, tieneConfiguracionSupabase } from '../services/supabaseClient';
 import {
   limpiarMetricasNavegacion,
@@ -61,6 +61,14 @@ function calcularResumenMetricas(metricas) {
     retornosRapidos: retornos.length,
     mediaNavegacionMs: mediaNavMs,
   };
+}
+
+function escaparCsv(valor) {
+  const texto = String(valor ?? '');
+  if (texto.includes('"') || texto.includes(',') || texto.includes('\n')) {
+    return `"${texto.replace(/"/g, '""')}"`;
+  }
+  return texto;
 }
 
 export function AdminView() {
@@ -247,6 +255,37 @@ export function AdminView() {
   function limpiarMetricas() {
     limpiarMetricasNavegacion();
     refrescarMetricas();
+  }
+
+  function exportarMetricasCsv() {
+    const columnas = [
+      'timestamp',
+      'tipo',
+      'vista',
+      'desde',
+      'hacia',
+      'campo',
+      'seccion',
+      'duracionMs',
+      'origen',
+      'accion',
+      'scrollOrigen',
+      'scrollDestino',
+      'distanciaReducida',
+    ];
+
+    const filas = metricasFiltradas.map((item) => columnas.map((col) => escaparCsv(item[col])).join(','));
+    const csv = [columnas.join(','), ...filas].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    const marcaTiempo = new Date().toISOString().replace(/[:.]/g, '-');
+    enlace.href = url;
+    enlace.download = `metricas-ux-${marcaTiempo}.csv`;
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    URL.revokeObjectURL(url);
   }
 
   const vistasMetricasDisponibles = Array.from(
@@ -523,6 +562,15 @@ export function AdminView() {
             >
               <RefreshCw className="h-4 w-4" />
               Refrescar
+            </button>
+            <button
+              type="button"
+              onClick={exportarMetricasCsv}
+              disabled={metricasFiltradas.length === 0}
+              className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" />
+              Exportar CSV
             </button>
             <button
               type="button"

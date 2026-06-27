@@ -142,3 +142,25 @@ Se añadió un panel visual dentro de Administración para no depender de consol
 - Acciones:
   - refrescar métricas
   - limpiar métricas locales
+
+## Mejoras adicionales implementadas
+
+1. Validación por sección (step-aware)
+
+- La navegación por secciones marca errores por bloque para dirigir la corrección sin scroll manual.
+- Estados visuales por sección: error, completada y activa.
+
+2. Progreso de formulario
+
+- Se muestra indicador de progreso por formulario: sección actual y porcentaje completado.
+- El porcentaje se calcula con checks obligatorios reales del flujo.
+
+3. Persistencia de posición
+
+- Se guarda y restaura sección activa + posición de scroll al volver a la vista.
+- Aplica en Parte de Trabajo y Parte PEM.
+
+4. Exportación CSV de métricas UX
+
+- Se añadió botón `Exportar CSV` en Administración.
+- Exporta los eventos filtrados por vista, rango temporal y tipo.

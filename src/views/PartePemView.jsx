@@ -102,6 +102,7 @@ const SECCIONES_PARTE_PEM = [
   { id: 'pem-evidencias', label: 'Evidencias', shortLabel: 'Evidencias' },
   { id: 'pem-firma-envio', label: 'Firma y cierre', shortLabel: 'Firma' },
 ];
+const RESTORE_KEY_PARTE_PEM = 'sat_restore_parte_pem_v1';
 
 export function PartePemView({ rolUsuario, sesion }) {
   const location = useLocation();
@@ -115,6 +116,7 @@ export function PartePemView({ rolUsuario, sesion }) {
   const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
   const [toast, setToast] = useState(null);
   const [seccionActiva, setSeccionActiva] = useState(SECCIONES_PARTE_PEM[0].id);
+  const [seccionesConErrorManual, setSeccionesConErrorManual] = useState([]);
 
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
@@ -205,6 +207,7 @@ export function PartePemView({ rolUsuario, sesion }) {
     const campo = evento?.target?.name || evento?.target?.id || '';
     const seccion = resolverSeccionPorCampo(campo);
     registrarErrorValidacion({ vista: 'parte_pem', campo, seccion });
+    setSeccionesConErrorManual((prev) => (prev.includes(seccion) ? prev : [...prev, seccion]));
     if (seccionActiva !== seccion) {
       irASeccionFormulario(seccion);
     }
@@ -329,6 +332,62 @@ export function PartePemView({ rolUsuario, sesion }) {
     observables.forEach((nodo) => observer.observe(nodo));
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (location.state?.prefill) {
+      return;
+    }
+
+    try {
+      const raw = sessionStorage.getItem(RESTORE_KEY_PARTE_PEM);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (!parsed || typeof parsed !== 'object') {
+        return;
+      }
+
+      const seccionGuardada = parsed.seccionActiva;
+      const scrollGuardado = Number(parsed.scrollY);
+
+      window.requestAnimationFrame(() => {
+        if (seccionGuardada && SECCIONES_PARTE_PEM.some((item) => item.id === seccionGuardada)) {
+          irASeccionFormulario(seccionGuardada);
+        }
+        if (Number.isFinite(scrollGuardado) && scrollGuardado > 0) {
+          window.scrollTo({ top: scrollGuardado, behavior: 'auto' });
+        }
+      });
+    } catch {
+      // noop
+    }
+  }, [location.state?.prefill]);
+
+  useEffect(() => {
+    function guardarPosicion() {
+      try {
+        sessionStorage.setItem(RESTORE_KEY_PARTE_PEM, JSON.stringify({
+          seccionActiva,
+          scrollY: window.scrollY,
+          ts: Date.now(),
+        }));
+      } catch {
+        // noop
+      }
+    }
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        guardarPosicion();
+      }
+    };
+
+    window.addEventListener('beforeunload', guardarPosicion);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      guardarPosicion();
+      window.removeEventListener('beforeunload', guardarPosicion);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [seccionActiva]);
 
   function prepararCanvasFirma() {
     const canvas = canvasFirmaRef.current;
@@ -499,6 +558,13 @@ export function PartePemView({ rolUsuario, sesion }) {
       return;
     }
 
+    if (!firmaClienteDataUrl) {
+      setSeccionesConErrorManual((prev) => (prev.includes('pem-firma-envio') ? prev : [...prev, 'pem-firma-envio']));
+      irASeccionFormulario('pem-firma-envio');
+      setError('La firma digital del cliente es obligatoria para registrar el parte PEM.');
+      return;
+    }
+
     setEnviando(true);
     try {
       // Registrar automáticamente fechas de intervención al cerrar el parte
@@ -556,6 +622,8 @@ export function PartePemView({ rolUsuario, sesion }) {
       });
       setIntervension({ inicioIso: null, finIso: null });
       setFotosIntervencion([]);
+      setSeccionActiva(SECCIONES_PARTE_PEM[0].id);
+      setSeccionesConErrorManual([]);
       limpiarFirma();
 
       navigate('/ordenes', { replace: true });
@@ -570,6 +638,38 @@ export function PartePemView({ rolUsuario, sesion }) {
       setEnviando(false);
     }
   }
+
+  const checksProgreso = [
+    { seccion: 'pem-datos', ok: Boolean(formulario.cliente_id) },
+    { seccion: 'pem-datos', ok: Boolean(formulario.tecnico_id) },
+    { seccion: 'pem-datos', ok: Boolean(formulario.equipo_id) },
+    { seccion: 'pem-datos', ok: Boolean((formulario.equipo_matricula || '').trim()) },
+    { seccion: 'pem-datos', ok: Boolean(formulario.tipo_orden) },
+    { seccion: 'pem-checks', ok: Boolean(checks.verificacion_suministros) },
+    { seccion: 'pem-checks', ok: Boolean(checks.verificacion_funcionamiento) },
+    { seccion: 'pem-checks', ok: Boolean(checks.verificacion_seguridades) },
+    { seccion: 'pem-checks', ok: Boolean(checks.instrucciones_funcionamiento) },
+    { seccion: 'pem-checks', ok: Boolean(checks.instrucciones_mantenimiento) },
+    { seccion: 'pem-firma-envio', ok: Boolean((formulario.nombre_firmante || '').trim()) },
+    { seccion: 'pem-firma-envio', ok: Boolean(firmaClienteDataUrl) },
+  ];
+  const totalChecks = checksProgreso.length;
+  const checksCompletados = checksProgreso.filter((item) => item.ok).length;
+  const porcentajeCompletado = totalChecks > 0 ? Math.round((checksCompletados / totalChecks) * 100) : 0;
+  const seccionesConCheckIncompleto = Array.from(new Set(checksProgreso.filter((item) => !item.ok).map((item) => item.seccion)));
+  const seccionesCompletadas = SECCIONES_PARTE_PEM
+    .filter((seccion) => {
+      const checksSeccion = checksProgreso.filter((item) => item.seccion === seccion.id);
+      return checksSeccion.length === 0 || checksSeccion.every((item) => item.ok);
+    })
+    .map((item) => item.id);
+  const seccionesConError = Array.from(
+    new Set([
+      ...seccionesConErrorManual.filter((item) => seccionesConCheckIncompleto.includes(item)),
+      ...seccionesConCheckIncompleto,
+    ]),
+  );
+  const indiceSeccionActual = Math.max(1, SECCIONES_PARTE_PEM.findIndex((item) => item.id === seccionActiva) + 1);
 
   if (!puedeUsar) {
     return (
@@ -606,6 +706,13 @@ export function PartePemView({ rolUsuario, sesion }) {
           secciones={SECCIONES_PARTE_PEM}
           seccionActiva={seccionActiva}
           onIrSeccion={irASeccionFormulario}
+          seccionesConError={seccionesConError}
+          seccionesCompletadas={seccionesCompletadas}
+          resumenProgreso={{
+            indiceActual: indiceSeccionActual,
+            totalSecciones: SECCIONES_PARTE_PEM.length,
+            porcentaje: porcentajeCompletado,
+          }}
           className="lg:col-span-2"
         />
 
