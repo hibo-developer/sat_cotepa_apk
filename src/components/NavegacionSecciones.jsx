@@ -49,14 +49,14 @@ export function NavegacionSecciones({
           );
         })}
       </ul>
-      <p className="hidden px-1 pt-1 text-[11px] text-slate-500 sm:block">
+      <p className="hidden px-1 pt-1 text-[11px] text-sat-subtle sm:block">
         Seccion actual:{' '}
-        <span className="font-semibold text-slate-700">
+        <span className="font-semibold text-sat-muted">
           {secciones.find((seccion) => seccion.id === seccionActiva)?.label || secciones[0]?.label}
         </span>
       </p>
       {resumenProgreso && (
-        <p className="px-1 pt-1 text-[11px] text-slate-600">
+        <p className="px-1 pt-1 text-[11px] text-sat-muted">
           {`Sección ${resumenProgreso.indiceActual} de ${resumenProgreso.totalSecciones} · ${resumenProgreso.porcentaje}% completado`}
         </p>
       )}

@@ -2174,10 +2174,10 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
 
       <form onSubmit={enviarParte} onInvalidCapture={manejarErrorValidacion} className="grid gap-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:grid-cols-2 lg:gap-4 lg:p-5">
         <h2 className="text-lg font-bold text-marca-900 lg:col-span-2">Detalle del parte</h2>
-        <p className="text-xs text-slate-600 lg:col-span-2">
+        <p className="text-xs text-sat-muted lg:col-span-2">
           El parte puede vincularse a una orden abierta o registrarse como imprevisto sin orden previa.
         </p>
-        <p className="text-xs text-slate-500 lg:col-span-2">
+        <p className="text-xs text-sat-subtle lg:col-span-2">
           Al guardarlo, la orden vinculada se finaliza. Si no hay orden, se crea una orden imprevista y se finaliza en el mismo paso.
         </p>
 
@@ -2204,7 +2204,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-sky-900">Dirección del cliente</p>
-                <p className="mt-1 text-sm text-slate-700">
+                <p className="mt-1 text-sm text-sat-muted">
                   {ubicacionCliente.direccion || (ubicacionCliente.tieneUbicacion ? 'Ubicación registrada' : 'Sin ubicación')}
                 </p>
               </div>
@@ -2217,7 +2217,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
                 🧭 Ir
               </button>
             </div>
-            <p className="mt-2 text-[11px] text-slate-600">
+            <p className="mt-2 text-[11px] text-sat-muted">
               Usa coordenadas si están guardadas; si no, usa la dirección del cliente.
             </p>
           </div>
@@ -2261,13 +2261,13 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
               Fin Pausa Comida
             </button>
           </div>
-          <p className="mt-2 text-xs text-slate-700">
+          <p className="mt-2 text-xs text-sat-muted">
             Inicio: {intervension.inicioIso ? new Date(intervension.inicioIso).toLocaleString('es-ES') : 'No iniciado'}
           </p>
-          <p className="text-xs text-slate-700">
+          <p className="text-xs text-sat-muted">
             Fin: {intervension.finIso ? new Date(intervension.finIso).toLocaleString('es-ES') : 'No finalizado'}
           </p>
-          <p className="text-xs text-slate-700">
+          <p className="text-xs text-sat-muted">
             Ubicación cliente: {formatearLugar(intervension.ubicacionInicio)}
           </p>
           {pendienteGeoIntervension && !intervension.finIso && !intervension.ubicacionInicio && (
@@ -2275,10 +2275,10 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
               Sin conexión: se usa el reloj del sistema. La geolocalización se registrará al volver internet.
             </p>
           )}
-          <p className="text-xs text-slate-700">
+          <p className="text-xs text-sat-muted">
             Tiempo intervención bruto: {Number.isFinite(minutosIntervensionBrutos) ? `${minutosIntervensionBrutos} min` : 'Pendiente'}
           </p>
-          <p className="text-xs text-slate-700">
+          <p className="text-xs text-sat-muted">
             Pausas comida: {intervension.pausasComida.length} ({minutosPausaComida} min)
           </p>
           {intervension.pausasComida.length > 0 && (
@@ -2304,10 +2304,10 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
               ))}
             </ul>
           )}
-          <p className="text-xs text-slate-700">
+          <p className="text-xs text-sat-muted">
             Tiempo intervención neto: {Number.isFinite(minutosIntervensionNetos) ? `${minutosIntervensionNetos} min` : (Number.isFinite(intervension.minutosGeo) ? `${intervension.minutosGeo} min` : 'Pendiente')}
           </p>
-          <p className="text-xs text-slate-700">
+          <p className="text-xs text-sat-muted">
             Pausa activa: {intervension.pausaComidaActiva?.inicioIso ? new Date(intervension.pausaComidaActiva.inicioIso).toLocaleString('es-ES') : 'No'}
           </p>
         </div>
@@ -2324,7 +2324,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         </div>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Cliente *</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Cliente *</span>
           <select
             name="cliente_id"
             value={formulario.cliente_id}
@@ -2339,7 +2339,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
                 orden_id: '',
               }));
             }}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             disabled={cargando}
           >
             <option value="">Selecciona cliente</option>
@@ -2360,13 +2360,13 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
                 orden_id: '',
               }))
             }
-            className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="mt-2 w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             placeholder="Si no existe, escribe el nombre del cliente"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Equipo</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Equipo</span>
           <select
             name="equipo_id"
             value={formulario.equipo_id}
@@ -2379,7 +2379,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
                 equipo_nombre: equipo?.nombre || prev.equipo_nombre,
               }));
             }}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             disabled={!formulario.cliente_id}
           >
             <option value="">Sin equipo</option>
@@ -2394,19 +2394,19 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
             type="text"
             value={formulario.equipo_nombre}
             onChange={(e) => setFormulario((prev) => ({ ...prev, equipo_nombre: e.target.value }))}
-            className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="mt-2 w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             placeholder="Opcional: nombre del equipo para usar/crear"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Técnico *</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Técnico *</span>
           <select
             name="tecnico_id"
             required
             value={formulario.tecnico_id}
             onChange={(e) => setFormulario((prev) => ({ ...prev, tecnico_id: e.target.value, orden_id: '' }))}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             disabled={esTecnico}
           >
             <option value="">{esTecnico ? 'Tu técnico asignado' : 'Selecciona técnico'}</option>
@@ -2419,7 +2419,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Orden abierta (opcional)</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Orden abierta (opcional)</span>
           <select
             name="orden_id"
             value={formulario.orden_id}
@@ -2434,7 +2434,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
                 prioridad: orden?.prioridad || prev.prioridad,
               }));
             }}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             disabled={!formulario.cliente_id || !formulario.tecnico_id}
           >
             <option value="">Sin orden previa (imprevista)</option>
@@ -2444,32 +2444,32 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-sat-subtle">
             Si no seleccionas orden, el sistema creará una orden imprevista y la cerrará con este parte.
           </p>
         </label>
 
         <label className="block lg:col-span-2">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Descripción del problema *</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Descripción del problema *</span>
           <textarea
             name="descripcion_problema"
             required
             rows={4}
             value={formulario.descripcion_problema}
             onChange={(e) => setFormulario((prev) => ({ ...prev, descripcion_problema: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             placeholder="Describe la avería reportada"
           />
         </label>
 
         <label className="block lg:col-span-2">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Tareas realizadas</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Tareas realizadas</span>
           <textarea
             name="tareas_realizadas_libre"
             rows={4}
             value={formulario.tareas_realizadas_libre}
             onChange={(e) => setFormulario((prev) => ({ ...prev, tareas_realizadas_libre: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             placeholder="Describe el trabajo realizado (diagnóstico, acciones, sustituciones, pruebas, etc.)"
           />
         </label>
@@ -2486,25 +2486,25 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         </div>
 
         <label className="block lg:col-span-2">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Materiales utilizados</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Materiales utilizados</span>
           <textarea
             name="materialesTexto"
             rows={4}
             value={formulario.materialesTexto}
             onChange={(e) => setFormulario((prev) => ({ ...prev, materialesTexto: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
             placeholder={"Ejemplo:\nGas R32;1;45.5\nFiltro;2;12"}
           />
         </label>
 
-        <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 lg:col-span-2">
-          <p className="text-xs font-semibold text-slate-700">Materiales desde inventario (descuenta stock)</p>
+        <div className="space-y-2 rounded-xl border border-sat-border-soft bg-sat-surface p-3 lg:col-span-2">
+          <p className="text-xs font-semibold text-sat-muted">Materiales desde inventario (descuenta stock)</p>
           <div className="flex flex-col gap-2">
             <div className="flex gap-2">
               <select
                 value={materialSeleccionadoId}
                 onChange={(e) => setMaterialSeleccionadoId(e.target.value)}
-                className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                className="flex-1 rounded-xl border border-sat-border px-3 py-2 text-sm"
               >
                 <option value="">Selecciona material</option>
                 {materialesInventario.map((material) => (
@@ -2518,7 +2518,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
                 min="1"
                 value={materialSeleccionadoCantidad}
                 onChange={(e) => setMaterialSeleccionadoCantidad(e.target.value)}
-                className="w-16 rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                className="w-16 rounded-xl border border-sat-border px-3 py-2 text-sm"
               />
             </div>
             <button
@@ -2552,7 +2552,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
             </ul>
           )}
 
-          <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+          <p className="rounded-lg border border-sat-border-soft bg-white px-3 py-2 text-xs font-semibold text-sat-muted">
             Total materiales (previo): {totalMaterialesPreview.toFixed(2)} EUR
           </p>
         </div>
@@ -2569,7 +2569,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         </div>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Tiempo empleado (min) *</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Tiempo empleado (min) *</span>
           <input
             name="tiempo_empleado"
             required
@@ -2577,17 +2577,17 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
             type="number"
             value={formulario.tiempo_empleado}
             onChange={(e) => setFormulario((prev) => ({ ...prev, tiempo_empleado: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Prioridad</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Prioridad</span>
           <select
             name="prioridad"
             value={formulario.prioridad}
             onChange={(e) => setFormulario((prev) => ({ ...prev, prioridad: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
           >
             <option value="baja">Baja</option>
             <option value="media">Media</option>
@@ -2597,27 +2597,27 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         </label>
 
         <label className="block lg:col-span-2">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Informe PDF</span>
-          <p className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Informe PDF</span>
+          <p className="rounded-xl border border-sat-border bg-sat-surface px-4 py-3 text-xs text-sat-muted">
             Al guardar, el parte queda registrado y el administrador podrá generar el informe PDF definitivo desde el panel SAT tras completar la valoración económica.
           </p>
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-700">Mecánicos en la intervención</span>
+          <span className="mb-1 block text-xs font-semibold text-sat-muted">Mecánicos en la intervención</span>
           <input
             name="mecanicos_intervinieron"
             min="1"
             type="number"
             value={formulario.mecanicos_intervinieron}
             onChange={(e) => setFormulario((prev) => ({ ...prev, mecanicos_intervinieron: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
           />
         </label>
 
-        <div className="rounded-xl border border-slate-300 bg-slate-50 p-3">
+        <div className="rounded-xl border border-sat-border bg-sat-surface p-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700">Fotos de la intervención</span>
+            <span className="text-xs font-semibold text-sat-muted">Fotos de la intervención</span>
             {fotosIntervencion.length > 0 && (
               <button
                 type="button"
@@ -2633,7 +2633,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
               type="button"
               onClick={() => inputFotoAntesRef.current?.click()}
               disabled={guardando}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 disabled:opacity-60"
+              className="rounded-lg border border-sat-border bg-white px-3 py-2 text-xs font-semibold text-sat-muted disabled:opacity-60"
             >
               Añadir (antes)
             </button>
@@ -2641,7 +2641,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
               type="button"
               onClick={() => inputFotoDespuesRef.current?.click()}
               disabled={guardando}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 disabled:opacity-60"
+              className="rounded-lg border border-sat-border bg-white px-3 py-2 text-xs font-semibold text-sat-muted disabled:opacity-60"
             >
               Añadir (después)
             </button>
@@ -2664,7 +2664,7 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
             onChange={(e) => manejarSeleccionFotos(e, 'despues')}
             className="hidden"
           />
-          <p className="mt-2 text-[11px] text-slate-600">
+          <p className="mt-2 text-[11px] text-sat-muted">
             Máximo 10 fotos. Se comprimen a 1280px para facilitar el envío.
           </p>
           {fotosIntervencion.length > 0 && (
@@ -2703,26 +2703,26 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
           <p className="text-xs font-bold uppercase tracking-wide text-marca-800">Sección 5 · Firma y envío</p>
         </div>
 
-        <div className="rounded-xl border border-slate-300 bg-slate-50 p-3">
+        <div className="rounded-xl border border-sat-border bg-sat-surface p-3">
           <label className="mb-3 block">
-            <span className="mb-1 block text-xs font-semibold text-slate-700">Nombre de quien firma *</span>
+            <span className="mb-1 block text-xs font-semibold text-sat-muted">Nombre de quien firma *</span>
             <input
               name="nombre_firmante"
               required
               type="text"
               value={formulario.nombre_firmante}
               onChange={(e) => setFormulario((prev) => ({ ...prev, nombre_firmante: e.target.value }))}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-sat-border bg-white px-3 py-2 text-sm"
               placeholder="Nombre y apellidos"
               maxLength={120}
             />
           </label>
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700">Firma del cliente *</span>
+            <span className="text-xs font-semibold text-sat-muted">Firma del cliente *</span>
             <button
               type="button"
               onClick={limpiarFirma}
-              className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+              className="rounded-lg border border-sat-border bg-white px-2 py-1 text-xs font-semibold text-sat-muted"
             >
               Limpiar firma
             </button>
@@ -2735,10 +2735,10 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
             onPointerMove={trazarFirma}
             onPointerUp={terminarTrazoFirma}
             onPointerLeave={terminarTrazoFirma}
-            className="w-full rounded-lg border border-slate-300 bg-white"
+            className="w-full rounded-lg border border-sat-border bg-white"
             style={{ touchAction: 'none' }}
           />
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-sat-subtle">
             Firma requerida para completar el parte.
           </p>
         </div>

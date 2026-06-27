@@ -53,17 +53,17 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p id="modal-navegacion-titulo" className="text-lg font-bold text-slate-900">
+            <p id="modal-navegacion-titulo" className="text-lg font-bold text-sat-text">
               Elegir navegación
             </p>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-sat-muted">
               Selecciona la app que quieres usar para ir al cliente.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-full p-2 text-sat-subtle transition hover:bg-sat-surface-alt hover:text-sat-muted"
             aria-label="Cerrar modal"
           >
             <X className="h-5 w-5" />
@@ -80,23 +80,23 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
                 key={app}
                 type="button"
                 onClick={() => onSelect(app, recordar)}
-                className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-left transition hover:border-marca-300 hover:bg-marca-50"
+                className="flex w-full items-center gap-3 rounded-2xl border border-sat-border-soft px-4 py-3 text-left transition hover:border-marca-300 hover:bg-marca-50"
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sat-surface-alt text-sat-muted">
                   <Icono className="h-5 w-5" />
                 </span>
-                <span className="text-sm font-semibold text-slate-800">{meta.nombre}</span>
+                <span className="text-sm font-semibold text-sat-text">{meta.nombre}</span>
               </button>
             );
           })}
         </div>
 
-        <label className="mt-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+        <label className="mt-4 flex items-center gap-3 rounded-2xl border border-sat-border-soft bg-sat-surface px-4 py-3 text-sm text-sat-muted">
           <input
             type="checkbox"
             checked={recordar}
             onChange={(event) => setRecordar(event.target.checked)}
-            className="h-4 w-4 rounded border-slate-300"
+            className="h-4 w-4 rounded border-sat-border"
           />
           Recordar mi elección
         </label>

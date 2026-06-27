@@ -49,7 +49,7 @@ export function ToastEstado({ toast, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full p-1 text-slate-500 transition hover:bg-black/5 hover:text-slate-700"
+          className="rounded-full p-1 text-sat-subtle transition hover:bg-black/5 hover:text-sat-muted"
           aria-label="Cerrar aviso"
         >
           <X className="h-4 w-4" />

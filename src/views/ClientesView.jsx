@@ -300,7 +300,7 @@ export function ClientesView({ rolUsuario }) {
         <div className="lg:grid lg:grid-cols-12 lg:gap-4">
           {puedeEditarCatalogos && (
             <form onSubmit={guardarCliente} className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
-              <h3 className="text-base font-bold text-slate-800">
+              <h3 className="text-base font-bold text-sat-text">
                 {clienteEditandoId ? 'Editar cliente' : 'Nuevo cliente'}
               </h3>
 
@@ -308,26 +308,26 @@ export function ClientesView({ rolUsuario }) {
                 required
                 value={clienteForm.nombre}
                 onChange={(e) => setClienteForm((p) => ({ ...p, nombre: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
                 placeholder="Nombre del cliente"
               />
               <input
                 value={clienteForm.direccion}
                 onChange={(e) => setClienteForm((p) => ({ ...p, direccion: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
                 placeholder="Dirección"
               />
               <input
                 value={clienteForm.telefono}
                 onChange={(e) => setClienteForm((p) => ({ ...p, telefono: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
                 placeholder="Teléfono"
               />
               <input
                 type="email"
                 value={clienteForm.email}
                 onChange={(e) => setClienteForm((p) => ({ ...p, email: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
                 placeholder="Email"
               />
               <div className="grid grid-cols-2 gap-2">
@@ -335,14 +335,14 @@ export function ClientesView({ rolUsuario }) {
                   inputMode="decimal"
                   value={clienteForm.lat}
                   onChange={(e) => setClienteForm((p) => ({ ...p, lat: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                  className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
                   placeholder="Latitud"
                 />
                 <input
                   inputMode="decimal"
                   value={clienteForm.lng}
                   onChange={(e) => setClienteForm((p) => ({ ...p, lng: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                  className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
                   placeholder="Longitud"
                 />
               </div>
@@ -352,7 +352,7 @@ export function ClientesView({ rolUsuario }) {
                   {clienteEditandoId ? 'Actualizar' : 'Crear'}
                 </button>
                 <button
-                  className="rounded-xl bg-slate-200 px-4 py-3 text-sm font-bold text-slate-700"
+                  className="rounded-xl bg-slate-200 px-4 py-3 text-sm font-bold text-sat-muted"
                   type="button"
                   onClick={limpiarFormCliente}
                 >
@@ -363,9 +363,9 @@ export function ClientesView({ rolUsuario }) {
           )}
 
           <div className={`space-y-2 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
-            {cargando && <p className="text-sm font-semibold text-slate-600">Cargando clientes...</p>}
+            {cargando && <p className="text-sm font-semibold text-sat-muted">Cargando clientes...</p>}
             {!cargando && clientes.length > 0 && (
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+              <div className="flex items-center justify-between rounded-xl border border-sat-border-soft bg-sat-surface px-3 py-2 text-xs font-semibold text-sat-muted">
                 <div className="flex items-center gap-3">
                   <span>Pagina {paginaClientes} de {totalPaginasClientes}</span>
                   <label className="flex items-center gap-1">
@@ -376,7 +376,7 @@ export function ClientesView({ rolUsuario }) {
                         setItemsPaginaClientes(Number(e.target.value));
                         setPaginaClientes(1);
                       }}
-                      className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+                      className="rounded-md border border-sat-border bg-white px-2 py-1 text-xs"
                     >
                       {OPCIONES_ITEMS_PAGINA.map((opcion) => (
                         <option key={opcion} value={opcion}>{opcion}</option>
@@ -389,7 +389,7 @@ export function ClientesView({ rolUsuario }) {
                     type="button"
                     onClick={() => setPaginaClientes((previo) => Math.max(1, previo - 1))}
                     disabled={paginaClientes === 1}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="rounded-lg border border-sat-border bg-white px-3 py-1.5 disabled:opacity-50"
                   >
                     Anterior
                   </button>
@@ -397,7 +397,7 @@ export function ClientesView({ rolUsuario }) {
                     type="button"
                     onClick={() => setPaginaClientes((previo) => Math.min(totalPaginasClientes, previo + 1))}
                     disabled={paginaClientes === totalPaginasClientes}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="rounded-lg border border-sat-border bg-white px-3 py-1.5 disabled:opacity-50"
                   >
                     Siguiente
                   </button>
@@ -408,11 +408,11 @@ export function ClientesView({ rolUsuario }) {
             {!cargando &&
               clientesPaginados.map((cliente) => (
                 <article key={cliente.id} className="rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
-                  <p className="text-sm font-bold text-slate-800">{cliente.nombre}</p>
-                  <p className="text-xs text-slate-600">{cliente.telefono || 'Sin teléfono'} · {cliente.email || 'Sin email'}</p>
-                  <p className="mt-1 text-xs text-slate-500">{cliente.direccion || 'Sin dirección'}</p>
+                  <p className="text-sm font-bold text-sat-text">{cliente.nombre}</p>
+                  <p className="text-xs text-sat-muted">{cliente.telefono || 'Sin teléfono'} · {cliente.email || 'Sin email'}</p>
+                  <p className="mt-1 text-xs text-sat-subtle">{cliente.direccion || 'Sin dirección'}</p>
                   {(cliente.lat != null && cliente.lng != null) && (
-                    <p className="mt-1 text-xs text-slate-500">GPS: {Number(cliente.lat).toFixed(5)}, {Number(cliente.lng).toFixed(5)}</p>
+                    <p className="mt-1 text-xs text-sat-subtle">GPS: {Number(cliente.lat).toFixed(5)}, {Number(cliente.lng).toFixed(5)}</p>
                   )}
 
                   {puedeEditarCatalogos && (
@@ -453,17 +453,17 @@ export function ClientesView({ rolUsuario }) {
         <div className="lg:grid lg:grid-cols-12 lg:gap-4">
           {puedeEditarCatalogos && (
             <form onSubmit={guardarEquipo} className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
-              <h3 className="text-base font-bold text-slate-800">
+              <h3 className="text-base font-bold text-sat-text">
                 {equipoEditandoId ? 'Editar equipo' : 'Nuevo equipo'}
               </h3>
 
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-700">Cliente *</span>
+                <span className="mb-1 block text-xs font-semibold text-sat-muted">Cliente *</span>
                 <select
                   required
                   value={equipoForm.cliente_id}
                   onChange={(e) => setEquipoForm((p) => ({ ...p, cliente_id: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                  className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
                 >
                   <option value="">Selecciona cliente</option>
                   {clientes.map((cliente) => (
@@ -478,34 +478,34 @@ export function ClientesView({ rolUsuario }) {
                 required
                 value={equipoForm.nombre}
                 onChange={(e) => setEquipoForm((p) => ({ ...p, nombre: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
                 placeholder="Nombre del equipo"
               />
               <input
                 value={equipoForm.marca}
                 onChange={(e) => setEquipoForm((p) => ({ ...p, marca: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
                 placeholder="Marca"
               />
               <input
                 value={equipoForm.modelo}
                 onChange={(e) => setEquipoForm((p) => ({ ...p, modelo: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
                 placeholder="Modelo"
               />
               <input
                 value={equipoForm.numero_serie}
                 onChange={(e) => setEquipoForm((p) => ({ ...p, numero_serie: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
                 placeholder="Número de serie"
               />
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-700">Última revisión</span>
+                <span className="mb-1 block text-xs font-semibold text-sat-muted">Última revisión</span>
                 <input
                   type="date"
                   value={equipoForm.ultima_revision}
                   onChange={(e) => setEquipoForm((p) => ({ ...p, ultima_revision: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                  className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
                 />
               </label>
 
@@ -514,7 +514,7 @@ export function ClientesView({ rolUsuario }) {
                   {equipoEditandoId ? 'Actualizar' : 'Crear'}
                 </button>
                 <button
-                  className="rounded-xl bg-slate-200 px-4 py-3 text-sm font-bold text-slate-700"
+                  className="rounded-xl bg-slate-200 px-4 py-3 text-sm font-bold text-sat-muted"
                   type="button"
                   onClick={limpiarFormEquipo}
                 >
@@ -528,12 +528,12 @@ export function ClientesView({ rolUsuario }) {
             <input
               value={busquedaEquipo}
               onChange={(e) => setBusquedaEquipo(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm"
+              className="w-full rounded-xl border border-sat-border bg-white px-4 py-3 text-sm"
               placeholder="Buscar por cliente, nombre, marca, modelo o serie"
             />
-            {cargando && <p className="text-sm font-semibold text-slate-600">Cargando equipos...</p>}
+            {cargando && <p className="text-sm font-semibold text-sat-muted">Cargando equipos...</p>}
             {!cargando && equiposFiltrados.length > 0 && (
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+              <div className="flex items-center justify-between rounded-xl border border-sat-border-soft bg-sat-surface px-3 py-2 text-xs font-semibold text-sat-muted">
                 <div className="flex items-center gap-3">
                   <span>Pagina {paginaEquipos} de {totalPaginasEquipos}</span>
                   <label className="flex items-center gap-1">
@@ -544,7 +544,7 @@ export function ClientesView({ rolUsuario }) {
                         setItemsPaginaEquipos(Number(e.target.value));
                         setPaginaEquipos(1);
                       }}
-                      className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+                      className="rounded-md border border-sat-border bg-white px-2 py-1 text-xs"
                     >
                       {OPCIONES_ITEMS_PAGINA.map((opcion) => (
                         <option key={opcion} value={opcion}>{opcion}</option>
@@ -557,7 +557,7 @@ export function ClientesView({ rolUsuario }) {
                     type="button"
                     onClick={() => setPaginaEquipos((previo) => Math.max(1, previo - 1))}
                     disabled={paginaEquipos === 1}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="rounded-lg border border-sat-border bg-white px-3 py-1.5 disabled:opacity-50"
                   >
                     Anterior
                   </button>
@@ -565,7 +565,7 @@ export function ClientesView({ rolUsuario }) {
                     type="button"
                     onClick={() => setPaginaEquipos((previo) => Math.min(totalPaginasEquipos, previo + 1))}
                     disabled={paginaEquipos === totalPaginasEquipos}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="rounded-lg border border-sat-border bg-white px-3 py-1.5 disabled:opacity-50"
                   >
                     Siguiente
                   </button>
@@ -576,14 +576,14 @@ export function ClientesView({ rolUsuario }) {
             {!cargando &&
               equiposPaginados.map((equipo) => (
                 <article key={equipo.id} className="rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
-                  <p className="text-sm font-bold text-slate-800">{equipo.nombre}</p>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-sm font-bold text-sat-text">{equipo.nombre}</p>
+                  <p className="text-xs text-sat-muted">
                     {(equipo.clientes && equipo.clientes.nombre) || 'Cliente no disponible'}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-sat-subtle">
                     {equipo.marca || 'Sin marca'} · {equipo.modelo || 'Sin modelo'} · {equipo.numero_serie || 'Sin serie'}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-sat-subtle">
                     Última revisión: {equipo.ultima_revision || 'No registrada'}
                   </p>
 
@@ -619,7 +619,7 @@ export function ClientesView({ rolUsuario }) {
               ))}
 
             {!cargando && busquedaEquipo.trim() && equiposFiltrados.length === 0 && (
-              <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">
+              <p className="rounded-xl border border-dashed border-sat-border bg-sat-surface p-3 text-sm text-sat-muted">
                 No hay equipos que coincidan con la búsqueda.
               </p>
             )}

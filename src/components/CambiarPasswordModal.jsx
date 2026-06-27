@@ -74,7 +74,7 @@ export function CambiarPasswordModal({ abierto, onCerrar }) {
 
         <form onSubmit={manejarSubmit} className="space-y-3">
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-slate-700">
+            <span className="mb-1 block text-xs font-semibold text-sat-muted">
               Nueva contrasena
             </span>
             <input
@@ -88,7 +88,7 @@ export function CambiarPasswordModal({ abierto, onCerrar }) {
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-slate-700">
+            <span className="mb-1 block text-xs font-semibold text-sat-muted">
               Repetir nueva contrasena
             </span>
             <input
@@ -101,7 +101,7 @@ export function CambiarPasswordModal({ abierto, onCerrar }) {
             />
           </label>
 
-          <p className="text-[11px] leading-tight text-slate-500">
+          <p className="text-[11px] leading-tight text-sat-subtle">
             Minimo 10 caracteres con mayusculas, minusculas y numeros. Se comprueba contra
             filtraciones publicas (HaveIBeenPwned) sin enviar la contrasena.
           </p>

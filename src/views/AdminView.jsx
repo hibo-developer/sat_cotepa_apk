@@ -215,10 +215,10 @@ export function AdminView() {
       <section className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:p-5">
         <header className="flex items-center gap-2">
           <ShieldUser className="h-5 w-5 text-marca-700" />
-          <h3 className="text-base font-bold text-slate-800">Usuarios y Roles</h3>
+          <h3 className="text-base font-bold text-sat-text">Usuarios y Roles</h3>
         </header>
 
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-sat-muted">
           CRUD de usuarios autenticados y asignacion de rol SAT (admin, oficina, tecnico). Para rol tecnico se crea
           automaticamente el registro de tecnico.
         </p>
@@ -242,21 +242,21 @@ export function AdminView() {
         )}
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-4">
-          <form onSubmit={guardarUsuario} className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
+          <form onSubmit={guardarUsuario} className="space-y-2 rounded-xl border border-sat-border-soft bg-sat-surface p-3 lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-700">Email *</span>
+              <span className="mb-1 block text-xs font-semibold text-sat-muted">Email *</span>
               <input
                 required
                 type="email"
                 value={formUsuario.email}
                 onChange={(evento) => setFormUsuario((previo) => ({ ...previo, email: evento.target.value }))}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                 disabled={guardandoUsuario || !puedeAdministrar}
               />
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-700">
+              <span className="mb-1 block text-xs font-semibold text-sat-muted">
                 {usuarioEditandoId ? 'Nueva contrasena (opcional)' : 'Contrasena inicial *'}
               </span>
               <input
@@ -265,30 +265,30 @@ export function AdminView() {
                 required={!usuarioEditandoId}
                 minLength={12}
                 onChange={(evento) => setFormUsuario((previo) => ({ ...previo, password: evento.target.value }))}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                 disabled={guardandoUsuario || !puedeAdministrar}
                 placeholder={usuarioEditandoId ? 'Dejar vacio para mantener la actual' : 'Minimo 12, con mayuscula, minuscula, numero y simbolo'}
               />
-              <span className="mt-1 block text-[11px] text-slate-500">
+              <span className="mt-1 block text-[11px] text-sat-subtle">
                 Requisito: minimo 12 caracteres con mayuscula, minuscula, numero y simbolo.
               </span>
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-700">Nombre visible</span>
+              <span className="mb-1 block text-xs font-semibold text-sat-muted">Nombre visible</span>
               <input
                 type="text"
                 value={formUsuario.nombre_visible}
                 onChange={(evento) =>
                   setFormUsuario((previo) => ({ ...previo, nombre_visible: evento.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                 disabled={guardandoUsuario || !puedeAdministrar}
               />
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-700">Rol *</span>
+              <span className="mb-1 block text-xs font-semibold text-sat-muted">Rol *</span>
               <select
                 value={formUsuario.rol}
                 onChange={(evento) =>
@@ -297,7 +297,7 @@ export function AdminView() {
                     rol: evento.target.value,
                   }))
                 }
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                 disabled={guardandoUsuario || !puedeAdministrar}
               >
                 <option value="admin">Admin</option>
@@ -309,28 +309,28 @@ export function AdminView() {
             {formUsuario.rol === 'tecnico' && (
               <>
                 <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-700">Nombre del tecnico</span>
+                  <span className="mb-1 block text-xs font-semibold text-sat-muted">Nombre del tecnico</span>
                   <input
                     type="text"
                     value={formUsuario.tecnico_nombre}
                     onChange={(evento) =>
                       setFormUsuario((previo) => ({ ...previo, tecnico_nombre: evento.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                     disabled={guardandoUsuario || !puedeAdministrar}
                     placeholder="Si se deja vacio se usa el nombre visible"
                   />
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-700">Especialidad</span>
+                  <span className="mb-1 block text-xs font-semibold text-sat-muted">Especialidad</span>
                   <input
                     type="text"
                     value={formUsuario.tecnico_especialidad}
                     onChange={(evento) =>
                       setFormUsuario((previo) => ({ ...previo, tecnico_especialidad: evento.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
                     disabled={guardandoUsuario || !puedeAdministrar}
                     placeholder="Ej: Hornos industriales"
                   />
@@ -351,7 +351,7 @@ export function AdminView() {
                 type="button"
                 onClick={resetFormularioUsuario}
                 disabled={guardandoUsuario || !puedeAdministrar}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 disabled:opacity-60"
+                className="w-full rounded-xl border border-sat-border bg-white px-4 py-3 text-sm font-bold text-sat-muted disabled:opacity-60"
               >
                 Limpiar formulario
               </button>
@@ -360,26 +360,26 @@ export function AdminView() {
 
           <div className="space-y-2 lg:col-span-8">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-slate-700">Usuarios registrados: {usuarios.length}</p>
+              <p className="text-sm font-semibold text-sat-muted">Usuarios registrados: {usuarios.length}</p>
               <button
                 type="button"
                 onClick={recargarUsuarios}
                 disabled={cargandoUsuarios || guardandoUsuario || !puedeAdministrar}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 disabled:opacity-60"
+                className="rounded-lg border border-sat-border bg-white px-3 py-2 text-xs font-bold text-sat-muted disabled:opacity-60"
               >
                 {cargandoUsuarios ? 'Actualizando...' : 'Recargar'}
               </button>
             </div>
 
             {!cargandoUsuarios && usuarios.length > 0 && (
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+              <div className="flex items-center justify-between rounded-xl border border-sat-border-soft bg-sat-surface px-3 py-2 text-xs font-semibold text-sat-muted">
                 <span>Pagina {paginaUsuarios} de {totalPaginasUsuarios}</span>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setPaginaUsuarios((previo) => Math.max(1, previo - 1))}
                     disabled={paginaUsuarios === 1}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="rounded-lg border border-sat-border bg-white px-3 py-1.5 disabled:opacity-50"
                   >
                     Anterior
                   </button>
@@ -387,7 +387,7 @@ export function AdminView() {
                     type="button"
                     onClick={() => setPaginaUsuarios((previo) => Math.min(totalPaginasUsuarios, previo + 1))}
                     disabled={paginaUsuarios === totalPaginasUsuarios}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="rounded-lg border border-sat-border bg-white px-3 py-1.5 disabled:opacity-50"
                   >
                     Siguiente
                   </button>
@@ -396,18 +396,18 @@ export function AdminView() {
             )}
 
             {cargandoUsuarios ? (
-              <p className="text-sm font-semibold text-slate-600">Cargando usuarios...</p>
+              <p className="text-sm font-semibold text-sat-muted">Cargando usuarios...</p>
             ) : (
               <ul className="space-y-2">
                 {usuariosPaginados.map((usuario) => (
-                  <li key={usuario.user_id} className="rounded-xl border border-slate-200 bg-white p-3">
-                    <p className="text-sm font-bold text-slate-800">{usuario.email}</p>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Rol: {usuario.rol}</p>
-                    <p className="mt-1 text-xs text-slate-600">
+                  <li key={usuario.user_id} className="rounded-xl border border-sat-border-soft bg-white p-3">
+                    <p className="text-sm font-bold text-sat-text">{usuario.email}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-sat-subtle">Rol: {usuario.rol}</p>
+                    <p className="mt-1 text-xs text-sat-muted">
                       Nombre visible: {usuario.nombre_visible || 'Sin definir'}
                     </p>
                     {usuario.rol === 'tecnico' && (
-                      <p className="text-xs text-slate-600">
+                      <p className="text-xs text-sat-muted">
                         Tecnico: {usuario.tecnico_nombre || 'Sin nombre'}
                         {usuario.tecnico_especialidad ? ` · ${usuario.tecnico_especialidad}` : ''}
                       </p>
@@ -417,7 +417,7 @@ export function AdminView() {
                       <button
                         type="button"
                         onClick={() => editarUsuario(usuario)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                        className="rounded-lg border border-sat-border bg-white px-3 py-2 text-xs font-bold text-sat-muted"
                         disabled={guardandoUsuario || !puedeAdministrar}
                       >
                         Editar
