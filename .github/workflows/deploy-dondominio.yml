@@ -47,7 +47,7 @@ jobs:
 
       - name: Prepare DonDominio package (htaccess + sw)
         shell: pwsh
-        run: powershell -ExecutionPolicy Bypass -File ./scripts/prepare-web-dondominio.ps1
+        run: ./scripts/prepare-web-dondominio.ps1
 
       - name: Resolve package path
         id: package
