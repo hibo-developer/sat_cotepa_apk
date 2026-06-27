@@ -7,16 +7,16 @@ export function BotonVolverArriba({ visible, onClick, className = '' }) {
     <button
       type="button"
       onClick={onClick}
-      className={`fixed bottom-24 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-marca-200/90 bg-white/95 px-4 py-3 text-xs font-bold uppercase tracking-[0.12em] text-marca-800 shadow-2xl shadow-slate-200/70 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-marca-50 active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-marca-100 lg:bottom-6 ${className}`}
+      className={`fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex items-center gap-2.5 rounded-full border border-marca-200/90 bg-white/95 px-4 py-3 text-xs font-bold uppercase tracking-[0.12em] text-marca-800 shadow-2xl shadow-slate-200/70 ring-1 ring-slate-950/5 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-marca-50 active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-marca-100 lg:bottom-6 ${className}`}
       aria-label="Volver arriba"
     >
       <span
         aria-hidden="true"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-marca-100 text-sm leading-none text-marca-700"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white bg-marca-100 text-sm leading-none text-marca-700 shadow-sm"
       >
         ↑
       </span>
-      <span className="leading-none">Volver arriba</span>
+      <span className="leading-none tracking-[0.14em]">Volver arriba</span>
     </button>
   );
 }

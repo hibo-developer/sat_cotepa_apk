@@ -48,7 +48,7 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-[1.75rem] border border-marca-100/90 bg-white/95 p-5 shadow-2xl shadow-slate-300/60 ring-1 ring-black/5"
+        className="w-full max-w-md overflow-hidden rounded-[1.9rem] border border-white/80 bg-white/95 p-5 shadow-[0_24px_70px_-28px_rgba(15,23,42,0.45)] ring-1 ring-slate-950/5"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -57,7 +57,7 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
               <Compass className="h-3.5 w-3.5" />
               Navegación
             </div>
-            <p id="modal-navegacion-titulo" className="mt-3 text-lg font-extrabold text-slate-900">
+            <p id="modal-navegacion-titulo" className="mt-3 text-xl font-extrabold tracking-tight text-slate-900">
               Elegir navegación
             </p>
             <p className="mt-1 text-sm leading-6 text-slate-600">
@@ -67,7 +67,7 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-4 focus:ring-marca-100"
+            className="rounded-full border border-transparent p-2 text-slate-500 transition hover:border-slate-200 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-4 focus:ring-marca-100"
             aria-label="Cerrar modal"
           >
             <X className="h-5 w-5" />
@@ -84,9 +84,9 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
                 key={app}
                 type="button"
                 onClick={() => onSelect(app, recordar)}
-                className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-marca-300 hover:bg-marca-50 focus:outline-none focus:ring-4 focus:ring-marca-100"
+                className="flex w-full items-center gap-3 rounded-[1.35rem] border border-slate-200/90 bg-white px-4 py-3.5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-marca-300 hover:bg-marca-50/80 focus:outline-none focus:ring-4 focus:ring-marca-100"
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 shadow-sm">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white bg-slate-100 text-slate-700 shadow-sm">
                   <Icono className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -95,19 +95,25 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
                     {app === 'system' ? 'Usar la app disponible en el dispositivo' : 'Abrir directamente esta aplicación'}
                   </span>
                 </span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                  Abrir
+                </span>
               </button>
             );
           })}
         </div>
 
-        <label className="mt-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-3 text-sm text-slate-700">
+        <label className="mt-4 flex items-center gap-3 rounded-[1.35rem] border border-slate-200 bg-slate-50/90 px-4 py-3 text-sm text-slate-700 shadow-sm">
           <input
             type="checkbox"
             checked={recordar}
             onChange={(event) => setRecordar(event.target.checked)}
-            className="h-4 w-4 rounded border-slate-300"
+            className="h-4 w-4 rounded border-slate-300 text-cotepa-rojo-500 focus:ring-cotepa-rojo-200"
           />
-          Recordar mi elección
+          <span>
+            <span className="block font-semibold text-slate-800">Recordar mi elección</span>
+            <span className="block text-xs text-slate-500">Usar esta app por defecto la próxima vez.</span>
+          </span>
         </label>
       </div>
     </div>
