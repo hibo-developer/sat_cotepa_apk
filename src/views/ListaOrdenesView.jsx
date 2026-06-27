@@ -1207,7 +1207,7 @@ function TarjetaOrden({
     }
     setDescargandoInforme(true);
     try {
-      const url = await obtenerUrlFirmadaStorage(orden.informePdfUrl, { expiresIn: 900 });
+      const url = await obtenerUrlFirmadaStorage(orden.informePdfUrl, { expiresIn: 900, forceRefresh: true });
       if (!url) {
         throw new Error('No se pudo obtener el enlace del informe.');
       }
@@ -2125,7 +2125,7 @@ export function ListaOrdenesView({ rolUsuario }) {
 
       for (const orden of informes) {
         try {
-          const urlInforme = await obtenerUrlFirmadaStorage(orden.informePdfUrl, { expiresIn: 900 });
+          const urlInforme = await obtenerUrlFirmadaStorage(orden.informePdfUrl, { expiresIn: 900, forceRefresh: true });
           if (!urlInforme) {
             continue;
           }

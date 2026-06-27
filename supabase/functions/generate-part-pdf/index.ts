@@ -343,6 +343,17 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Metodo no permitido' }, 405, cors);
   }
 
+  // Esta función queda desactivada para evitar que clientes antiguos
+  // sigan generando la plantilla simplificada de informe.
+  return jsonResponse(
+    {
+      error: 'generate-part-pdf desactivada. Actualiza la app para usar la plantilla corporativa actual.',
+      code: 'FUNCTION_DISABLED',
+    },
+    410,
+    cors,
+  );
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
   const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');

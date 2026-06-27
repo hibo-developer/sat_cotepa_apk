@@ -76,11 +76,7 @@ describe('parteTrabajoInformeService', () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false })));
   });
 
-  it('usa fallback local si la Edge Function devuelve non-2xx', async () => {
-    invokeMock.mockResolvedValue({
-      data: null,
-      error: new Error('Edge Function returned a non-2xx status code'),
-    });
+  it('genera y sube el informe usando la plantilla corporativa local', async () => {
     uploadMock.mockResolvedValue({ error: null });
 
     const { generarYSubirInformeParte } = await import('./parteTrabajoInformeService');
@@ -117,12 +113,59 @@ describe('parteTrabajoInformeService', () => {
       fechaInformeIso: '2026-06-27T10:15:00.000Z',
     });
 
-    expect(invokeMock).toHaveBeenCalledTimes(1);
+    expect(invokeMock).not.toHaveBeenCalled();
     expect(uploadMock).toHaveBeenCalledTimes(1);
     expect(uploadMock.mock.calls[0][0]).toBe('22222222-2222-2222-2222-222222222222/33333333-3333-3333-3333-333333333333/11111111-1111-1111-1111-111111111111/SAT-260627-07.pdf');
     expect(resultado).toEqual({
       pdfUrl: 'sb://informes-partes/22222222-2222-2222-2222-222222222222/33333333-3333-3333-3333-333333333333/11111111-1111-1111-1111-111111111111/SAT-260627-07.pdf',
       nombreArchivo: 'SAT-260627-07.pdf',
     });
+  });
+
+  it('no rompe el informe si falla la firma de URLs de evidencias', async () => {
+    uploadMock.mockResolvedValue({ error: null });
+    obtenerUrlFirmadaStorageMock.mockImplementation(async (url) => {
+      if (String(url).includes('foto-rota')) {
+        throw new Error('signed url error');
+      }
+      return `https://signed.test/${encodeURIComponent(String(url || ''))}`;
+    });
+
+    const { generarYSubirInformeParte } = await import('./parteTrabajoInformeService');
+
+    const resultado = await generarYSubirInformeParte({
+      parte: {
+        id: '11111111-1111-1111-1111-111111111111',
+        tareas_realizadas: 'Trabajo completado',
+      },
+      formulario: {
+        cliente_id: '22222222-2222-2222-2222-222222222222',
+        tecnico_id: '33333333-3333-3333-3333-333333333333',
+        orden_id: '11111111-1111-1111-1111-111111111111',
+        prioridad: 'media',
+        descripcion_problema: 'Fallo de prueba',
+        materialesTexto: '',
+      },
+      desplazamiento: {
+        inicioIso: '2026-06-27T10:00:00.000Z',
+        finIso: '2026-06-27T10:15:00.000Z',
+      },
+      intervension: {
+        inicioIso: '2026-06-27T10:15:00.000Z',
+        finIso: '2026-06-27T11:00:00.000Z',
+        pausasComida: [],
+      },
+      clienteNombre: 'Cliente Test',
+      equipoNombre: 'Equipo Test',
+      tecnicoNombre: 'Tecnico Test',
+      nombreFirmante: 'Firmante Test',
+      firmaUrl: 'sb://firmas-clientes/cli/tec/firma.png',
+      fotosIntervencionUrls: ['sb://fotos-intervenciones/cli/tec/foto-buena.jpg', 'sb://fotos-intervenciones/cli/tec/foto-rota.jpg'],
+      secuencialDiario: 8,
+      fechaInformeIso: '2026-06-27T10:15:00.000Z',
+    });
+
+    expect(uploadMock).toHaveBeenCalledTimes(1);
+    expect(resultado.nombreArchivo).toBe('SAT-260627-08.pdf');
   });
 });

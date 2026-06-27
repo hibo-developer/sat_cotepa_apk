@@ -1025,7 +1025,13 @@ export function obtenerUrlPublicaInformeParte(clienteId, parteId) {
 
 async function subirPdfInforme({ pdfBlob, nombreArchivo, clienteId, tecnicoId, ordenId }) {
   const supabase = obtenerClienteSupabase();
-  const ruta = `${clienteId}/${tecnicoId}/${ordenId}/${nombreArchivo}`;
+  const cliente = txt(clienteId, '').trim();
+  const tecnico = txt(tecnicoId, '').trim();
+  const orden = txt(ordenId, '').trim();
+  if (!cliente || !tecnico || !orden) {
+    throw new Error('No se pudo subir el PDF: faltan cliente, técnico u orden en el contexto del informe.');
+  }
+  const ruta = `${cliente}/${tecnico}/${orden}/${nombreArchivo}`;
   const { error } = await supabase.storage
     .from('informes-partes')
     .upload(ruta, pdfBlob, { upsert: true, contentType: 'application/pdf', cacheControl: '0' });
@@ -1035,12 +1041,14 @@ async function subirPdfInforme({ pdfBlob, nombreArchivo, clienteId, tecnicoId, o
   return `sb://informes-partes/${ruta}`;
 }
 
-function construirMensajeErrorServidorInforme(error) {
-  const detalle = String(error?.message || '').trim();
-  if (!detalle) {
-    return 'sin detalle';
+async function resolverUrlFirmadaOpcional(url) {
+  const referencia = txt(url, '').trim();
+  if (!referencia) return '';
+  try {
+    return await obtenerUrlFirmadaStorage(referencia, { expiresIn: 900 });
+  } catch {
+    return '';
   }
-  return detalle;
 }
 
 async function obtenerSecuencialDiario(fechaIso, filtroTipoOrden = 'averia') {
@@ -1091,17 +1099,13 @@ export async function generarYSubirInformeParte({
     ? Number(secuencialDiarioEntrada)
     : await obtenerSecuencialDiario(fechaBaseIso, filtroTipoOrden);
 
-  const firmaAccesible = firmaUrl
-    ? await obtenerUrlFirmadaStorage(firmaUrl, { expiresIn: 900 })
-    : '';
+  const firmaAccesible = await resolverUrlFirmadaOpcional(firmaUrl);
   const fotosAccesibles = await Promise.all(
     (Array.isArray(fotosIntervencionUrls) ? fotosIntervencionUrls : [])
-      .map((u) => obtenerUrlFirmadaStorage(u, { expiresIn: 900 })),
+      .map((u) => resolverUrlFirmadaOpcional(u)),
   );
 
-  const supabase = obtenerClienteSupabase();
-  const payloadInforme = {
-    ordenId: formulario.orden_id || parte?.id,
+  const { pdfBlob, nombreArchivo } = await crearPdfInforme({
     parte,
     formulario,
     seguimientoTiempo,
@@ -1113,58 +1117,21 @@ export async function generarYSubirInformeParte({
     tecnicoNombre,
     nombreFirmante,
     firmaUrl: firmaAccesible,
-    fotosIntervencionUrls: fotosAccesibles,
+    fotosIntervencionUrls: fotosAccesibles.filter(Boolean),
     secuencialDiario,
     fechaInformeIso,
     prefijoInforme,
-  };
+  });
 
-  try {
-    const { data, error } = await supabase.functions.invoke('generate-part-pdf', {
-      body: payloadInforme,
-    });
+  const pdfUrl = await subirPdfInforme({
+    pdfBlob,
+    nombreArchivo,
+    clienteId: formulario?.cliente_id,
+    tecnicoId: formulario?.tecnico_id,
+    ordenId: formulario?.orden_id || parte?.id,
+  });
 
-    if (error || !data?.pdfUrl || !data?.nombreArchivo) {
-      throw new Error(construirMensajeErrorServidorInforme(error));
-    }
-
-    return { pdfUrl: data.pdfUrl, nombreArchivo: data.nombreArchivo };
-  } catch (errorServidor) {
-    const { pdfBlob, nombreArchivo } = await crearPdfInforme({
-      parte,
-      formulario,
-      seguimientoTiempo,
-      desplazamiento,
-      intervension,
-      valoracionEconomica,
-      clienteNombre,
-      equipoNombre,
-      tecnicoNombre,
-      nombreFirmante,
-      firmaUrl: firmaAccesible,
-      fotosIntervencionUrls: fotosAccesibles,
-      secuencialDiario,
-      fechaInformeIso,
-      prefijoInforme,
-    });
-
-    try {
-      const pdfUrl = await subirPdfInforme({
-        pdfBlob,
-        nombreArchivo,
-        clienteId: formulario?.cliente_id,
-        tecnicoId: formulario?.tecnico_id,
-        ordenId: formulario?.orden_id || parte?.id,
-      });
-      return { pdfUrl, nombreArchivo };
-    } catch (errorLocal) {
-      const detalleServidor = construirMensajeErrorServidorInforme(errorServidor);
-      const detalleLocal = String(errorLocal?.message || '').trim() || 'sin detalle';
-      throw new Error(
-        `No se pudo generar el informe PDF en servidor (${detalleServidor}) ni en local (${detalleLocal}).`,
-      );
-    }
-  }
+  return { pdfUrl, nombreArchivo };
 }
 
 export async function generarInformeParteDemoLocal() {
