@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { authStorageSupabase } from './supabaseStorage';
 
 const runtimeConfig =
   typeof window !== 'undefined' && window.__APP_CONFIG__ ? window.__APP_CONFIG__ : null;
@@ -96,7 +97,16 @@ async function obtenerUrlFirmadaDirectaStorage(supabaseClient, ref, expiresIn) {
 
 // Cliente de Supabase centralizado para usar en servicios del dominio.
 export const supabase =
-  supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+  supabaseUrl && supabaseAnonKey
+    ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storage: authStorageSupabase,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+      },
+    })
+    : null;
 
 export function tieneConfiguracionSupabase() {
   return Boolean(supabase);

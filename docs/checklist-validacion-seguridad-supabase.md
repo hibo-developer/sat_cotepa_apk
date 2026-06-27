@@ -16,6 +16,9 @@ Aplicar tambien `supabase/migrations/20260620010000_restrict_tecnicos_select_for
 ## 2. Configuracion Auth (manual)
 
 - [ ] Authentication > Settings > Leaked Password Protection: activado.
+- [ ] Authentication > Settings > Signups: deshabilitados si el alta es controlada por admin/oficina.
+- [ ] Authentication > Settings > Password security: longitud minima 10 o superior, con mayusculas/minusculas/digitos (alineado con `src/services/passwordSecurity.js`).
+- [ ] Authentication > Settings > Email confirmations: activado para cuentas reales.
 - [ ] Si no esta disponible por plan (p. ej. Free), registrar excepcion de riesgo y aplicar mitigaciones:
 	- Seguir [docs/checklist-auth-produccion-plan-free.md](checklist-auth-produccion-plan-free.md).
 - [ ] Authentication > Providers: confirmar que no hay acceso anonimo habilitado para el entorno productivo.

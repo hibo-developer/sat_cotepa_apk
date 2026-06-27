@@ -66,7 +66,7 @@ function Ensure-AndroidSdkDisponible([string]$repoRoot) {
     throw "sdk.dir está vacío en android\\local.properties. Configura el Android SDK en Android Studio y vuelve a ejecutar."
   }
 
-  $sdkPath = $sdkRaw -replace '\\\\', '\'
+  $sdkPath = $sdkRaw -replace '\\\\', '\' -replace '\\:', ':'
   if (-not (Test-Path $sdkPath)) {
     throw "No se encontró el Android SDK en: $sdkPath. En Android Studio: Settings > Android SDK, instala el SDK y copia esa ruta a android\\local.properties (sdk.dir=...)."
   }
@@ -94,6 +94,110 @@ function Ensure-AndroidSdkDisponible([string]$repoRoot) {
       }
     }
   }
+}
+
+function Read-EnvFile([string]$envPath) {
+  $map = @{}
+  if (-not (Test-Path $envPath)) {
+    return $map
+  }
+
+  foreach ($linea in Get-Content -Path $envPath -ErrorAction SilentlyContinue) {
+    $texto = [string]$linea
+    if (-not $texto) {
+      continue
+    }
+
+    $trim = $texto.Trim()
+    if (-not $trim -or $trim.StartsWith('#')) {
+      continue
+    }
+
+    $idx = $trim.IndexOf('=')
+    if ($idx -le 0) {
+      continue
+    }
+
+    $clave = $trim.Substring(0, $idx).Trim()
+    $valor = $trim.Substring($idx + 1).Trim()
+    if (($valor.StartsWith('"') -and $valor.EndsWith('"')) -or ($valor.StartsWith("'") -and $valor.EndsWith("'"))) {
+      $valor = $valor.Substring(1, $valor.Length - 2)
+    }
+
+    if ($clave) {
+      $map[$clave] = $valor
+    }
+  }
+
+  return $map
+}
+
+function Read-PublicAppConfig([string]$repoRoot) {
+  $map = @{}
+  $configPath = Join-Path $repoRoot "public\app-config.js"
+  if (-not (Test-Path $configPath)) {
+    return $map
+  }
+
+  $contenido = Get-Content -Path $configPath -Raw -ErrorAction SilentlyContinue
+  if (-not $contenido) {
+    return $map
+  }
+
+  if ($contenido -match "SUPABASE_URL\s*:\s*['""]([^'""]*)['""]") {
+    $map["VITE_SUPABASE_URL"] = $Matches[1]
+  }
+
+  if ($contenido -match "SUPABASE_ANON_KEY\s*:\s*['""]([^'""]*)['""]") {
+    $map["VITE_SUPABASE_ANON_KEY"] = $Matches[1]
+  }
+
+  return $map
+}
+
+function Get-ConfigValue([hashtable]$envData, [hashtable]$publicConfig, [string]$key) {
+  $desdeProceso = [Environment]::GetEnvironmentVariable($key)
+  if (-not [string]::IsNullOrWhiteSpace($desdeProceso)) {
+    return $desdeProceso.Trim()
+  }
+
+  if ($envData.ContainsKey($key) -and -not [string]::IsNullOrWhiteSpace($envData[$key])) {
+    return [string]$envData[$key]
+  }
+
+  if ($publicConfig.ContainsKey($key) -and -not [string]::IsNullOrWhiteSpace($publicConfig[$key])) {
+    return [string]$publicConfig[$key]
+  }
+
+  return ""
+}
+
+function Write-RuntimeAppConfig([string]$repoRoot) {
+  $envData = Read-EnvFile (Join-Path $repoRoot ".env")
+  $publicConfig = Read-PublicAppConfig $repoRoot
+  $supabaseUrl = Get-ConfigValue $envData $publicConfig "VITE_SUPABASE_URL"
+  $supabaseAnonKey = Get-ConfigValue $envData $publicConfig "VITE_SUPABASE_ANON_KEY"
+
+  if ([string]::IsNullOrWhiteSpace($supabaseUrl) -or [string]::IsNullOrWhiteSpace($supabaseAnonKey)) {
+    throw "Faltan VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY. Define estas variables en el entorno o en .env antes de generar el APK release."
+  }
+
+  $distDir = Join-Path $repoRoot "dist"
+  Ensure-Dir $distDir
+
+  $configJson = @{
+    SUPABASE_URL = $supabaseUrl
+    SUPABASE_ANON_KEY = $supabaseAnonKey
+  } | ConvertTo-Json -Compress
+
+  $contenido = @(
+    "window.__APP_CONFIG__ = Object.assign({}, window.__APP_CONFIG__ || {}, $configJson);"
+    ""
+  )
+
+  $destino = Join-Path $distDir "app-config.js"
+  Set-Content -Path $destino -Value $contenido -Encoding UTF8
+  Write-Host "Runtime config generado: $destino"
 }
 
 function Remove-DirSafe([string]$path) {
@@ -180,6 +284,8 @@ try {
   if ($LASTEXITCODE -ne 0) {
     throw "Fallo en 'npm run build' (exit code $LASTEXITCODE)."
   }
+
+  Write-RuntimeAppConfig $repoRoot
 
   Write-Host "[2/3] Sync Capacitor Android..."
   Sync-CapacitorAndroid $repoRoot

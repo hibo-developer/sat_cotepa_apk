@@ -12,6 +12,110 @@ $fallbackOutputDir = Join-Path $repoRoot "release-desktop-fallback"
 
 . (Join-Path $scriptDir "ensure-node-path.ps1")
 
+function Read-EnvFile([string]$envPath) {
+  $map = @{}
+  if (-not (Test-Path $envPath)) {
+    return $map
+  }
+
+  foreach ($linea in Get-Content -Path $envPath -ErrorAction SilentlyContinue) {
+    $texto = [string]$linea
+    if (-not $texto) {
+      continue
+    }
+
+    $trim = $texto.Trim()
+    if (-not $trim -or $trim.StartsWith('#')) {
+      continue
+    }
+
+    $idx = $trim.IndexOf('=')
+    if ($idx -le 0) {
+      continue
+    }
+
+    $clave = $trim.Substring(0, $idx).Trim()
+    $valor = $trim.Substring($idx + 1).Trim()
+    if (($valor.StartsWith('"') -and $valor.EndsWith('"')) -or ($valor.StartsWith("'") -and $valor.EndsWith("'"))) {
+      $valor = $valor.Substring(1, $valor.Length - 2)
+    }
+
+    if ($clave) {
+      $map[$clave] = $valor
+    }
+  }
+
+  return $map
+}
+
+function Read-PublicAppConfig([string]$repoRoot) {
+  $map = @{}
+  $configPath = Join-Path $repoRoot "public\app-config.js"
+  if (-not (Test-Path $configPath)) {
+    return $map
+  }
+
+  $contenido = Get-Content -Path $configPath -Raw -ErrorAction SilentlyContinue
+  if (-not $contenido) {
+    return $map
+  }
+
+  if ($contenido -match "SUPABASE_URL\s*:\s*['\""]([^'\""]*)['\""]") {
+    $map["VITE_SUPABASE_URL"] = $Matches[1]
+  }
+
+  if ($contenido -match "SUPABASE_ANON_KEY\s*:\s*['\""]([^'\""]*)['\""]") {
+    $map["VITE_SUPABASE_ANON_KEY"] = $Matches[1]
+  }
+
+  return $map
+}
+
+function Get-ConfigValue([hashtable]$envData, [hashtable]$publicConfig, [string]$key) {
+  $desdeProceso = [Environment]::GetEnvironmentVariable($key)
+  if (-not [string]::IsNullOrWhiteSpace($desdeProceso)) {
+    return $desdeProceso.Trim()
+  }
+
+  if ($envData.ContainsKey($key) -and -not [string]::IsNullOrWhiteSpace($envData[$key])) {
+    return [string]$envData[$key]
+  }
+
+  if ($publicConfig.ContainsKey($key) -and -not [string]::IsNullOrWhiteSpace($publicConfig[$key])) {
+    return [string]$publicConfig[$key]
+  }
+
+  return ""
+}
+
+function Write-RuntimeAppConfig([string]$repoRoot) {
+  $envData = Read-EnvFile (Join-Path $repoRoot ".env")
+  $publicConfig = Read-PublicAppConfig $repoRoot
+  $supabaseUrl = Get-ConfigValue $envData $publicConfig "VITE_SUPABASE_URL"
+  $supabaseAnonKey = Get-ConfigValue $envData $publicConfig "VITE_SUPABASE_ANON_KEY"
+
+  if ([string]::IsNullOrWhiteSpace($supabaseUrl) -or [string]::IsNullOrWhiteSpace($supabaseAnonKey)) {
+    throw "Faltan VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY. Define estas variables en el entorno o en .env antes de generar el EXE."
+  }
+
+  $distDir = Join-Path $repoRoot "dist"
+  Ensure-Dir $distDir
+
+  $configJson = @{
+    SUPABASE_URL = $supabaseUrl
+    SUPABASE_ANON_KEY = $supabaseAnonKey
+  } | ConvertTo-Json -Compress
+
+  $contenido = @(
+    "window.__APP_CONFIG__ = Object.assign({}, window.__APP_CONFIG__ || {}, $configJson);"
+    ""
+  )
+
+  $destino = Join-Path $distDir "app-config.js"
+  Set-Content -Path $destino -Value $contenido -Encoding UTF8
+  Write-Host "Runtime config generado: $destino"
+}
+
 function Ensure-Dir([string]$path) {
   if (-not (Test-Path $path)) {
     New-Item -ItemType Directory -Path $path | Out-Null
@@ -94,6 +198,42 @@ function Publish-ReleaseArtifact([string]$repoRoot, [string]$artifactPath) {
   return $destPath
 }
 
+function Invoke-DesktopInstallerSigning([string]$artifactPath) {
+  $signScript = Join-Path $scriptDir "sign-desktop-installer.ps1"
+  $defaultPfxPath = "C:\secure\cotepa-code-signing\COTEPA-Internal-Code-Signing.pfx"
+  $pfxPath = Get-ConfigValue @{} @{} "CODE_SIGNING_PFX_PATH"
+  if ([string]::IsNullOrWhiteSpace($pfxPath)) {
+    $pfxPath = $defaultPfxPath
+  }
+
+  if (-not (Test-Path $pfxPath)) {
+    Write-Warning "No se encontro PFX de firma en '$pfxPath'. Se omite la firma del instalador."
+    return
+  }
+
+  $timestampUrl = [Environment]::GetEnvironmentVariable("CODE_SIGNING_TIMESTAMP_URL")
+  $description = [Environment]::GetEnvironmentVariable("CODE_SIGNING_DESCRIPTION")
+  $descriptionUrl = [Environment]::GetEnvironmentVariable("CODE_SIGNING_DESCRIPTION_URL")
+  $pfxPassword = [Environment]::GetEnvironmentVariable("CODE_SIGNING_PFX_PASSWORD")
+
+  $args = @(
+    "-ExecutionPolicy", "Bypass",
+    "-File", $signScript,
+    "-InstallerPath", $artifactPath,
+    "-PfxPath", $pfxPath
+  )
+
+  if ($timestampUrl) { $args += @("-TimestampUrl", $timestampUrl) }
+  if ($description) { $args += @("-Description", $description) }
+  if ($descriptionUrl) { $args += @("-DescriptionUrl", $descriptionUrl) }
+  if ($pfxPassword) { $args += @("-PfxPassword", $pfxPassword) }
+
+  & powershell @args
+  if ($LASTEXITCODE -ne 0) {
+    throw "Fallo la firma del instalador (exit code $LASTEXITCODE)."
+  }
+}
+
 Push-Location $repoRoot
 try {
   Write-Host "[1/4] Build web (Vite)..."
@@ -101,6 +241,8 @@ try {
   if ($LASTEXITCODE -ne 0) {
     throw "Fallo en 'npm run build' (exit code $LASTEXITCODE)."
   }
+
+  Write-RuntimeAppConfig $repoRoot
 
   Write-Host "[2/4] Cerrando procesos de escritorio que puedan bloquear artefactos..."
   Stop-DesktopProcesses
@@ -135,6 +277,11 @@ try {
   }
 
   $releaseArtifactPath = Publish-ReleaseArtifact $repoRoot $artifactPath
+
+  if ($Target -eq "nsis") {
+    Write-Host "[5/4] Firmando instalador Windows..."
+    Invoke-DesktopInstallerSigning $releaseArtifactPath
+  }
 
   Write-Host "Build desktop completado correctamente:"
   Get-Item $artifactPath | Select-Object FullName, Length, LastWriteTime | Format-List

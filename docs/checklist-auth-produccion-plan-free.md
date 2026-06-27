@@ -7,11 +7,13 @@ Objetivo: reducir riesgo en Auth cuando el proyecto esta en plan Free y no permi
 - [ ] Anonymous sign-ins: deshabilitado si no se usa.
 - [ ] Si Anonymous sign-ins esta habilitado por necesidad, aplicar barrera explicita en RLS/Storage para bloquear `is_anonymous=true` (ver seccion 3).
 - [ ] Proveedores: solo los estrictamente necesarios (deshabilitar el resto).
+- [ ] Signups publicos deshabilitados si el alta es controlada por admin/oficina.
+- [ ] Confirmacion de email requerida para cuentas reales.
 
 ## 2. Contrasenas y MFA (lo mas importante en Free)
 
 - [ ] Password policy endurecida en Auth -> Password security:
-  - [ ] Longitud minima aumentada (recomendado: 12 o mas).
+  - [ ] Longitud minima aumentada (recomendado: 12 o mas; minimo 10 si hay compatibilidad con usuarios existentes).
   - [ ] Requerir caracteres: digitos + minusculas + mayusculas + simbolos.
 - [ ] MFA (TOTP) habilitado en el proyecto.
 - [ ] Cuentas operativas (admin/oficina) con MFA activado y validado (login real con MFA).

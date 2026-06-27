@@ -1,0 +1,76 @@
+name: Deploy web to DonDominio
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-dondominio
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web
+        run: npm run build
+
+      - name: Inject runtime config
+        shell: bash
+        run: |
+          if [ -z "${VITE_SUPABASE_URL}" ] || [ -z "${VITE_SUPABASE_ANON_KEY}" ]; then
+            echo "Faltan secrets VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY"
+            exit 1
+          fi
+
+          cat > dist/app-config.js <<EOF
+          window.__APP_CONFIG__ = Object.assign({}, window.__APP_CONFIG__ || {}, {"SUPABASE_URL":"${VITE_SUPABASE_URL}","SUPABASE_ANON_KEY":"${VITE_SUPABASE_ANON_KEY}"});
+          EOF
+
+      - name: Prepare DonDominio package (htaccess + sw)
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File ./scripts/prepare-web-dondominio.ps1
+
+      - name: Resolve package path
+        id: package
+        shell: pwsh
+        run: |
+          $latest = Get-ChildItem -Path ./release-web-dondominio -Directory |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+
+          if (-not $latest) {
+            throw "No se encontro carpeta en release-web-dondominio"
+          }
+
+          "path=$($latest.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Deploy to DonDominio by FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.DONDOMINIO_FTP_SERVER }}
+          username: ${{ secrets.DONDOMINIO_FTP_USERNAME }}
+          password: ${{ secrets.DONDOMINIO_FTP_PASSWORD }}
+          server-dir: ${{ secrets.DONDOMINIO_FTP_SERVER_DIR }}
+          local-dir: ${{ steps.package.outputs.path }}/
+          exclude: |
+            **/.git*
+            **/.git*/**

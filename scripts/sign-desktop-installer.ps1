@@ -4,7 +4,8 @@ param(
   [string]$PfxPath = "C:\secure\cotepa-code-signing\COTEPA-Internal-Code-Signing.pfx",
   [string]$TimestampUrl = "",
   [string]$Description = "SAT Movil COTEPA",
-  [string]$DescriptionUrl = ""
+  [string]$DescriptionUrl = "",
+  [string]$PfxPassword = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,13 +42,20 @@ if (-not $signtool) {
   throw "No se encontro signtool.exe. Instala el Windows SDK o el App Certification Kit para poder firmar el setup.exe."
 }
 
-$password = Read-Host "Introduce la contrasena del PFX" -AsSecureString
-$bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
-try {
-  $plainPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+$plainPassword = $PfxPassword
+if ([string]::IsNullOrWhiteSpace($plainPassword)) {
+  $plainPassword = [Environment]::GetEnvironmentVariable('CODE_SIGNING_PFX_PASSWORD')
 }
-finally {
-  if ($bstr -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+
+if ([string]::IsNullOrWhiteSpace($plainPassword)) {
+  $password = Read-Host "Introduce la contrasena del PFX" -AsSecureString
+  $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
+  try {
+    $plainPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+  }
+  finally {
+    if ($bstr -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+  }
 }
 
 $arguments = @(

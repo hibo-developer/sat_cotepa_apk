@@ -1035,6 +1035,14 @@ async function subirPdfInforme({ pdfBlob, nombreArchivo, clienteId, tecnicoId, o
   return `sb://informes-partes/${ruta}`;
 }
 
+function construirMensajeErrorServidorInforme(error) {
+  const detalle = String(error?.message || '').trim();
+  if (!detalle) {
+    return 'sin detalle';
+  }
+  return detalle;
+}
+
 async function obtenerSecuencialDiario(fechaIso, filtroTipoOrden = 'averia') {
   try {
     const supabase = obtenerClienteSupabase();
@@ -1091,7 +1099,9 @@ export async function generarYSubirInformeParte({
       .map((u) => obtenerUrlFirmadaStorage(u, { expiresIn: 900 })),
   );
 
-  const { pdfBlob, nombreArchivo } = await crearPdfInforme({
+  const supabase = obtenerClienteSupabase();
+  const payloadInforme = {
+    ordenId: formulario.orden_id || parte?.id,
     parte,
     formulario,
     seguimientoTiempo,
@@ -1107,16 +1117,54 @@ export async function generarYSubirInformeParte({
     secuencialDiario,
     fechaInformeIso,
     prefijoInforme,
-  });
-  const pdfUrl = await subirPdfInforme({
-    pdfBlob,
-    nombreArchivo,
-    clienteId: formulario.cliente_id,
-    tecnicoId: formulario.tecnico_id,
-    ordenId: formulario.orden_id || parte?.id,
-  });
-  if (!pdfUrl) throw new Error('No se pudo obtener la URL pública del informe PDF.');
-  return { pdfUrl, nombreArchivo };
+  };
+
+  try {
+    const { data, error } = await supabase.functions.invoke('generate-part-pdf', {
+      body: payloadInforme,
+    });
+
+    if (error || !data?.pdfUrl || !data?.nombreArchivo) {
+      throw new Error(construirMensajeErrorServidorInforme(error));
+    }
+
+    return { pdfUrl: data.pdfUrl, nombreArchivo: data.nombreArchivo };
+  } catch (errorServidor) {
+    const { pdfBlob, nombreArchivo } = await crearPdfInforme({
+      parte,
+      formulario,
+      seguimientoTiempo,
+      desplazamiento,
+      intervension,
+      valoracionEconomica,
+      clienteNombre,
+      equipoNombre,
+      tecnicoNombre,
+      nombreFirmante,
+      firmaUrl: firmaAccesible,
+      fotosIntervencionUrls: fotosAccesibles,
+      secuencialDiario,
+      fechaInformeIso,
+      prefijoInforme,
+    });
+
+    try {
+      const pdfUrl = await subirPdfInforme({
+        pdfBlob,
+        nombreArchivo,
+        clienteId: formulario?.cliente_id,
+        tecnicoId: formulario?.tecnico_id,
+        ordenId: formulario?.orden_id || parte?.id,
+      });
+      return { pdfUrl, nombreArchivo };
+    } catch (errorLocal) {
+      const detalleServidor = construirMensajeErrorServidorInforme(errorServidor);
+      const detalleLocal = String(errorLocal?.message || '').trim() || 'sin detalle';
+      throw new Error(
+        `No se pudo generar el informe PDF en servidor (${detalleServidor}) ni en local (${detalleLocal}).`,
+      );
+    }
+  }
 }
 
 export async function generarInformeParteDemoLocal() {

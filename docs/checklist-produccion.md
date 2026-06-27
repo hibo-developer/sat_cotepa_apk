@@ -11,6 +11,7 @@
 - [ ] `supabase/12_verify_no_anonymous_policies.sql` ejecutado sin hallazgos (bloques 1-3 en 0 filas).
 - [ ] Alternativa: `supabase/13_apply_and_verify_security.sql` ejecutado completo en una sola pasada.
 - [ ] Leaked Password Protection activado, o excepcion aprobada siguiendo [docs/checklist-auth-produccion-plan-free.md](checklist-auth-produccion-plan-free.md) si el plan de Supabase no lo incluye.
+- [ ] Authentication > Settings: signups publicos deshabilitados, email confirmations activadas y password policy alineada con `src/services/passwordSecurity.js`.
 - [ ] Usuarios reales creados en Auth y asignados en `public.usuarios_sat`.
 - [ ] Tecnicos vinculados correctamente en `public.tecnicos.user_id`.
 - [ ] Sin acceso anonimo a datos de negocio.

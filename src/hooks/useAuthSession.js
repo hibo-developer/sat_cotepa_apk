@@ -8,6 +8,7 @@ import {
   obtenerSesionActual,
   verificarTotpMfa,
 } from '../services/authService';
+import { limpiarStorageAuthSupabase } from '../services/supabaseStorage';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
 
 function resolverFactorPreferido(factores) {
@@ -173,6 +174,7 @@ export function useAuthSession() {
   async function cancelarMfa() {
     setError('');
     await cerrarSesion();
+    await limpiarStorageAuthSupabase();
     setSesion(null);
     setSesionPendienteMfa(null);
     setFactorMfaId(null);
@@ -181,6 +183,12 @@ export function useAuthSession() {
   async function logout() {
     setError('');
     await cerrarSesion();
+    await limpiarStorageAuthSupabase();
+    try {
+      localStorage.removeItem('sat_cache_usuario_sat_v1');
+      localStorage.removeItem('sat_cache_parte_borrador_v1');
+      localStorage.removeItem('sat_device_instance_id_v1');
+    } catch {}
     setSesion(null);
     setSesionPendienteMfa(null);
     setFactorMfaId(null);
