@@ -65,8 +65,8 @@ export function IndicadorSync() {
 
   const offline = !estado.online;
   const colorBase = offline
-    ? 'border-amber-200/90 bg-white/95 text-amber-950 shadow-amber-100/80'
-    : 'border-sky-200/90 bg-white/95 text-sky-950 shadow-sky-100/80';
+    ? 'border-amber-200/90 bg-gradient-to-br from-white via-amber-50/60 to-white text-amber-950 shadow-[0_18px_40px_-30px_rgba(251,191,36,0.85)] ring-1 ring-amber-100/80'
+    : 'border-sky-200/90 bg-gradient-to-br from-white via-sky-50/60 to-white text-sky-950 shadow-[0_18px_40px_-30px_rgba(56,189,248,0.7)] ring-1 ring-sky-100/80';
 
   const detallePartes = estado.pendientesPartes > 0
     ? ` · ${estado.pendientesPartes} parte${estado.pendientesPartes > 1 ? 's' : ''} por enviar`
@@ -78,23 +78,23 @@ export function IndicadorSync() {
   return (
     <div
       role="status"
-      className={`overflow-hidden rounded-[1.75rem] border px-4 py-3.5 text-xs font-semibold shadow-xl backdrop-blur-sm ${colorBase}`}
+      className={`overflow-hidden rounded-[1.9rem] border px-4 py-3.5 text-xs font-semibold shadow-xl backdrop-blur-md ${colorBase}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex items-start gap-3">
-          <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${offline ? 'bg-amber-100/80' : 'bg-sky-100/80'}`}>
+          <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border shadow-sm ${offline ? 'border-amber-200/70 bg-amber-100/80' : 'border-sky-200/70 bg-sky-100/80'}`}>
             <span
-              className={`inline-block h-2.5 w-2.5 rounded-full ${offline ? 'bg-amber-500 animate-pulse' : 'bg-sky-500'}`}
+              className={`inline-block h-2.5 w-2.5 rounded-full shadow-[0_0_0_4px_rgba(255,255,255,0.55)] ${offline ? 'bg-amber-500 animate-pulse' : 'bg-sky-500'}`}
               aria-hidden="true"
             />
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-bold leading-5">
+              <span className="text-sm font-extrabold leading-5 tracking-tight">
                 {offline ? 'Sin conexión · trabajando en local' : 'Cambios pendientes de sincronizar'}
               </span>
               {estado.pendientes > 0 && (
-                <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${offline ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'}`}>
+                <span className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] shadow-sm ${offline ? 'border-amber-200 bg-amber-100 text-amber-800' : 'border-sky-200 bg-sky-100 text-sky-800'}`}>
                   {estado.pendientes}
                 </span>
               )}
@@ -103,7 +103,7 @@ export function IndicadorSync() {
               {offline ? 'Los cambios seguiran guardandose en el dispositivo hasta recuperar la conexion.' : 'La informacion local esta lista para enviarse en cuanto completes la sincronizacion.'}
             </p>
             {(detallePartes || detalleGps) && (
-              <p className="mt-1.5 text-[11px] font-medium leading-5 text-current/80">
+              <p className="mt-1.5 rounded-2xl bg-white/50 px-3 py-2 text-[11px] font-medium leading-5 text-current/80">
                 {[detallePartes, detalleGps].filter(Boolean).join('')}
               </p>
             )}
@@ -114,7 +114,7 @@ export function IndicadorSync() {
             type="button"
             onClick={sincronizarAhora}
             disabled={sincronizando}
-            className="shrink-0 rounded-2xl border border-sky-200 bg-sky-50 px-3.5 py-2 text-[11px] font-bold text-sky-700 shadow-sm transition hover:bg-sky-100 focus:outline-none focus:ring-4 focus:ring-sky-100 disabled:opacity-60"
+            className="shrink-0 rounded-2xl border border-sky-200 bg-white/85 px-3.5 py-2 text-[11px] font-bold text-sky-700 shadow-sm shadow-sky-100/70 transition duration-200 hover:-translate-y-0.5 hover:bg-sky-50 focus:outline-none focus:ring-4 focus:ring-sky-100 disabled:translate-y-0 disabled:opacity-60"
           >
             {sincronizando ? 'Sincronizando…' : 'Sincronizar ahora'}
           </button>
