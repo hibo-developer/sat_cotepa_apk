@@ -28,6 +28,14 @@ const FORM_REGULARIZACION_INICIAL = {
 };
 
 const OPCIONES_ITEMS_PAGINA = [5, 10, 20];
+const claseTarjeta = 'rounded-3xl border border-marca-100 bg-white p-4 shadow-tarjeta';
+const claseCampo = 'w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-marca-600 focus:outline-none focus:ring-4 focus:ring-marca-100';
+const claseEtiqueta = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600';
+const claseBotonPrimario = 'rounded-2xl bg-cotepa-rojo-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-red-200 transition hover:bg-cotepa-rojo-600 focus:outline-none focus:ring-4 focus:ring-red-100';
+const claseBotonSecundario = 'rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200';
+const claseBotonAccion = 'rounded-xl bg-marca-50 px-3 py-2 text-xs font-bold text-marca-700 transition hover:bg-marca-100 focus:outline-none focus:ring-4 focus:ring-marca-100';
+const claseBotonWarning = 'rounded-xl bg-amber-100 px-3 py-2 text-xs font-bold text-amber-700 transition hover:bg-amber-200 focus:outline-none focus:ring-4 focus:ring-amber-100';
+const claseBotonPeligro = 'rounded-xl bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-200 focus:outline-none focus:ring-4 focus:ring-rose-100';
 
 export function InventarioView({ rolUsuario }) {
   const [materialesInventario, setMaterialesInventario] = useState([]);
@@ -250,6 +258,21 @@ export function InventarioView({ rolUsuario }) {
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-200">
           Gestión de materiales globales de almacén con seguimiento de stock, regularizaciones y movimientos recientes.
         </p>
+
+        <div className="mt-5 grid grid-cols-3 gap-2.5 text-center text-xs font-bold">
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
+            <p className="text-slate-300">Materiales</p>
+            <p className="mt-1 text-base text-white">{materialesInventario.length}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
+            <p className="text-slate-300">Movimientos</p>
+            <p className="mt-1 text-base text-white">{movimientosSoportados ? movimientosInventario.length : '-'}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
+            <p className="text-slate-300">Modo</p>
+            <p className="mt-1 text-base text-white">{modoSoloLectura ? 'Consulta' : 'Edicion'}</p>
+          </div>
+        </div>
       </header>
 
       {modoSoloLectura && (
@@ -277,65 +300,94 @@ export function InventarioView({ rolUsuario }) {
       <div className="lg:grid lg:grid-cols-12 lg:gap-4">
         {puedeEditarCatalogos && (
           <div className="space-y-4 lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
-            <form onSubmit={guardarMaterial} className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
-              <h3 className="text-base font-bold text-slate-800">
-                {materialEditandoId ? 'Editar material' : 'Nuevo material'}
-              </h3>
+            <form onSubmit={guardarMaterial} className={`space-y-4 ${claseTarjeta}`}>
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 rounded-full border border-marca-100 bg-marca-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-marca-700">
+                  <Package className="h-3.5 w-3.5" />
+                  Ficha material
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">
+                    {materialEditandoId ? 'Editar material' : 'Nuevo material'}
+                  </h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Centraliza nombre, stock y precio de referencia para mantener el inventario operativo y trazable.
+                  </p>
+                </div>
+              </div>
               {!materialEditandoId && (
-                <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
                   Si el material ya existe, se sumará el stock automáticamente en lugar de crear un duplicado.
                 </p>
               )}
 
-              <input
-                required
-                value={materialForm.nombre}
-                onChange={(e) => setMaterialForm((p) => ({ ...p, nombre: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                placeholder="Nombre del material"
-              />
+              <label className="block">
+                <span className={claseEtiqueta}>Nombre del material</span>
+                <input
+                  required
+                  value={materialForm.nombre}
+                  onChange={(e) => setMaterialForm((p) => ({ ...p, nombre: e.target.value }))}
+                  className={claseCampo}
+                  placeholder="Nombre del material"
+                />
+              </label>
 
-              <input
-                value={materialForm.descripcion}
-                onChange={(e) => setMaterialForm((p) => ({ ...p, descripcion: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                placeholder="Descripcion"
-              />
+              <label className="block">
+                <span className={claseEtiqueta}>Descripcion</span>
+                <input
+                  value={materialForm.descripcion}
+                  onChange={(e) => setMaterialForm((p) => ({ ...p, descripcion: e.target.value }))}
+                  className={claseCampo}
+                  placeholder="Descripcion"
+                />
+              </label>
 
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  value={materialForm.unidad}
-                  onChange={(e) => setMaterialForm((p) => ({ ...p, unidad: e.target.value }))}
-                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                  placeholder="Unidad"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  value={materialForm.stock_actual}
-                  onChange={(e) => setMaterialForm((p) => ({ ...p, stock_actual: e.target.value }))}
-                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                  placeholder={materialEditandoId ? 'Stock total' : 'Cantidad'}
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={materialForm.precio_ref}
-                  onChange={(e) => setMaterialForm((p) => ({ ...p, precio_ref: e.target.value }))}
-                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                  placeholder="Precio"
-                />
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="block">
+                  <span className={claseEtiqueta}>Unidad</span>
+                  <input
+                    value={materialForm.unidad}
+                    onChange={(e) => setMaterialForm((p) => ({ ...p, unidad: e.target.value }))}
+                    className={claseCampo}
+                    placeholder="Unidad"
+                  />
+                </label>
+                <label className="block">
+                  <span className={claseEtiqueta}>{materialEditandoId ? 'Stock total' : 'Cantidad'}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={materialForm.stock_actual}
+                    onChange={(e) => setMaterialForm((p) => ({ ...p, stock_actual: e.target.value }))}
+                    className={claseCampo}
+                    placeholder={materialEditandoId ? 'Stock total' : 'Cantidad'}
+                  />
+                </label>
+                <label className="block">
+                  <span className={claseEtiqueta}>Precio ref.</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={materialForm.precio_ref}
+                    onChange={(e) => setMaterialForm((p) => ({ ...p, precio_ref: e.target.value }))}
+                    className={claseCampo}
+                    placeholder="Precio"
+                  />
+                </label>
               </div>
 
-              <input
-                value={materialForm.motivo}
-                onChange={(e) => setMaterialForm((p) => ({ ...p, motivo: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                placeholder="Motivo (opcional)"
-              />
+              <label className="block">
+                <span className={claseEtiqueta}>Motivo</span>
+                <input
+                  value={materialForm.motivo}
+                  onChange={(e) => setMaterialForm((p) => ({ ...p, motivo: e.target.value }))}
+                  className={claseCampo}
+                  placeholder="Motivo (opcional)"
+                />
+              </label>
 
-              <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700">
+              <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
                 <input
                   type="checkbox"
                   checked={materialForm.activo}
@@ -345,11 +397,11 @@ export function InventarioView({ rolUsuario }) {
               </label>
 
               <div className="grid grid-cols-2 gap-2">
-                <button className="rounded-xl bg-cotepa-rojo-500 px-4 py-3 text-sm font-bold text-white" type="submit">
+                <button className={claseBotonPrimario} type="submit">
                   {materialEditandoId ? 'Actualizar' : 'Guardar'}
                 </button>
                 <button
-                  className="rounded-xl bg-slate-200 px-4 py-3 text-sm font-bold text-slate-700"
+                  className={claseBotonSecundario}
                   type="button"
                   onClick={limpiarFormMaterial}
                 >
@@ -358,62 +410,85 @@ export function InventarioView({ rolUsuario }) {
               </div>
             </form>
 
-            <form onSubmit={regularizarStock} className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
-              <h3 className="text-base font-bold text-slate-800">Regularizar stock</h3>
-              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <form onSubmit={regularizarStock} className={`space-y-4 ${claseTarjeta}`}>
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-700">
+                  <TriangleAlert className="h-3.5 w-3.5" />
+                  Ajuste manual
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">Regularizar stock</h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Usa este bloque para correcciones de inventario físico, incidencias de almacen o ajustes administrativos.
+                  </p>
+                </div>
+              </div>
+              <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 Usa esta opción para ajustes por inventario físico, roturas o correcciones administrativas.
               </p>
 
-              <select
-                required
-                value={regularizacionForm.material_id}
-                onChange={(e) => setRegularizacionForm((p) => ({ ...p, material_id: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-              >
-                <option value="">Selecciona material</option>
-                {materialesInventario.map((material) => (
-                  <option key={material.id} value={material.id}>
-                    {material.nombre} · stock {material.stock_actual}
-                  </option>
-                ))}
-              </select>
-
-              <div className="grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className={claseEtiqueta}>Material</span>
                 <select
-                  value={regularizacionForm.modo}
-                  onChange={(e) => setRegularizacionForm((p) => ({ ...p, modo: e.target.value }))}
-                  className="rounded-xl border border-slate-300 px-3 py-3 text-sm"
-                >
-                  <option value="fijar">Fijar stock final</option>
-                  <option value="sumar">Sumar stock</option>
-                  <option value="restar">Restar stock</option>
-                </select>
-                <input
                   required
-                  type="number"
-                  min="0"
-                  value={regularizacionForm.cantidad}
-                  onChange={(e) => setRegularizacionForm((p) => ({ ...p, cantidad: e.target.value }))}
-                  className="rounded-xl border border-slate-300 px-3 py-3 text-sm"
-                  placeholder="Cantidad"
-                />
+                  value={regularizacionForm.material_id}
+                  onChange={(e) => setRegularizacionForm((p) => ({ ...p, material_id: e.target.value }))}
+                  className={claseCampo}
+                >
+                  <option value="">Selecciona material</option>
+                  {materialesInventario.map((material) => (
+                    <option key={material.id} value={material.id}>
+                      {material.nombre} · stock {material.stock_actual}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className={claseEtiqueta}>Modo</span>
+                  <select
+                    value={regularizacionForm.modo}
+                    onChange={(e) => setRegularizacionForm((p) => ({ ...p, modo: e.target.value }))}
+                    className={claseCampo}
+                  >
+                    <option value="fijar">Fijar stock final</option>
+                    <option value="sumar">Sumar stock</option>
+                    <option value="restar">Restar stock</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className={claseEtiqueta}>Cantidad</span>
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    value={regularizacionForm.cantidad}
+                    onChange={(e) => setRegularizacionForm((p) => ({ ...p, cantidad: e.target.value }))}
+                    className={claseCampo}
+                    placeholder="Cantidad"
+                  />
+                </label>
               </div>
 
-              <textarea
-                required
-                rows={2}
-                value={regularizacionForm.motivo}
-                onChange={(e) => setRegularizacionForm((p) => ({ ...p, motivo: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                placeholder="Motivo de la regularizacion"
-              />
+              <label className="block">
+                <span className={claseEtiqueta}>Motivo</span>
+                <textarea
+                  required
+                  rows={2}
+                  value={regularizacionForm.motivo}
+                  onChange={(e) => setRegularizacionForm((p) => ({ ...p, motivo: e.target.value }))}
+                  className={claseCampo}
+                  placeholder="Motivo de la regularizacion"
+                />
+              </label>
 
               <div className="grid grid-cols-2 gap-2">
-                <button className="rounded-xl bg-marca-900 px-4 py-3 text-sm font-bold text-white" type="submit">
+                <button className="rounded-2xl bg-marca-900 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-slate-200 transition hover:bg-marca-800 focus:outline-none focus:ring-4 focus:ring-marca-100" type="submit">
                   Aplicar
                 </button>
                 <button
-                  className="rounded-xl bg-slate-200 px-4 py-3 text-sm font-bold text-slate-700"
+                  className={claseBotonSecundario}
                   type="button"
                   onClick={limpiarFormRegularizacion}
                 >
@@ -427,7 +502,7 @@ export function InventarioView({ rolUsuario }) {
         <div className={`space-y-2 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
           {cargando && <p className="text-sm font-semibold text-slate-600">Cargando materiales...</p>}
           {!cargando && materialesInventario.length > 0 && (
-            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+            <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-700 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <span>Pagina {paginaMateriales} de {totalPaginasMateriales}</span>
                 <label className="flex items-center gap-1">
@@ -438,7 +513,7 @@ export function InventarioView({ rolUsuario }) {
                       setItemsPaginaMateriales(Number(e.target.value));
                       setPaginaMateriales(1);
                     }}
-                    className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+                    className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-marca-100"
                   >
                     {OPCIONES_ITEMS_PAGINA.map((opcion) => (
                       <option key={opcion} value={opcion}>{opcion}</option>
@@ -451,7 +526,7 @@ export function InventarioView({ rolUsuario }) {
                   type="button"
                   onClick={() => setPaginaMateriales((previo) => Math.max(1, previo - 1))}
                   disabled={paginaMateriales === 1}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 transition focus:outline-none focus:ring-2 focus:ring-marca-100 disabled:opacity-50"
                 >
                   Anterior
                 </button>
@@ -459,7 +534,7 @@ export function InventarioView({ rolUsuario }) {
                   type="button"
                   onClick={() => setPaginaMateriales((previo) => Math.min(totalPaginasMateriales, previo + 1))}
                   disabled={paginaMateriales === totalPaginasMateriales}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 transition focus:outline-none focus:ring-2 focus:ring-marca-100 disabled:opacity-50"
                 >
                   Siguiente
                 </button>
@@ -468,12 +543,12 @@ export function InventarioView({ rolUsuario }) {
           )}
           {!cargando &&
             materialesPaginados.map((material) => (
-              <article key={material.id} className="rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
+              <article key={material.id} className={claseTarjeta}>
                 <p className="text-sm font-bold text-slate-800">{material.nombre}</p>
                 <p className="text-xs text-slate-600">
                   {material.descripcion || 'Sin descripcion'}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
                   Stock: {material.stock_actual} {material.unidad || 'ud'} · Precio ref: {material.precio_ref ?? 'N/D'}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">Estado: {material.activo ? 'Activo' : 'Inactivo'}</p>
@@ -482,7 +557,7 @@ export function InventarioView({ rolUsuario }) {
                   <div className="mt-3 grid grid-cols-3 gap-2">
                     <button
                       type="button"
-                      className="rounded-xl bg-marca-50 px-3 py-2 text-xs font-bold text-marca-700"
+                      className={claseBotonAccion}
                       onClick={() => {
                         setMaterialEditandoId(material.id);
                         setMaterialForm({
@@ -500,7 +575,7 @@ export function InventarioView({ rolUsuario }) {
                     </button>
                     <button
                       type="button"
-                      className="rounded-xl bg-amber-100 px-3 py-2 text-xs font-bold text-amber-700"
+                      className={claseBotonWarning}
                       onClick={() =>
                         setRegularizacionForm((previo) => ({
                           ...previo,
@@ -512,7 +587,7 @@ export function InventarioView({ rolUsuario }) {
                     </button>
                     <button
                       type="button"
-                      className="rounded-xl bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700"
+                      className={claseBotonPeligro}
                       onClick={() => borrarMaterial(material.id)}
                     >
                       Eliminar
@@ -521,35 +596,43 @@ export function InventarioView({ rolUsuario }) {
                 )}
               </article>
             ))}
+
+          {!cargando && materialesInventario.length === 0 && (
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
+              No hay materiales registrados todavia. Puedes crear el primero desde el panel lateral.
+            </div>
+          )}
         </div>
       </div>
 
-      <section className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
+      <section className={`space-y-4 ${claseTarjeta}`}>
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h3 className="text-base font-bold text-slate-800">Historial de movimientos</h3>
             <p className="text-xs text-slate-600">Entradas, salidas y regularizaciones con motivo.</p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-semibold text-slate-700">Filtrar por material</label>
-            <select
-              value={filtroMaterialMovimientoId}
-              onChange={(e) => setFiltroMaterialMovimientoId(e.target.value)}
-              className="rounded-xl border border-slate-300 px-3 py-2 text-xs"
-            >
-              <option value="">Todos</option>
-              {materialesInventario.map((material) => (
-                <option key={material.id} value={material.id}>
-                  {material.nombre}
-                </option>
-              ))}
-            </select>
+          <div className="w-full max-w-xs">
+            <label className="block">
+              <span className={claseEtiqueta}>Filtrar por material</span>
+              <select
+                value={filtroMaterialMovimientoId}
+                onChange={(e) => setFiltroMaterialMovimientoId(e.target.value)}
+                className={claseCampo}
+              >
+                <option value="">Todos</option>
+                {materialesInventario.map((material) => (
+                  <option key={material.id} value={material.id}>
+                    {material.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
 
         {!movimientosSoportados && (
-          <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          <p className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
             El historial requiere la migracion de base de datos 14_inventario_movimientos_regularizacion.sql.
           </p>
         )}
@@ -557,7 +640,7 @@ export function InventarioView({ rolUsuario }) {
         {cargandoMovimientos && <p className="text-sm text-slate-600">Cargando movimientos...</p>}
 
         {!cargandoMovimientos && movimientosSoportados && movimientosInventario.length === 0 && (
-          <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+          <p className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
             No hay movimientos registrados para el filtro seleccionado.
           </p>
         )}

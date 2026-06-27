@@ -33,6 +33,13 @@ const FORM_EQUIPO_INICIAL = {
 };
 
 const OPCIONES_ITEMS_PAGINA = [5, 10, 20];
+const claseTarjeta = 'rounded-3xl border border-marca-100 bg-white p-4 shadow-tarjeta';
+const claseCampo = 'w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-marca-600 focus:outline-none focus:ring-4 focus:ring-marca-100';
+const claseEtiqueta = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600';
+const claseBotonPrimario = 'rounded-2xl bg-cotepa-rojo-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-red-200 transition hover:bg-cotepa-rojo-600 focus:outline-none focus:ring-4 focus:ring-red-100';
+const claseBotonSecundario = 'rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200';
+const claseBotonAccion = 'rounded-xl bg-marca-50 px-3 py-2 text-xs font-bold text-marca-700 transition hover:bg-marca-100 focus:outline-none focus:ring-4 focus:ring-marca-100';
+const claseBotonPeligro = 'rounded-xl bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-200 focus:outline-none focus:ring-4 focus:ring-rose-100';
 
 export function ClientesView({ rolUsuario }) {
   const [tabActiva, setTabActiva] = useState('clientes');
@@ -267,6 +274,21 @@ export function ClientesView({ rolUsuario }) {
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-200">
           Gestión centralizada de clientes y equipos con acceso rápido a los datos base del servicio técnico.
         </p>
+
+        <div className="mt-5 grid grid-cols-3 gap-2.5 text-center text-xs font-bold">
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
+            <p className="text-slate-300">Clientes</p>
+            <p className="mt-1 text-base text-white">{clientes.length}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
+            <p className="text-slate-300">Equipos</p>
+            <p className="mt-1 text-base text-white">{equipos.length}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-lg shadow-black/5">
+            <p className="text-slate-300">Modo</p>
+            <p className="mt-1 text-base text-white">{modoSoloLectura ? 'Consulta' : 'Edición'}</p>
+          </div>
+        </div>
       </header>
 
       {modoSoloLectura && (
@@ -317,60 +339,91 @@ export function ClientesView({ rolUsuario }) {
       {tabActiva === 'clientes' && (
         <div className="lg:grid lg:grid-cols-12 lg:gap-4">
           {puedeEditarCatalogos && (
-            <form onSubmit={guardarCliente} className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
-              <h3 className="text-base font-bold text-slate-800">
-                {clienteEditandoId ? 'Editar cliente' : 'Nuevo cliente'}
-              </h3>
+            <form onSubmit={guardarCliente} className={`space-y-4 ${claseTarjeta} lg:col-span-4 lg:sticky lg:top-5 lg:self-start`}>
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 rounded-full border border-marca-100 bg-marca-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-marca-700">
+                  <Users className="h-3.5 w-3.5" />
+                  Ficha cliente
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">
+                    {clienteEditandoId ? 'Editar cliente' : 'Nuevo cliente'}
+                  </h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Mantén actualizados los datos de contacto y la ubicación base para agilizar navegación y servicio.
+                  </p>
+                </div>
+              </div>
 
-              <input
-                required
-                value={clienteForm.nombre}
-                onChange={(e) => setClienteForm((p) => ({ ...p, nombre: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                placeholder="Nombre del cliente"
-              />
-              <input
-                value={clienteForm.direccion}
-                onChange={(e) => setClienteForm((p) => ({ ...p, direccion: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                placeholder="Dirección"
-              />
-              <input
-                value={clienteForm.telefono}
-                onChange={(e) => setClienteForm((p) => ({ ...p, telefono: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                placeholder="Teléfono"
-              />
-              <input
-                type="email"
-                value={clienteForm.email}
-                onChange={(e) => setClienteForm((p) => ({ ...p, email: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                placeholder="Email"
-              />
-              <div className="grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className={claseEtiqueta}>Nombre del cliente</span>
                 <input
-                  inputMode="decimal"
-                  value={clienteForm.lat}
-                  onChange={(e) => setClienteForm((p) => ({ ...p, lat: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                  placeholder="Latitud"
+                  required
+                  value={clienteForm.nombre}
+                  onChange={(e) => setClienteForm((p) => ({ ...p, nombre: e.target.value }))}
+                  className={claseCampo}
+                  placeholder="Nombre del cliente"
                 />
+              </label>
+              <label className="block">
+                <span className={claseEtiqueta}>Dirección</span>
                 <input
-                  inputMode="decimal"
-                  value={clienteForm.lng}
-                  onChange={(e) => setClienteForm((p) => ({ ...p, lng: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                  placeholder="Longitud"
+                  value={clienteForm.direccion}
+                  onChange={(e) => setClienteForm((p) => ({ ...p, direccion: e.target.value }))}
+                  className={claseCampo}
+                  placeholder="Dirección"
                 />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className={claseEtiqueta}>Teléfono</span>
+                  <input
+                    value={clienteForm.telefono}
+                    onChange={(e) => setClienteForm((p) => ({ ...p, telefono: e.target.value }))}
+                    className={claseCampo}
+                    placeholder="Teléfono"
+                  />
+                </label>
+                <label className="block">
+                  <span className={claseEtiqueta}>Email</span>
+                  <input
+                    type="email"
+                    value={clienteForm.email}
+                    onChange={(e) => setClienteForm((p) => ({ ...p, email: e.target.value }))}
+                    className={claseCampo}
+                    placeholder="Email"
+                  />
+                </label>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className={claseEtiqueta}>Latitud</span>
+                  <input
+                    inputMode="decimal"
+                    value={clienteForm.lat}
+                    onChange={(e) => setClienteForm((p) => ({ ...p, lat: e.target.value }))}
+                    className={claseCampo}
+                    placeholder="Latitud"
+                  />
+                </label>
+                <label className="block">
+                  <span className={claseEtiqueta}>Longitud</span>
+                  <input
+                    inputMode="decimal"
+                    value={clienteForm.lng}
+                    onChange={(e) => setClienteForm((p) => ({ ...p, lng: e.target.value }))}
+                    className={claseCampo}
+                    placeholder="Longitud"
+                  />
+                </label>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <button className="rounded-xl bg-cotepa-rojo-500 px-4 py-3 text-sm font-bold text-white" type="submit">
+                <button className={claseBotonPrimario} type="submit">
                   {clienteEditandoId ? 'Actualizar' : 'Crear'}
                 </button>
                 <button
-                  className="rounded-xl bg-slate-200 px-4 py-3 text-sm font-bold text-slate-700"
+                  className={claseBotonSecundario}
                   type="button"
                   onClick={limpiarFormCliente}
                 >
@@ -383,9 +436,9 @@ export function ClientesView({ rolUsuario }) {
           <div className={`space-y-2 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
             {cargando && <p className="text-sm font-semibold text-slate-600">Cargando clientes...</p>}
             {!cargando && clientes.length > 0 && (
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-700 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
-                  <span>Pagina {paginaClientes} de {totalPaginasClientes}</span>
+                  <span>Página {paginaClientes} de {totalPaginasClientes}</span>
                   <label className="flex items-center gap-1">
                     <span>Mostrar</span>
                     <select
@@ -394,7 +447,7 @@ export function ClientesView({ rolUsuario }) {
                         setItemsPaginaClientes(Number(e.target.value));
                         setPaginaClientes(1);
                       }}
-                      className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+                      className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-marca-100"
                     >
                       {OPCIONES_ITEMS_PAGINA.map((opcion) => (
                         <option key={opcion} value={opcion}>{opcion}</option>
@@ -407,7 +460,7 @@ export function ClientesView({ rolUsuario }) {
                     type="button"
                     onClick={() => setPaginaClientes((previo) => Math.max(1, previo - 1))}
                     disabled={paginaClientes === 1}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 transition focus:outline-none focus:ring-2 focus:ring-marca-100 disabled:opacity-50"
                   >
                     Anterior
                   </button>
@@ -415,7 +468,7 @@ export function ClientesView({ rolUsuario }) {
                     type="button"
                     onClick={() => setPaginaClientes((previo) => Math.min(totalPaginasClientes, previo + 1))}
                     disabled={paginaClientes === totalPaginasClientes}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 transition focus:outline-none focus:ring-2 focus:ring-marca-100 disabled:opacity-50"
                   >
                     Siguiente
                   </button>
@@ -425,19 +478,21 @@ export function ClientesView({ rolUsuario }) {
 
             {!cargando &&
               clientesPaginados.map((cliente) => (
-                <article key={cliente.id} className="rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
+                <article key={cliente.id} className={claseTarjeta}>
                   <p className="text-sm font-bold text-slate-800">{cliente.nombre}</p>
                   <p className="text-xs text-slate-600">{cliente.telefono || 'Sin teléfono'} · {cliente.email || 'Sin email'}</p>
                   <p className="mt-1 text-xs text-slate-500">{cliente.direccion || 'Sin dirección'}</p>
                   {(cliente.lat != null && cliente.lng != null) && (
-                    <p className="mt-1 text-xs text-slate-500">GPS: {Number(cliente.lat).toFixed(5)}, {Number(cliente.lng).toFixed(5)}</p>
+                    <p className="mt-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                      GPS: {Number(cliente.lat).toFixed(5)}, {Number(cliente.lng).toFixed(5)}
+                    </p>
                   )}
 
                   {puedeEditarCatalogos && (
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        className="rounded-xl bg-marca-50 px-3 py-2 text-xs font-bold text-marca-700"
+                        className={claseBotonAccion}
                         onClick={() => {
                           setClienteEditandoId(cliente.id);
                           setClienteForm({
@@ -454,7 +509,7 @@ export function ClientesView({ rolUsuario }) {
                       </button>
                       <button
                         type="button"
-                        className="rounded-xl bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700"
+                        className={claseBotonPeligro}
                         onClick={() => borrarCliente(cliente.id)}
                       >
                         Eliminar
@@ -463,6 +518,12 @@ export function ClientesView({ rolUsuario }) {
                   )}
                 </article>
               ))}
+
+            {!cargando && clientes.length === 0 && (
+              <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
+                No hay clientes registrados todavía. Puedes crear el primero desde el panel lateral.
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -470,18 +531,29 @@ export function ClientesView({ rolUsuario }) {
       {tabActiva === 'equipos' && (
         <div className="lg:grid lg:grid-cols-12 lg:gap-4">
           {puedeEditarCatalogos && (
-            <form onSubmit={guardarEquipo} className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
-              <h3 className="text-base font-bold text-slate-800">
-                {equipoEditandoId ? 'Editar equipo' : 'Nuevo equipo'}
-              </h3>
+            <form onSubmit={guardarEquipo} className={`space-y-4 ${claseTarjeta} lg:col-span-4 lg:sticky lg:top-5 lg:self-start`}>
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 rounded-full border border-marca-100 bg-marca-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-marca-700">
+                  <Package className="h-3.5 w-3.5" />
+                  Ficha equipo
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">
+                    {equipoEditandoId ? 'Editar equipo' : 'Nuevo equipo'}
+                  </h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Asocia cada equipo a su cliente y mantén identificadores técnicos accesibles para soporte y revisiones.
+                  </p>
+                </div>
+              </div>
 
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-700">Cliente *</span>
+                <span className={claseEtiqueta}>Cliente</span>
                 <select
                   required
                   value={equipoForm.cliente_id}
                   onChange={(e) => setEquipoForm((p) => ({ ...p, cliente_id: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                  className={claseCampo}
                 >
                   <option value="">Selecciona cliente</option>
                   {clientes.map((cliente) => (
@@ -496,43 +568,43 @@ export function ClientesView({ rolUsuario }) {
                 required
                 value={equipoForm.nombre}
                 onChange={(e) => setEquipoForm((p) => ({ ...p, nombre: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className={claseCampo}
                 placeholder="Nombre del equipo"
               />
               <input
                 value={equipoForm.marca}
                 onChange={(e) => setEquipoForm((p) => ({ ...p, marca: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className={claseCampo}
                 placeholder="Marca"
               />
               <input
                 value={equipoForm.modelo}
                 onChange={(e) => setEquipoForm((p) => ({ ...p, modelo: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className={claseCampo}
                 placeholder="Modelo"
               />
               <input
                 value={equipoForm.numero_serie}
                 onChange={(e) => setEquipoForm((p) => ({ ...p, numero_serie: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                className={claseCampo}
                 placeholder="Número de serie"
               />
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-700">Última revisión</span>
+                <span className={claseEtiqueta}>Última revisión</span>
                 <input
                   type="date"
                   value={equipoForm.ultima_revision}
                   onChange={(e) => setEquipoForm((p) => ({ ...p, ultima_revision: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                  className={claseCampo}
                 />
               </label>
 
               <div className="grid grid-cols-2 gap-2">
-                <button className="rounded-xl bg-cotepa-rojo-500 px-4 py-3 text-sm font-bold text-white" type="submit">
+                <button className={claseBotonPrimario} type="submit">
                   {equipoEditandoId ? 'Actualizar' : 'Crear'}
                 </button>
                 <button
-                  className="rounded-xl bg-slate-200 px-4 py-3 text-sm font-bold text-slate-700"
+                  className={claseBotonSecundario}
                   type="button"
                   onClick={limpiarFormEquipo}
                 >
@@ -543,17 +615,22 @@ export function ClientesView({ rolUsuario }) {
           )}
 
           <div className={`space-y-2 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
-            <input
-              value={busquedaEquipo}
-              onChange={(e) => setBusquedaEquipo(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm"
-              placeholder="Buscar por cliente, nombre, marca, modelo o serie"
-            />
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+              <label className="block">
+                <span className={claseEtiqueta}>Buscar equipo</span>
+                <input
+                  value={busquedaEquipo}
+                  onChange={(e) => setBusquedaEquipo(e.target.value)}
+                  className={claseCampo}
+                  placeholder="Buscar por cliente, nombre, marca, modelo o serie"
+                />
+              </label>
+            </div>
             {cargando && <p className="text-sm font-semibold text-slate-600">Cargando equipos...</p>}
             {!cargando && equiposFiltrados.length > 0 && (
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-700 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
-                  <span>Pagina {paginaEquipos} de {totalPaginasEquipos}</span>
+                  <span>Página {paginaEquipos} de {totalPaginasEquipos}</span>
                   <label className="flex items-center gap-1">
                     <span>Mostrar</span>
                     <select
@@ -562,7 +639,7 @@ export function ClientesView({ rolUsuario }) {
                         setItemsPaginaEquipos(Number(e.target.value));
                         setPaginaEquipos(1);
                       }}
-                      className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+                      className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-marca-100"
                     >
                       {OPCIONES_ITEMS_PAGINA.map((opcion) => (
                         <option key={opcion} value={opcion}>{opcion}</option>
@@ -575,7 +652,7 @@ export function ClientesView({ rolUsuario }) {
                     type="button"
                     onClick={() => setPaginaEquipos((previo) => Math.max(1, previo - 1))}
                     disabled={paginaEquipos === 1}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 transition focus:outline-none focus:ring-2 focus:ring-marca-100 disabled:opacity-50"
                   >
                     Anterior
                   </button>
@@ -583,7 +660,7 @@ export function ClientesView({ rolUsuario }) {
                     type="button"
                     onClick={() => setPaginaEquipos((previo) => Math.min(totalPaginasEquipos, previo + 1))}
                     disabled={paginaEquipos === totalPaginasEquipos}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 transition focus:outline-none focus:ring-2 focus:ring-marca-100 disabled:opacity-50"
                   >
                     Siguiente
                   </button>
@@ -593,7 +670,7 @@ export function ClientesView({ rolUsuario }) {
 
             {!cargando &&
               equiposPaginados.map((equipo) => (
-                <article key={equipo.id} className="rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
+                <article key={equipo.id} className={claseTarjeta}>
                   <p className="text-sm font-bold text-slate-800">{equipo.nombre}</p>
                   <p className="text-xs text-slate-600">
                     {(equipo.clientes && equipo.clientes.nombre) || 'Cliente no disponible'}
@@ -609,7 +686,7 @@ export function ClientesView({ rolUsuario }) {
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        className="rounded-xl bg-marca-50 px-3 py-2 text-xs font-bold text-marca-700"
+                      className={claseBotonAccion}
                         onClick={() => {
                           setEquipoEditandoId(equipo.id);
                           setEquipoForm({
@@ -626,7 +703,7 @@ export function ClientesView({ rolUsuario }) {
                       </button>
                       <button
                         type="button"
-                        className="rounded-xl bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700"
+                      className={claseBotonPeligro}
                         onClick={() => borrarEquipo(equipo.id)}
                       >
                         Eliminar
@@ -637,8 +714,14 @@ export function ClientesView({ rolUsuario }) {
               ))}
 
             {!cargando && busquedaEquipo.trim() && equiposFiltrados.length === 0 && (
-              <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">
+              <p className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
                 No hay equipos que coincidan con la búsqueda.
+              </p>
+            )}
+
+            {!cargando && !busquedaEquipo.trim() && equipos.length === 0 && (
+              <p className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                No hay equipos registrados todavía. Puedes crear el primero desde el panel lateral.
               </p>
             )}
           </div>
