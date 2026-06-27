@@ -3,7 +3,7 @@ import { CircleAlert, CircleCheckBig, X } from 'lucide-react';
 
 const ESTILOS = {
   exito: {
-    contenedor: 'border-emerald-200/90 bg-white/95 text-emerald-950 shadow-emerald-100/80',
+    contenedor: 'border-emerald-200/90 bg-gradient-to-br from-white via-emerald-50/40 to-white text-emerald-950 shadow-[0_22px_45px_-30px_rgba(52,211,153,0.85)]',
     franja: 'bg-emerald-500',
     badge: 'bg-emerald-100 text-emerald-800',
     icono: CircleCheckBig,
@@ -11,7 +11,7 @@ const ESTILOS = {
     descripcion: 'text-slate-700',
   },
   error: {
-    contenedor: 'border-red-200/90 bg-white/95 text-red-950 shadow-red-100/80',
+    contenedor: 'border-red-200/90 bg-gradient-to-br from-white via-red-50/40 to-white text-red-950 shadow-[0_22px_45px_-30px_rgba(248,113,113,0.8)]',
     franja: 'bg-red-500',
     badge: 'bg-red-100 text-red-800',
     icono: CircleAlert,
@@ -43,7 +43,7 @@ export function ToastEstado({ toast, onClose }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4">
       <div
-        className={`pointer-events-auto relative flex w-full max-w-lg items-start gap-3 overflow-hidden rounded-[1.75rem] border px-4 py-3.5 shadow-2xl ring-1 ring-slate-950/5 backdrop-blur-md ${estilo.contenedor}`}
+        className={`pointer-events-auto relative flex w-full max-w-lg items-start gap-3 overflow-hidden rounded-[1.85rem] border px-4 py-3.5 shadow-2xl ring-1 ring-slate-950/5 backdrop-blur-md ${estilo.contenedor}`}
         role="status"
         aria-live="polite"
       >
@@ -63,7 +63,7 @@ export function ToastEstado({ toast, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full border border-transparent p-1.5 text-slate-500 transition hover:border-slate-200 hover:bg-black/5 hover:text-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200"
+          className="rounded-full border border-transparent bg-white/60 p-1.5 text-slate-500 shadow-sm transition hover:border-slate-200 hover:bg-white hover:text-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200"
           aria-label="Cerrar aviso"
         >
           <X className="h-4 w-4" />
