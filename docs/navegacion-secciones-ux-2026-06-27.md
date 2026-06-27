@@ -92,56 +92,6 @@ Criterio cumplido: reducción >= 70% en tiempo de navegación y corrección sin 
 - `npm run build` completado correctamente.
 - Sin errores de análisis en archivos modificados.
 
-## Instrumentación en runtime
-
-Se añadió telemetría local para medir navegación real en clientes:
-
-- Archivo: `src/services/navegacionMetricasService.js`
-- Eventos registrados:
-  - `navegacion_seccion` (tiempo de salto entre secciones)
-  - `error_validacion` (campo inválido y sección objetivo)
-  - `retorno_rapido` (uso de volver arriba y distancia de scroll evitada)
-
-Integración:
-
-- `src/views/ParteTrabajoView.jsx`
-- `src/views/PartePemView.jsx`
-- `src/App.jsx`
-
-Consulta rápida en consola (modo desarrollo):
-
-```js
-const raw = localStorage.getItem('sat_nav_metrics_v1');
-const metrics = raw ? JSON.parse(raw) : [];
-console.table(metrics.slice(-20));
-```
-
-Resumen agregado disponible con:
-
-```js
-import { obtenerResumenMetricasNavegacion } from './src/services/navegacionMetricasService';
-obtenerResumenMetricasNavegacion();
-```
-
-## Panel interno en Administración
-
-Se añadió un panel visual dentro de Administración para no depender de consola:
-
-- Vista: `src/views/AdminView.jsx`
-- Datos mostrados:
-  - total de registros
-  - total de navegaciones por sección
-  - total de errores de validación
-  - total de retornos rápidos
-  - media de tiempo de salto entre secciones
-  - últimos 15 eventos con detalle y timestamp
-- Filtros disponibles:
-  - por vista (`parte_trabajo`, `parte_pem`, `global`, etc.)
-  - por rango temporal (1h, 24h, 7d, 30d o todo)
-  - por tipo de evento
-- Acciones:
-  - refrescar métricas
-  - limpiar métricas locales
 
 ## Mejoras adicionales implementadas
 
@@ -160,7 +110,6 @@ Se añadió un panel visual dentro de Administración para no depender de consol
 - Se guarda y restaura sección activa + posición de scroll al volver a la vista.
 - Aplica en Parte de Trabajo y Parte PEM.
 
-4. Exportación CSV de métricas UX
+4. Simplificación del panel de Administración
 
-- Se añadió botón `Exportar CSV` en Administración.
-- Exporta los eventos filtrados por vista, rango temporal y tipo.
+- Se retiró la capa de métricas UX para mantener foco en operaciones SAT.

@@ -44,7 +44,6 @@ import {
   resolverDestinoFacturable,
   UBICACION_COTEPA,
 } from '../services/distanciaClienteService';
-import { registrarErrorValidacion, registrarNavegacionSeccion } from '../services/navegacionMetricasService';
 
 function obtenerUbicacionActual() {
   return new Promise((resolve, reject) => {
@@ -452,21 +451,10 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
   const ubicacionCliente = resolverUbicacionCliente(clienteSeleccionado);
 
   function irASeccionFormulario(id) {
-    const inicioMs = performance.now();
-    const anterior = seccionActiva;
     const nodo = document.getElementById(id);
     if (nodo) {
       nodo.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setSeccionActiva(id);
-      window.setTimeout(() => {
-        registrarNavegacionSeccion({
-          vista: 'parte_trabajo',
-          desde: anterior,
-          hacia: id,
-          origen: 'interna',
-          duracionMs: performance.now() - inicioMs,
-        });
-      }, 450);
     }
   }
 
@@ -484,7 +472,6 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
   function manejarErrorValidacion(evento) {
     const campo = evento?.target?.name || evento?.target?.id || '';
     const seccion = resolverSeccionPorCampo(campo);
-    registrarErrorValidacion({ vista: 'parte_trabajo', campo, seccion });
     setSeccionesConErrorManual((prev) => (prev.includes(seccion) ? prev : [...prev, seccion]));
     if (seccionActiva !== seccion) {
       irASeccionFormulario(seccion);

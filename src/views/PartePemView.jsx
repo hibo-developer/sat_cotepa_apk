@@ -12,7 +12,6 @@ import { crearPartePem, obtenerOrdenesAbiertasParaPartePem } from '../services/p
 import { estaOnline } from '../services/offlineSyncService';
 import { abrirGoogleMaps } from '../services/externalNavigationService';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
-import { registrarErrorValidacion, registrarNavegacionSeccion } from '../services/navegacionMetricasService';
 
 async function comprimirImagenA1280(archivo, nombreFinal) {
   if (!archivo) return null;
@@ -171,21 +170,10 @@ export function PartePemView({ rolUsuario, sesion }) {
     !(latCliente === 0 && lngCliente === 0);
 
   function irASeccionFormulario(id) {
-    const inicioMs = performance.now();
-    const anterior = seccionActiva;
     const nodo = document.getElementById(id);
     if (nodo) {
       nodo.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setSeccionActiva(id);
-      window.setTimeout(() => {
-        registrarNavegacionSeccion({
-          vista: 'parte_pem',
-          desde: anterior,
-          hacia: id,
-          origen: 'interna',
-          duracionMs: performance.now() - inicioMs,
-        });
-      }, 450);
     }
   }
 
@@ -206,7 +194,6 @@ export function PartePemView({ rolUsuario, sesion }) {
   function manejarErrorValidacion(evento) {
     const campo = evento?.target?.name || evento?.target?.id || '';
     const seccion = resolverSeccionPorCampo(campo);
-    registrarErrorValidacion({ vista: 'parte_pem', campo, seccion });
     setSeccionesConErrorManual((prev) => (prev.includes(seccion) ? prev : [...prev, seccion]));
     if (seccionActiva !== seccion) {
       irASeccionFormulario(seccion);

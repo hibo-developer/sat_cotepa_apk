@@ -9,7 +9,6 @@ import { useAuthSession } from './hooks/useAuthSession';
 import { precargarCatalogosOffline } from './services/catalogosService';
 import { estaOnline } from './services/offlineSyncService';
 import { obtenerClienteSupabase, tieneConfiguracionSupabase } from './services/supabaseClient';
-import { registrarRetornoRapido } from './services/navegacionMetricasService';
 import logoCotepa from './assets/cotepa.jpg';
 import { AdminView } from './views/AdminView';
 import { AccesoView } from './views/AccesoView';
@@ -250,14 +249,7 @@ export default function App() {
   }
 
   function volverArriba() {
-    const origen = window.scrollY;
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    registrarRetornoRapido({
-      vista: vistaActiva,
-      accion: 'volver_arriba',
-      scrollOrigen: origen,
-      scrollDestino: 0,
-    });
   }
 
   const navItemsVisibles = NAV_ITEMS.filter((item) => {
