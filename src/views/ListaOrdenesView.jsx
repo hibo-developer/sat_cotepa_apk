@@ -2470,12 +2470,40 @@ export function ListaOrdenesView({ rolUsuario }) {
 
   if (cargando) {
     return (
-      <section className="rounded-[1.35rem] border border-sat-border-soft bg-gradient-to-br from-white to-sat-surface p-5 shadow-sm">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sat-subtle">Órdenes</p>
-        <p className="mt-2 text-base font-black tracking-tight text-sat-text">Cargando listado operativo...</p>
-        <p className="mt-1 text-sm leading-6 text-sat-muted">
-          Estamos recuperando las órdenes y preparando el panel con los filtros actuales.
-        </p>
+      <section className="overflow-hidden rounded-[1.4rem] border border-sat-border-soft bg-gradient-to-br from-white via-sat-surface to-marca-50/40 shadow-sm">
+        <div className="h-1.5 w-full bg-gradient-to-r from-marca-500 via-marca-600 to-cotepa-rojo-500" />
+        <div className="p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sat-subtle">Órdenes</p>
+              <p className="mt-2 text-base font-black tracking-tight text-sat-text">Cargando listado operativo...</p>
+              <p className="mt-1 text-sm leading-6 text-sat-muted">
+                Estamos recuperando las órdenes y preparando el panel con los filtros actuales.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-marca-100 bg-white px-3 py-1.5 text-[11px] font-bold text-marca-700 shadow-sm">
+              <Rocket className="h-3.5 w-3.5" />
+              Sincronizando panel
+            </span>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-[1.1rem] border border-sat-border-soft bg-white/80 p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sat-faint">Datos</p>
+              <p className="mt-2 text-sm font-black text-sat-text">Recuperando órdenes</p>
+              <p className="mt-1 text-xs font-medium text-sat-muted">Clientes, estados y métricas del listado.</p>
+            </div>
+            <div className="rounded-[1.1rem] border border-sat-border-soft bg-white/80 p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sat-faint">Vista</p>
+              <p className="mt-2 text-sm font-black text-sat-text">Preparando filtros</p>
+              <p className="mt-1 text-xs font-medium text-sat-muted">Se conservarán los criterios activos de análisis.</p>
+            </div>
+            <div className="rounded-[1.1rem] border border-sat-border-soft bg-white/80 p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sat-faint">Estado</p>
+              <p className="mt-2 text-sm font-black text-sat-text">Panel en proceso</p>
+              <p className="mt-1 text-xs font-medium text-sat-muted">La información aparecerá en cuanto termine la carga.</p>
+            </div>
+          </div>
+        </div>
       </section>
     );
   }
@@ -2491,70 +2519,116 @@ export function ListaOrdenesView({ rolUsuario }) {
       />
 
       {error && (
-        <div className="rounded-[1.2rem] border border-red-200 bg-gradient-to-r from-red-50 to-white p-4 text-sm text-red-700 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">Incidencia</p>
-          <p className="mt-2 text-sm font-black tracking-tight text-red-800">No se pudo cargar el panel de órdenes</p>
-          <p className="mt-1 font-semibold">{error}</p>
+        <div className="rounded-[1.25rem] border border-red-200 bg-gradient-to-r from-red-50 via-white to-red-50/70 p-4 text-sm text-red-700 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-red-200 bg-white text-red-500 shadow-sm">
+              <TriangleAlert className="h-4.5 w-4.5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">Incidencia</p>
+              <p className="mt-2 text-sm font-black tracking-tight text-red-800">No se pudo cargar el panel de órdenes</p>
+              <p className="mt-1 font-semibold">{error}</p>
+              <p className="mt-2 text-xs font-medium text-red-600/90">
+                Revisa conexión, permisos del usuario o vuelve a intentarlo tras refrescar la vista.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
-      <header className="rounded-2xl bg-marca-900 p-4 text-white shadow-lg lg:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h2 className="text-lg font-bold">Órdenes de Trabajo</h2>
-            <p className="mt-1 text-sm text-slate-200">
+      <header className="overflow-hidden rounded-[1.7rem] bg-marca-900 text-white shadow-lg">
+        <div className="h-1.5 w-full bg-gradient-to-r from-marca-400 via-white/80 to-cotepa-rojo-500" />
+        <div className="p-4 lg:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-100 shadow-sm">
+              <Rocket className="h-3.5 w-3.5" />
+              Centro operativo SAT
+            </span>
+            <h2 className="mt-3 text-lg font-black tracking-tight sm:text-[1.35rem]">Órdenes de Trabajo</h2>
+            <p className="mt-1 max-w-2xl text-sm text-slate-200">
               Consulta, crea y actualiza el estado de cada avería desde el móvil.
             </p>
           </div>
+          <div className="grid min-w-[220px] gap-2 sm:grid-cols-2">
+            <div className="rounded-[1.15rem] border border-white/15 bg-white/10 px-3 py-3 text-left shadow-sm backdrop-blur-sm">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">Cliente activo</p>
+              <p className="mt-1 text-sm font-black text-white">{nombreClienteAnalisis}</p>
+              <p className="mt-1 text-[11px] font-medium text-slate-300">Ámbito actual de análisis del listado</p>
+            </div>
+            <div className="rounded-[1.15rem] border border-white/15 bg-white/10 px-3 py-3 text-left shadow-sm backdrop-blur-sm">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">Visibles</p>
+              <p className="mt-1 text-sm font-black text-white">{totalOrdenesFiltradas}</p>
+              <p className="mt-1 text-[11px] font-medium text-slate-300">Órdenes tras aplicar filtros y búsqueda</p>
+            </div>
+          </div>
         </div>
 
-        <div className={`mt-4 grid gap-2 ${esTecnico ? 'grid-cols-2' : 'grid-cols-3'}`}>
-          <article className="rounded-xl border border-white/20 bg-white/10 p-3">
+        <div className={`mt-4 grid gap-2.5 ${esTecnico ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'}`}>
+          <article className="rounded-[1.2rem] border border-white/18 bg-gradient-to-br from-white/16 to-white/8 p-3.5 shadow-sm backdrop-blur-sm">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">Informes PDF</p>
               <Download className="h-4 w-4 text-white" />
             </div>
-            <p className="mt-2 text-xl font-extrabold text-white">{informesDisponibles}</p>
+            <p className="mt-2 text-2xl font-extrabold text-white">{informesDisponibles}</p>
             <p className="text-xs text-slate-200">listos para incluir en ZIP</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-bold text-slate-100">
+                Descarga agrupada
+              </span>
+              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-bold text-slate-100">
+                Exportación rápida
+              </span>
+            </div>
             <button
               type="button"
               onClick={exportarInformesZip}
               disabled={exportandoZip}
-              className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-white px-3 py-2 text-xs font-bold text-marca-900 disabled:opacity-60"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-white px-3 py-2.5 text-xs font-black text-marca-900 shadow-sm transition hover:-translate-y-0.5 disabled:opacity-60"
             >
               {exportandoZip ? 'Generando ZIP...' : 'Descargar ZIP de informes'}
             </button>
           </article>
 
           {!esTecnico && (
-            <article className="rounded-xl border border-white/20 bg-white/10 p-3">
+            <article className="rounded-[1.2rem] border border-white/18 bg-gradient-to-br from-white/16 to-white/8 p-3.5 shadow-sm backdrop-blur-sm">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">KPI</p>
                 <BarChart3 className="h-4 w-4 text-white" />
               </div>
-              <p className="mt-2 text-xl font-extrabold text-white">{ordenesFinalizadas.length}</p>
+              <p className="mt-2 text-2xl font-extrabold text-white">{ordenesFinalizadas.length}</p>
               <p className="text-xs text-slate-200">órdenes finalizadas analizadas</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-bold text-slate-100">
+                  Seguimiento operativo
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={exportarKpisExcel}
-                className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-white px-3 py-2 text-xs font-bold text-marca-900"
+                className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-white px-3 py-2.5 text-xs font-black text-marca-900 shadow-sm transition hover:-translate-y-0.5"
               >
                 Descargar KPI Excel
               </button>
             </article>
           )}
 
-          <article className="rounded-xl border border-white/20 bg-white/10 p-3">
+          <article className="rounded-[1.2rem] border border-white/18 bg-gradient-to-br from-white/16 to-white/8 p-3.5 shadow-sm backdrop-blur-sm">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">Órdenes</p>
               <Download className="h-4 w-4 text-white" />
             </div>
-            <p className="mt-2 text-xl font-extrabold text-white">{ordenes.length}</p>
+            <p className="mt-2 text-2xl font-extrabold text-white">{ordenes.length}</p>
             <p className="text-xs text-slate-200">registros totales exportables</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-bold text-slate-100">
+                Descarga administrativa
+              </span>
+            </div>
             <button
               type="button"
               onClick={exportarOrdenesExcel}
-              className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-white px-3 py-2 text-xs font-bold text-marca-900"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-white px-3 py-2.5 text-xs font-black text-marca-900 shadow-sm transition hover:-translate-y-0.5"
             >
               Descargar Excel de órdenes
             </button>
@@ -2628,93 +2702,222 @@ export function ListaOrdenesView({ rolUsuario }) {
             </label>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100">
-              Cliente: {nombreClienteAnalisis}
-            </span>
-            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100">
-              Tipo: {filtroTipoOrden === 'todos' ? 'Todas' : filtroTipoOrden.replaceAll('_', ' ')}
-            </span>
-            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100">
-              Estado: {filtroEstado}
-            </span>
-            {terminoBusqueda && (
-              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100">
-                Búsqueda: {busquedaOrdenes.trim()}
+          <div className="mt-3 rounded-[1.15rem] border border-white/12 bg-white/8 p-3 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">Filtros activos</p>
+                <p className="mt-1 text-xs font-medium text-slate-300">
+                  Resumen rápido del contexto aplicado al listado actual.
+                </p>
+              </div>
+              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-200">
+                {totalOrdenesFiltradas} visibles
               </span>
-            )}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100 shadow-sm">
+                <UserRound className="h-3.5 w-3.5 text-slate-200" />
+                <span className="text-slate-300">Cliente</span>
+                <span className="font-black text-white">{nombreClienteAnalisis}</span>
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100 shadow-sm">
+                <Wrench className="h-3.5 w-3.5 text-slate-200" />
+                <span className="text-slate-300">Tipo</span>
+                <span className="font-black text-white">{filtroTipoOrden === 'todos' ? 'Todas' : filtroTipoOrden.replaceAll('_', ' ')}</span>
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100 shadow-sm">
+                <Flag className="h-3.5 w-3.5 text-slate-200" />
+                <span className="text-slate-300">Estado</span>
+                <span className="font-black text-white">{filtroEstado}</span>
+              </span>
+              {terminoBusqueda && (
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100 shadow-sm">
+                  <Search className="h-3.5 w-3.5 text-slate-200" />
+                  <span className="text-slate-300">Búsqueda</span>
+                  <span className="font-black text-white">{busquedaOrdenes.trim()}</span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
         {!esTecnico && (
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-bold lg:grid-cols-4">
-            <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">MTTR</p>
-              <p className="mt-2 text-lg font-black text-white">{mttrMinutos} min</p>
-              <p className="mt-1 text-[11px] font-medium text-slate-300">Tiempo medio de resolución</p>
+          <div className="mt-3 rounded-[1.2rem] border border-white/12 bg-white/8 p-3 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">Indicadores KPI</p>
+                <p className="mt-1 text-xs font-medium text-slate-300">
+                  Valores calculados sobre el conjunto actual para seguimiento operativo y administrativo.
+                </p>
+              </div>
+              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-200">
+                Datos del filtro actual
+              </span>
             </div>
-            <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">SLA 48h</p>
-              <p className="mt-2 text-lg font-black text-white">{cumplimientoSla48h}%</p>
-              <p className="mt-1 text-[11px] font-medium text-slate-300">Finalizadas dentro de objetivo</p>
-            </div>
-            <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">FTF proxy</p>
-              <p className="mt-2 text-lg font-black text-white">{firstTimeFixProxy}%</p>
-              <p className="mt-1 text-[11px] font-medium text-slate-300">Órdenes cerradas en el ciclo actual</p>
-            </div>
-            <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">Coste mat.</p>
-              <p className="mt-2 text-lg font-black text-white">{costeTotalMateriales} €</p>
-              <p className="mt-1 text-[11px] font-medium text-slate-300">Acumulado del conjunto filtrado</p>
+            <div className="mt-3 grid grid-cols-1 gap-2 text-xs font-bold sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-[1.15rem] border border-white/12 bg-gradient-to-br from-white/16 to-white/8 p-3.5 text-left shadow-sm backdrop-blur-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">MTTR</p>
+                    <p className="mt-2 text-xl font-black text-white">{mttrMinutos} min</p>
+                  </div>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white shadow-sm">
+                    <Clock3 className="h-4.5 w-4.5" />
+                  </span>
+                </div>
+                <p className="mt-2 text-[11px] font-medium leading-5 text-slate-300">Tiempo medio de resolución</p>
+                <span className="mt-3 inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-200">
+                  Servicio cerrado
+                </span>
+              </div>
+              <div className="rounded-[1.15rem] border border-white/12 bg-gradient-to-br from-white/16 to-white/8 p-3.5 text-left shadow-sm backdrop-blur-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">SLA 48h</p>
+                    <p className="mt-2 text-xl font-black text-white">{cumplimientoSla48h}%</p>
+                  </div>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white shadow-sm">
+                    <CalendarClock className="h-4.5 w-4.5" />
+                  </span>
+                </div>
+                <p className="mt-2 text-[11px] font-medium leading-5 text-slate-300">Finalizadas dentro de objetivo</p>
+                <span className="mt-3 inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-200">
+                  Cumplimiento
+                </span>
+              </div>
+              <div className="rounded-[1.15rem] border border-white/12 bg-gradient-to-br from-white/16 to-white/8 p-3.5 text-left shadow-sm backdrop-blur-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">FTF proxy</p>
+                    <p className="mt-2 text-xl font-black text-white">{firstTimeFixProxy}%</p>
+                  </div>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white shadow-sm">
+                    <BarChart3 className="h-4.5 w-4.5" />
+                  </span>
+                </div>
+                <p className="mt-2 text-[11px] font-medium leading-5 text-slate-300">Órdenes cerradas en el ciclo actual</p>
+                <span className="mt-3 inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-200">
+                  Eficiencia
+                </span>
+              </div>
+              <div className="rounded-[1.15rem] border border-white/12 bg-gradient-to-br from-white/16 to-white/8 p-3.5 text-left shadow-sm backdrop-blur-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">Coste mat.</p>
+                    <p className="mt-2 text-xl font-black text-white">{costeTotalMateriales} €</p>
+                  </div>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white shadow-sm">
+                    <Download className="h-4.5 w-4.5" />
+                  </span>
+                </div>
+                <p className="mt-2 text-[11px] font-medium leading-5 text-slate-300">Acumulado del conjunto filtrado</p>
+                <span className="mt-3 inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-200">
+                  Coste agregado
+                </span>
+              </div>
             </div>
           </div>
         )}
 
-        <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold sm:grid-cols-4">
-          <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">Pendientes</p>
-            <p className="mt-2 text-lg font-black text-white">{resumenAnalisis.Pendiente}</p>
-            <p className="mt-1 text-[11px] font-medium text-slate-300">A la espera de atención</p>
+        <div className="mt-4 rounded-[1.2rem] border border-white/12 bg-white/8 p-3 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">Resumen de estados</p>
+              <p className="mt-1 text-xs font-medium text-slate-300">
+                Distribución actual de órdenes por situación dentro del ámbito de análisis seleccionado.
+              </p>
+            </div>
+            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-200">
+              Total: {totalOrdenesFiltradas}
+            </span>
           </div>
-          <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">En Proceso</p>
-            <p className="mt-2 text-lg font-black text-white">{resumenAnalisis['En Proceso']}</p>
-            <p className="mt-1 text-[11px] font-medium text-slate-300">Trabajos actualmente activos</p>
-          </div>
-          <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">Pausadas</p>
-            <p className="mt-2 text-lg font-black text-white">{resumenAnalisis.Pausado}</p>
-            <p className="mt-1 text-[11px] font-medium text-slate-300">Pendientes de reanudación</p>
-          </div>
-          <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">Finalizadas</p>
-            <p className="mt-2 text-lg font-black text-white">{resumenAnalisis.Finalizado}</p>
-            <p className="mt-1 text-[11px] font-medium text-slate-300">Cerradas en el conjunto filtrado</p>
+          <div className="mt-3 grid grid-cols-1 gap-2 text-xs font-bold sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-[1.15rem] border border-amber-200/25 bg-gradient-to-br from-amber-400/10 to-white/8 p-3.5 text-left shadow-sm backdrop-blur-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-amber-100">Pendientes</p>
+                  <p className="mt-2 text-xl font-black text-white">{resumenAnalisis.Pendiente}</p>
+                </div>
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-200/30 bg-amber-300/15 text-amber-100 shadow-sm">
+                  <Clock3 className="h-4.5 w-4.5" />
+                </span>
+              </div>
+              <p className="mt-2 text-[11px] font-medium leading-5 text-slate-300">A la espera de atención</p>
+            </div>
+            <div className="rounded-[1.15rem] border border-sky-200/25 bg-gradient-to-br from-sky-400/10 to-white/8 p-3.5 text-left shadow-sm backdrop-blur-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-sky-100">En Proceso</p>
+                  <p className="mt-2 text-xl font-black text-white">{resumenAnalisis['En Proceso']}</p>
+                </div>
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-sky-200/30 bg-sky-300/15 text-sky-100 shadow-sm">
+                  <Hammer className="h-4.5 w-4.5" />
+                </span>
+              </div>
+              <p className="mt-2 text-[11px] font-medium leading-5 text-slate-300">Trabajos actualmente activos</p>
+            </div>
+            <div className="rounded-[1.15rem] border border-orange-200/25 bg-gradient-to-br from-orange-400/10 to-white/8 p-3.5 text-left shadow-sm backdrop-blur-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-orange-100">Pausadas</p>
+                  <p className="mt-2 text-xl font-black text-white">{resumenAnalisis.Pausado}</p>
+                </div>
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-orange-200/30 bg-orange-300/15 text-orange-100 shadow-sm">
+                  <TriangleAlert className="h-4.5 w-4.5" />
+                </span>
+              </div>
+              <p className="mt-2 text-[11px] font-medium leading-5 text-slate-300">Pendientes de reanudación</p>
+            </div>
+            <div className="rounded-[1.15rem] border border-emerald-200/25 bg-gradient-to-br from-emerald-400/10 to-white/8 p-3.5 text-left shadow-sm backdrop-blur-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-100">Finalizadas</p>
+                  <p className="mt-2 text-xl font-black text-white">{resumenAnalisis.Finalizado}</p>
+                </div>
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-200/30 bg-emerald-300/15 text-emerald-100 shadow-sm">
+                  <CircleCheckBig className="h-4.5 w-4.5" />
+                </span>
+              </div>
+              <p className="mt-2 text-[11px] font-medium leading-5 text-slate-300">Cerradas en el conjunto filtrado</p>
+            </div>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 rounded-[1.15rem] border border-white/12 bg-white/8 p-3 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">Estados del panel</p>
+              <p className="mt-1 text-xs font-medium text-slate-300">
+                Cambia de vista rápida y compara el volumen de órdenes por situación.
+              </p>
+            </div>
+            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-200">
+              Filtro actual: {filtroEstado}
+            </span>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
           {FILTROS_ESTADO.map((filtro) => (
             <button
               key={filtro}
               type="button"
               onClick={() => setFiltroEstado(filtro)}
-              className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition ${
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold shadow-sm transition ${
                 filtroEstado === filtro
-                  ? 'border-cotepa-rojo-500 bg-cotepa-rojo-500 text-white shadow-md'
+                  ? 'border-cotepa-rojo-400 bg-white text-cotepa-rojo-600 shadow-md'
                   : 'border-white/10 bg-white/10 text-white hover:border-white/20 hover:bg-white/15'
               }`}
             >
               {filtro}
               <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
-                filtroEstado === filtro ? 'bg-white/15 text-white' : 'bg-white/10 text-slate-200'
+                filtroEstado === filtro ? 'bg-cotepa-rojo-50 text-cotepa-rojo-700' : 'bg-white/10 text-slate-200'
               }`}
               >
                 {contadoresEstado[filtro] ?? 0}
               </span>
             </button>
           ))}
+          </div>
+        </div>
         </div>
       </header>
 
@@ -2750,7 +2953,7 @@ export function ListaOrdenesView({ rolUsuario }) {
           ))}
 
           {totalPaginas > 1 && (
-            <div className="toolbar-panel rounded-[1.2rem] px-3 py-3 text-sm shadow-sm">
+            <div className="toolbar-panel rounded-[1.25rem] px-3 py-3 text-sm shadow-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sat-faint">Navegación de páginas</p>
@@ -2761,13 +2964,16 @@ export function ListaOrdenesView({ rolUsuario }) {
                     Página {paginaSegura} de {totalPaginas}
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5 self-start sm:self-auto">
-                  <span className="inline-flex items-center rounded-full border border-sat-border bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted shadow-sm">
+                <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+                  <span className="inline-flex items-center rounded-full border border-marca-100 bg-marca-50 px-2.5 py-1 text-[11px] font-bold text-marca-700 shadow-sm">
                     {paginaSegura}/{totalPaginas}
+                  </span>
+                  <span className="inline-flex items-center rounded-full border border-sat-border bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted shadow-sm">
+                    {totalOrdenesFiltradas} visibles
                   </span>
                 </div>
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-1.5 rounded-[1rem] border border-sat-border-soft bg-white/80 p-2">
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 rounded-[1rem] border border-sat-border-soft bg-white/90 p-2 shadow-inner shadow-slate-100/70">
                 <button
                   type="button"
                   disabled={paginaSegura === 1}
