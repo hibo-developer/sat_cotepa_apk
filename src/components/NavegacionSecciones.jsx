@@ -20,8 +20,21 @@ export function NavegacionSecciones({
   return (
     <nav
       aria-label="Navegacion por secciones"
-      className={`w-full max-w-full overflow-hidden rounded-2xl border border-marca-100 bg-white/95 p-2 shadow-md md:sticky md:top-[calc(0.5rem+env(safe-area-inset-top))] md:z-30 md:backdrop-blur ${className}`}
+      className={`w-full max-w-full overflow-hidden rounded-[1.6rem] border border-white/70 bg-white/92 p-3 shadow-hero backdrop-blur-xl md:sticky md:top-[calc(0.5rem+env(safe-area-inset-top))] md:z-30 ${className}`}
     >
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="metric-label">Navegacion guiada</p>
+          <p className="mt-1 text-sm font-black tracking-tight text-sat-text">
+            {secciones.find((seccion) => seccion.id === seccionActiva)?.label || secciones[0]?.label}
+          </p>
+        </div>
+        {resumenProgreso && (
+          <div className="surface-panel px-3 py-2 text-[11px] font-semibold text-sat-muted">
+            {`Sección ${resumenProgreso.indiceActual} de ${resumenProgreso.totalSecciones} · ${resumenProgreso.porcentaje}% completado`}
+          </div>
+        )}
+      </div>
       <ul className="flex gap-2 overflow-x-auto pb-1">
         {secciones.map((seccion) => {
           const activa = seccionActiva === seccion.id;
@@ -30,9 +43,9 @@ export function NavegacionSecciones({
               <button
                 type="button"
                 onClick={() => onIrSeccion(seccion.id)}
-                className={`whitespace-nowrap rounded-xl border px-2 py-1.5 text-[11px] font-bold transition sm:px-3 sm:py-2 sm:text-xs ${
+                className={`whitespace-nowrap rounded-2xl border px-2.5 py-2 text-[11px] font-bold transition sm:px-3.5 sm:py-2.5 sm:text-xs ${
                   activa
-                    ? 'border-cotepa-rojo-500 bg-cotepa-rojo-500 text-white shadow'
+                    ? 'border-cotepa-rojo-500 bg-gradient-to-br from-cotepa-rojo-500 to-cotepa-rojo-600 text-white shadow-lift'
                     : conError.has(seccion.id)
                       ? 'border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100'
                       : completadas.has(seccion.id)
@@ -49,17 +62,12 @@ export function NavegacionSecciones({
           );
         })}
       </ul>
-      <p className="hidden px-1 pt-1 text-[11px] text-sat-subtle sm:block">
+      <p className="hidden px-1 pt-2 text-[11px] text-sat-subtle sm:block">
         Seccion actual:{' '}
         <span className="font-semibold text-sat-muted">
           {secciones.find((seccion) => seccion.id === seccionActiva)?.label || secciones[0]?.label}
         </span>
       </p>
-      {resumenProgreso && (
-        <p className="px-1 pt-1 text-[11px] text-sat-muted">
-          {`Sección ${resumenProgreso.indiceActual} de ${resumenProgreso.totalSecciones} · ${resumenProgreso.porcentaje}% completado`}
-        </p>
-      )}
     </nav>
   );
 }
@@ -80,7 +88,7 @@ export function ControlesFlujoSecciones({
         type="button"
         onClick={() => anterior && onIrSeccion(anterior.id)}
         disabled={!anterior}
-        className="inline-flex items-center gap-1 rounded-xl border border-marca-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-marca-700 disabled:opacity-50 sm:px-3 sm:py-2 sm:text-xs"
+        className="btn-secondary px-2.5 py-1.5 text-[11px] disabled:opacity-50 sm:px-3 sm:py-2 sm:text-xs"
       >
         <ChevronLeft className="h-4 w-4" />
         Seccion anterior
@@ -89,7 +97,7 @@ export function ControlesFlujoSecciones({
         type="button"
         onClick={() => siguiente && onIrSeccion(siguiente.id)}
         disabled={!siguiente}
-        className="inline-flex items-center gap-1 rounded-xl border border-marca-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-marca-700 disabled:opacity-50 sm:px-3 sm:py-2 sm:text-xs"
+        className="btn-secondary px-2.5 py-1.5 text-[11px] disabled:opacity-50 sm:px-3 sm:py-2 sm:text-xs"
       >
         Siguiente seccion
         <ChevronRight className="h-4 w-4" />

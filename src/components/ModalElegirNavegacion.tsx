@@ -41,36 +41,39 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-900/50 px-4 py-6 sm:items-center"
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-navegacion-titulo"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl"
+        className="w-full max-w-lg overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/95 shadow-hero backdrop-blur-xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p id="modal-navegacion-titulo" className="text-lg font-bold text-sat-text">
-              Elegir navegación
-            </p>
-            <p className="mt-1 text-sm text-sat-muted">
-              Selecciona la app que quieres usar para ir al cliente.
-            </p>
+        <div className="border-b border-sat-border-soft px-5 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <span className="chip-soft">Navegación externa</span>
+              <p id="modal-navegacion-titulo" className="mt-3 text-xl font-black tracking-tight text-sat-text">
+                Elegir navegación
+              </p>
+              <p className="mt-1 text-sm leading-6 text-sat-muted">
+                Selecciona la app que quieres usar para ir al cliente con el acceso más directo.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="modal-close"
+              aria-label="Cerrar modal"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full p-2 text-sat-subtle transition hover:bg-sat-surface-alt hover:text-sat-muted"
-            aria-label="Cerrar modal"
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
 
-        <div className="mt-4 space-y-2">
+        <div className="space-y-3 px-5 py-5">
           {appsDisponibles.map((app) => {
             const meta = APP_META[app];
             const Icono = meta.Icono;
@@ -80,26 +83,39 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
                 key={app}
                 type="button"
                 onClick={() => onSelect(app, recordar)}
-                className="flex w-full items-center gap-3 rounded-2xl border border-sat-border-soft px-4 py-3 text-left transition hover:border-marca-300 hover:bg-marca-50"
+                className="flex w-full items-center gap-3 rounded-[1.3rem] border border-sat-border-soft bg-white/80 px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-marca-300 hover:bg-marca-50 hover:shadow-suave"
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sat-surface-alt text-sat-muted">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-sat-surface-alt text-sat-muted shadow-sm">
                   <Icono className="h-5 w-5" />
                 </span>
-                <span className="text-sm font-semibold text-sat-text">{meta.nombre}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-black tracking-tight text-sat-text">{meta.nombre}</span>
+                  <span className="mt-0.5 block text-xs text-sat-subtle">
+                    Abrir destino con esta aplicación
+                  </span>
+                </span>
               </button>
             );
           })}
-        </div>
+          {appsDisponibles.length === 0 && (
+            <p className="status-banner-warning text-xs">
+              No hay aplicaciones compatibles detectadas en este dispositivo.
+            </p>
+          )}
 
-        <label className="mt-4 flex items-center gap-3 rounded-2xl border border-sat-border-soft bg-sat-surface px-4 py-3 text-sm text-sat-muted">
-          <input
-            type="checkbox"
-            checked={recordar}
-            onChange={(event) => setRecordar(event.target.checked)}
-            className="h-4 w-4 rounded border-sat-border"
-          />
-          Recordar mi elección
-        </label>
+          <label className="surface-panel flex items-center gap-3 px-4 py-3 text-sm text-sat-muted">
+            <input
+              type="checkbox"
+              checked={recordar}
+              onChange={(event) => setRecordar(event.target.checked)}
+              className="h-4 w-4 rounded border-sat-border"
+            />
+            <span>
+              <span className="block font-semibold text-sat-text">Recordar mi elección</span>
+              <span className="block text-xs text-sat-subtle">La próxima vez se abrirá directamente la app elegida.</span>
+            </span>
+          </label>
+        </div>
       </div>
     </div>
   );
