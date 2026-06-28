@@ -21,17 +21,17 @@ export function NavegacionSecciones({
   return (
     <nav
       aria-label="Navegacion por secciones"
-      className={`w-full max-w-full overflow-hidden rounded-[1.75rem] border border-marca-100/90 bg-white/95 p-3.5 shadow-xl shadow-slate-200/60 ring-1 ring-black/5 md:sticky md:top-[calc(0.5rem+env(safe-area-inset-top))] md:z-30 md:backdrop-blur ${className}`}
+      className={`w-full max-w-full overflow-hidden rounded-[1.85rem] border border-marca-100/90 bg-gradient-to-br from-white via-white to-marca-50/50 p-3.5 shadow-[0_24px_55px_-34px_rgba(15,23,42,0.35)] ring-1 ring-black/5 md:sticky md:top-[calc(0.5rem+env(safe-area-inset-top))] md:z-30 md:backdrop-blur ${className}`}
     >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-marca-600">Navegación</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-marca-600">Navegación</p>
           <p className="mt-1 text-sm font-bold leading-5 text-slate-800">
             {seccionActual?.label || 'Sección actual'}
           </p>
         </div>
         {resumenProgreso && (
-          <span className="shrink-0 rounded-full border border-marca-100 bg-marca-50/90 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-marca-700 shadow-sm">
+          <span className="shrink-0 rounded-full border border-marca-100/90 bg-white/85 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-marca-700 shadow-sm ring-1 ring-white/80">
             {`${resumenProgreso.porcentaje}%`}
           </span>
         )}
@@ -44,20 +44,20 @@ export function NavegacionSecciones({
               <button
                 type="button"
                 onClick={() => onIrSeccion(seccion.id)}
-                className={`whitespace-nowrap rounded-2xl border px-3 py-2 text-[11px] font-bold transition duration-200 focus:outline-none focus:ring-4 focus:ring-marca-100 sm:px-3.5 sm:text-xs ${
+                className={`whitespace-nowrap rounded-[1.1rem] border px-3 py-2 text-[11px] font-bold shadow-sm transition duration-200 focus:outline-none focus:ring-4 focus:ring-marca-100 sm:px-3.5 sm:text-xs ${
                   activa
                     ? 'border-cotepa-rojo-400/90 bg-gradient-to-b from-cotepa-rojo-500 to-cotepa-rojo-600 text-white shadow-lg shadow-red-200/80'
                     : conError.has(seccion.id)
-                      ? 'border-rose-200 bg-rose-50/90 text-rose-800 hover:bg-rose-100'
+                      ? 'border-rose-200/90 bg-rose-50/95 text-rose-800 hover:border-rose-300 hover:bg-rose-100'
                       : completadas.has(seccion.id)
-                        ? 'border-emerald-200 bg-emerald-50/90 text-emerald-800 hover:bg-emerald-100'
-                        : 'border-transparent bg-marca-50/90 text-marca-700 hover:border-marca-100 hover:bg-marca-100'
+                        ? 'border-emerald-200/90 bg-emerald-50/95 text-emerald-800 hover:border-emerald-300 hover:bg-emerald-100'
+                        : 'border-transparent bg-white/75 text-marca-700 hover:border-marca-100 hover:bg-marca-50/95'
                 }`}
                 aria-current={activa ? 'page' : undefined}
               >
                 {seccion.shortLabel || seccion.label}
-                {conError.has(seccion.id) && <span className="ml-1 rounded-full bg-white/70 px-1.5 py-0.5 text-[10px]">!</span>}
-                {!conError.has(seccion.id) && completadas.has(seccion.id) && <span className="ml-1 rounded-full bg-white/70 px-1.5 py-0.5 text-[10px]">OK</span>}
+                {conError.has(seccion.id) && <span className="ml-1 rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] shadow-sm">!</span>}
+                {!conError.has(seccion.id) && completadas.has(seccion.id) && <span className="ml-1 rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] shadow-sm">OK</span>}
               </button>
             </li>
           );
@@ -94,7 +94,7 @@ export function ControlesFlujoSecciones({
         type="button"
         onClick={() => anterior && onIrSeccion(anterior.id)}
         disabled={!anterior}
-        className="inline-flex items-center gap-1.5 rounded-2xl border border-marca-200/90 bg-white px-3.5 py-2.5 text-[11px] font-semibold text-marca-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-marca-50 focus:outline-none focus:ring-4 focus:ring-marca-100 disabled:opacity-50 sm:text-xs"
+        className="inline-flex items-center gap-1.5 rounded-2xl border border-marca-200/90 bg-white/95 px-3.5 py-2.5 text-[11px] font-semibold text-marca-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-marca-300 hover:bg-marca-50 focus:outline-none focus:ring-4 focus:ring-marca-100 disabled:opacity-50 sm:text-xs"
       >
         <ChevronLeft className="h-4 w-4" />
         Seccion anterior
@@ -103,7 +103,7 @@ export function ControlesFlujoSecciones({
         type="button"
         onClick={() => siguiente && onIrSeccion(siguiente.id)}
         disabled={!siguiente}
-        className="inline-flex items-center gap-1.5 rounded-2xl border border-marca-200/90 bg-white px-3.5 py-2.5 text-[11px] font-semibold text-marca-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-marca-50 focus:outline-none focus:ring-4 focus:ring-marca-100 disabled:opacity-50 sm:text-xs"
+        className="inline-flex items-center gap-1.5 rounded-2xl border border-marca-200/90 bg-white/95 px-3.5 py-2.5 text-[11px] font-semibold text-marca-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-marca-300 hover:bg-marca-50 focus:outline-none focus:ring-4 focus:ring-marca-100 disabled:opacity-50 sm:text-xs"
       >
         Siguiente seccion
         <ChevronRight className="h-4 w-4" />
