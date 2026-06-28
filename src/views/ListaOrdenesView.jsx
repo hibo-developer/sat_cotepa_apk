@@ -1778,105 +1778,145 @@ function TarjetaOrden({
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sat-subtle">Acciones operativas</p>
                 <p className="mt-1 text-sm font-black tracking-tight text-sat-text">Gestiona la orden directamente desde el listado</p>
+                <p className="mt-1 text-xs leading-5 text-sat-muted">
+                  Revisa, continua el parte o completa el cierre desde un unico bloque.
+                </p>
               </div>
               <span className="inline-flex items-center rounded-full border border-sat-border-soft bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted">
                 {identificadorOrden}
               </span>
             </div>
-            <div className={`grid gap-2 ${puedeEditarOrden ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
+
+            <div className={`grid gap-2 ${puedeEditarOrden ? 'grid-cols-1 xl:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
               {puedeEditarOrden && (
+                <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-sm">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sat-subtle">Edicion</p>
+                  <p className="mt-1 text-sm font-bold text-sat-text">Ajusta tecnico, estado o prioridad</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMostrarEdicion((previo) => !previo);
+                      setMensajeEdicion('');
+                    }}
+                    className="btn-secondary mt-3 w-full rounded-2xl px-4 py-3 text-sm"
+                  >
+                    {mostrarEdicion ? 'Cancelar edición' : 'Editar orden'}
+                  </button>
+                </div>
+              )}
+
+              <div className="rounded-2xl border border-marca-100 bg-marca-50/70 p-3 shadow-sm">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-marca-600">Seguimiento</p>
+                <p className="mt-1 text-sm font-bold text-sat-text">Abre el parte asociado y continua el trabajo</p>
                 <button
                   type="button"
-                  onClick={() => {
-                    setMostrarEdicion((previo) => !previo);
-                    setMensajeEdicion('');
-                  }}
-                  className="btn-secondary w-full rounded-2xl px-4 py-3 text-sm"
+                  onClick={() => onIrAParte(orden)}
+                  className="btn-secondary mt-3 w-full rounded-2xl border-marca-300 bg-white px-4 py-3 text-sm text-marca-800"
                 >
-                  {mostrarEdicion ? 'Cancelar edición' : 'Editar orden'}
+                  Ir a parte
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={() => onIrAParte(orden)}
-                className="btn-secondary w-full rounded-2xl border-marca-300 bg-marca-50 px-4 py-3 text-sm text-marca-800"
-              >
-                Ir a parte
-              </button>
-              <button
-                type="button"
-                onClick={() => onIrAParte(orden)}
-                className="btn-primary w-full rounded-2xl px-4 py-3 text-sm"
-              >
-                Finalizar con informe
-              </button>
+              </div>
+
+              <div className="rounded-2xl border border-marca-200 bg-gradient-to-br from-marca-50 to-white p-3 shadow-sm">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-marca-600">Cierre</p>
+                <p className="mt-1 text-sm font-bold text-sat-text">Completa la orden y deja listo el informe final</p>
+                <button
+                  type="button"
+                  onClick={() => onIrAParte(orden)}
+                  className="btn-primary mt-3 w-full rounded-2xl px-4 py-3 text-sm"
+                >
+                  Finalizar con informe
+                </button>
+              </div>
             </div>
           </div>
 
           {mostrarEdicion && puedeEditarOrden && (
-            <form onSubmit={guardarEdicion} className="space-y-2 rounded-xl border border-marca-100 bg-marca-50 p-3">
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-sat-muted">Técnico *</span>
-                <select
-                  required
-                  value={formularioEdicion.tecnico_id}
-                  onChange={(evento) =>
-                    setFormularioEdicion((previo) => ({ ...previo, tecnico_id: evento.target.value }))
-                  }
-                  className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
+            <form onSubmit={guardarEdicion} className="space-y-3 rounded-[1.2rem] border border-marca-100 bg-gradient-to-br from-marca-50 to-white p-3 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sat-subtle">Edición rápida</p>
+                  <p className="mt-1 text-sm font-black tracking-tight text-sat-text">Actualiza asignación, estado y prioridad</p>
+                  <p className="mt-1 text-xs leading-5 text-sat-muted">
+                    Los cambios se aplican sobre la orden actual sin salir del listado.
+                  </p>
+                </div>
+                <span className="inline-flex items-center rounded-full border border-marca-200 bg-white px-2.5 py-1 text-[11px] font-bold text-marca-700">
+                  {identificadorOrden}
+                </span>
+              </div>
+
+              <div className="grid gap-3 lg:grid-cols-3">
+                <label className="block min-w-0 rounded-2xl border border-white/80 bg-white/90 p-3 shadow-sm">
+                  <span className="mb-1 block text-xs font-semibold text-sat-muted">Técnico *</span>
+                  <select
+                    required
+                    value={formularioEdicion.tecnico_id}
+                    onChange={(evento) =>
+                      setFormularioEdicion((previo) => ({ ...previo, tecnico_id: evento.target.value }))
+                    }
+                    className="select-base"
+                  >
+                    <option value="">Selecciona técnico</option>
+                    {tecnicosActivos.map((tecnico) => (
+                      <option key={tecnico.id} value={tecnico.id}>
+                        {tecnico.nombre}
+                        {tecnico.especialidad ? ` (${tecnico.especialidad})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block min-w-0 rounded-2xl border border-white/80 bg-white/90 p-3 shadow-sm">
+                  <span className="mb-1 block text-xs font-semibold text-sat-muted">Estado</span>
+                  <select
+                    value={formularioEdicion.estado}
+                    onChange={(evento) =>
+                      setFormularioEdicion((previo) => ({ ...previo, estado: evento.target.value }))
+                    }
+                    className="select-base"
+                  >
+                    {OPCIONES_ESTADO_EDITABLE.map((opcion) => (
+                      <option key={opcion.value} value={opcion.value}>
+                        {opcion.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block min-w-0 rounded-2xl border border-white/80 bg-white/90 p-3 shadow-sm">
+                  <span className="mb-1 block text-xs font-semibold text-sat-muted">Prioridad</span>
+                  <select
+                    value={formularioEdicion.prioridad}
+                    onChange={(evento) =>
+                      setFormularioEdicion((previo) => ({ ...previo, prioridad: evento.target.value }))
+                    }
+                    className="select-base"
+                  >
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                    <option value="urgente">Urgente</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                {mensajeEdicion ? (
+                  <p className="text-xs font-semibold text-sat-muted">{mensajeEdicion}</p>
+                ) : (
+                  <p className="text-xs font-semibold text-sat-subtle">
+                    Guarda cambios operativos sin alterar el flujo del informe.
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  disabled={accionEnCurso}
+                  className="btn-primary w-full rounded-2xl px-4 py-3 text-sm sm:w-auto"
                 >
-                  <option value="">Selecciona técnico</option>
-                  {tecnicosActivos.map((tecnico) => (
-                    <option key={tecnico.id} value={tecnico.id}>
-                      {tecnico.nombre}
-                      {tecnico.especialidad ? ` (${tecnico.especialidad})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-sat-muted">Estado</span>
-                <select
-                  value={formularioEdicion.estado}
-                  onChange={(evento) =>
-                    setFormularioEdicion((previo) => ({ ...previo, estado: evento.target.value }))
-                  }
-                  className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
-                >
-                  {OPCIONES_ESTADO_EDITABLE.map((opcion) => (
-                    <option key={opcion.value} value={opcion.value}>
-                      {opcion.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-sat-muted">Prioridad</span>
-                <select
-                  value={formularioEdicion.prioridad}
-                  onChange={(evento) =>
-                    setFormularioEdicion((previo) => ({ ...previo, prioridad: evento.target.value }))
-                  }
-                  className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
-                >
-                  <option value="baja">Baja</option>
-                  <option value="media">Media</option>
-                  <option value="alta">Alta</option>
-                  <option value="urgente">Urgente</option>
-                </select>
-              </label>
-
-              <button
-                type="submit"
-                disabled={accionEnCurso}
-                className="w-full rounded-xl bg-marca-900 px-4 py-3 text-sm font-bold text-white active:scale-95 disabled:opacity-60"
-              >
-                {accionEnCurso ? 'Guardando cambios...' : 'Guardar cambios'}
-              </button>
-
-              {mensajeEdicion && <p className="text-xs font-semibold text-sat-muted">{mensajeEdicion}</p>}
+                  {accionEnCurso ? 'Guardando cambios...' : 'Guardar cambios'}
+                </button>
+              </div>
             </form>
           )}
 
@@ -1926,42 +1966,70 @@ function BloqueEliminarOrden({
       </button>
 
       {mostrarEliminar && (
-        <div className="space-y-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900">
-          <p className="font-semibold">Antes de eliminar, guarda una copia del informe o de la orden.</p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="space-y-3 rounded-[1.2rem] border border-rose-200 bg-gradient-to-br from-rose-50 to-white p-3 text-xs text-rose-900 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-rose-500">Zona sensible</p>
+              <p className="mt-1 text-sm font-black tracking-tight text-rose-900">Eliminación preventiva de la orden</p>
+              <p className="mt-1 text-xs leading-5 text-rose-800">
+                Antes de eliminar, guarda una copia del informe o de la orden para conservar trazabilidad.
+              </p>
+            </div>
+            <span className="inline-flex items-center rounded-full border border-rose-200 bg-white px-2.5 py-1 text-[11px] font-bold text-rose-700">
+              Revisión previa
+            </span>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={onDescargarCopiaJsonOrden}
-              className="rounded-lg border border-rose-300 bg-white px-3 py-2 font-bold text-rose-700"
+              className="rounded-2xl border border-rose-300 bg-white px-3 py-2.5 text-left font-bold text-rose-700 shadow-sm transition hover:-translate-y-0.5"
             >
-              Descargar copia JSON
+              <span className="block text-[11px] uppercase tracking-[0.18em] text-rose-400">Respaldo</span>
+              <span className="mt-1 block text-sm">Descargar copia JSON</span>
             </button>
             <button
               type="button"
               onClick={onDescargarInformePdf}
               disabled={!orden.informePdfUrl || accionEnCurso}
-              className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 font-bold ${orden.informePdfUrl ? 'border-rose-300 bg-white text-rose-700' : 'border-sat-border bg-sat-surface-alt text-sat-faint pointer-events-none'}`}
+              className={`rounded-2xl border px-3 py-2.5 text-left font-bold shadow-sm transition ${orden.informePdfUrl ? 'border-rose-300 bg-white text-rose-700 hover:-translate-y-0.5' : 'border-sat-border bg-sat-surface-alt text-sat-faint pointer-events-none'}`}
             >
-              Descargar informe PDF
+              <span className="block text-[11px] uppercase tracking-[0.18em]">Informe</span>
+              <span className="mt-1 block text-sm">Descargar informe PDF</span>
             </button>
           </div>
-          <label className="flex items-center gap-2 rounded-lg border border-rose-200 bg-white px-3 py-2 font-semibold text-rose-800">
+
+          <label className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-white px-3 py-3 font-semibold text-rose-800 shadow-sm">
             <input
               type="checkbox"
               checked={copiaGuardada}
               onChange={(evento) => onCambiarCopiaGuardada(evento.target.checked)}
+              className="mt-0.5"
             />
-            Confirmo que ya guardé copia antes de eliminar.
+            <span className="min-w-0">
+              <span className="block text-[11px] uppercase tracking-[0.18em] text-rose-500">Confirmación</span>
+              <span className="mt-1 block text-sm">Confirmo que ya guardé copia antes de eliminar.</span>
+            </span>
           </label>
-          <button
-            type="button"
-            onClick={onConfirmarEliminacion}
-            disabled={accionEnCurso || !copiaGuardada}
-            className="w-full rounded-lg bg-rose-600 px-3 py-2 font-bold text-white disabled:opacity-60"
-          >
-            {accionEnCurso ? 'Eliminando...' : 'Eliminar definitivamente'}
-          </button>
-          {mensajeEliminacion && <p className="font-semibold text-rose-700">{mensajeEliminacion}</p>}
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            {mensajeEliminacion ? (
+              <p className="font-semibold text-rose-700">{mensajeEliminacion}</p>
+            ) : (
+              <p className="text-xs font-semibold text-rose-700">
+                La eliminación definitiva solo se habilita tras confirmar el respaldo.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={onConfirmarEliminacion}
+              disabled={accionEnCurso || !copiaGuardada}
+              className="w-full rounded-2xl bg-rose-600 px-4 py-3 text-sm font-bold text-white shadow-sm disabled:opacity-60 sm:w-auto"
+            >
+              {accionEnCurso ? 'Eliminando...' : 'Eliminar definitivamente'}
+            </button>
+          </div>
         </div>
       )}
     </>
