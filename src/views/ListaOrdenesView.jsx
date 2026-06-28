@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, CalendarClock, CircleCheckBig, Clock3, Download, Flag, Hammer, MapPinned, Rocket, TriangleAlert, UserRound, Wrench } from 'lucide-react';
+import { BarChart3, CalendarClock, CircleCheckBig, Clock3, Download, Flag, Hammer, MapPinned, Rocket, Search, TriangleAlert, UserRound, Wrench } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { ToastEstado } from '../components/ToastEstado';
@@ -2022,6 +2022,10 @@ export function ListaOrdenesView({ rolUsuario }) {
   const totalPaginas = Math.max(1, Math.ceil(totalOrdenesFiltradas / ORDENES_POR_PAGINA));
   const paginaSegura = Math.min(paginaActual, totalPaginas);
   const ordenesPaginadas = ordenesListado.slice((paginaSegura - 1) * ORDENES_POR_PAGINA, paginaSegura * ORDENES_POR_PAGINA);
+  const primerElementoPagina = totalOrdenesFiltradas ? ((paginaSegura - 1) * ORDENES_POR_PAGINA) + 1 : 0;
+  const ultimoElementoPagina = totalOrdenesFiltradas
+    ? Math.min(primerElementoPagina + ordenesPaginadas.length - 1, totalOrdenesFiltradas)
+    : 0;
   const esTecnico = rolUsuario === 'tecnico';
   const puedeCrearOrdenes = rolUsuario !== 'tecnico';
   const puedeEditarOrden = rolUsuario !== 'tecnico';
@@ -2388,12 +2392,15 @@ export function ListaOrdenesView({ rolUsuario }) {
           </div>
 
           <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)_minmax(0,1fr)]">
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-200">Filtrar por cliente</span>
+            <label className="block rounded-[1.1rem] border border-white/12 bg-white/8 p-3 shadow-sm">
+              <span className="mb-2 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-200">
+                <UserRound className="h-3.5 w-3.5" />
+                Cliente
+              </span>
               <select
                 value={filtroClienteAnalisis}
                 onChange={(evento) => setFiltroClienteAnalisis(evento.target.value)}
-                className="w-full rounded-xl border border-white/20 bg-marca-900/90 px-3 py-2.5 text-sm text-white shadow-sm transition hover:border-white/30 focus:border-white/40 focus:outline-none"
+                className="w-full rounded-xl border border-white/20 bg-marca-900/90 px-3 py-2.5 text-sm font-medium text-white shadow-sm transition hover:border-white/30 focus:border-white/40 focus:outline-none"
               >
                 <option value="todos">Todos los clientes</option>
                 {clientesAnalisis.map((cliente) => (
@@ -2404,12 +2411,15 @@ export function ListaOrdenesView({ rolUsuario }) {
               </select>
             </label>
 
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-200">Filtrar por tipo de orden</span>
+            <label className="block rounded-[1.1rem] border border-white/12 bg-white/8 p-3 shadow-sm">
+              <span className="mb-2 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-200">
+                <Wrench className="h-3.5 w-3.5" />
+                Tipo
+              </span>
               <select
                 value={filtroTipoOrden}
                 onChange={(evento) => setFiltroTipoOrden(evento.target.value)}
-                className="w-full rounded-xl border border-white/20 bg-marca-900/90 px-3 py-2.5 text-sm text-white shadow-sm transition hover:border-white/30 focus:border-white/40 focus:outline-none"
+                className="w-full rounded-xl border border-white/20 bg-marca-900/90 px-3 py-2.5 text-sm font-medium text-white shadow-sm transition hover:border-white/30 focus:border-white/40 focus:outline-none"
               >
                 <option value="todos">Todas</option>
                 <option value="averia">Avería</option>
@@ -2419,55 +2429,83 @@ export function ListaOrdenesView({ rolUsuario }) {
               </select>
             </label>
 
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-200">Buscar orden</span>
+            <label className="block rounded-[1.1rem] border border-white/12 bg-white/8 p-3 shadow-sm">
+              <span className="mb-2 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-200">
+                <Search className="h-3.5 w-3.5" />
+                Buscar
+              </span>
               <input
                 value={busquedaOrdenes}
                 onChange={(evento) => setBusquedaOrdenes(evento.target.value)}
-                className="w-full rounded-xl border border-white/20 bg-marca-900/90 px-3 py-2.5 text-sm text-white shadow-sm transition placeholder:text-slate-300 hover:border-white/30 focus:border-white/40 focus:outline-none"
+                className="w-full rounded-xl border border-white/20 bg-marca-900/90 px-3 py-2.5 text-sm font-medium text-white shadow-sm transition placeholder:text-slate-300 hover:border-white/30 focus:border-white/40 focus:outline-none"
                 placeholder="Ticket, cliente, equipo o técnico"
               />
             </label>
           </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100">
+              Cliente: {nombreClienteAnalisis}
+            </span>
+            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100">
+              Tipo: {filtroTipoOrden === 'todos' ? 'Todas' : filtroTipoOrden.replaceAll('_', ' ')}
+            </span>
+            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100">
+              Estado: {filtroEstado}
+            </span>
+            {terminoBusqueda && (
+              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100">
+                Búsqueda: {busquedaOrdenes.trim()}
+              </span>
+            )}
+          </div>
         </div>
 
         {!esTecnico && (
-          <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs font-bold lg:grid-cols-4">
-            <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
-              <p className="text-slate-300">MTTR</p>
-              <p className="text-base text-white">{mttrMinutos} min</p>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-bold lg:grid-cols-4">
+            <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">MTTR</p>
+              <p className="mt-2 text-lg font-black text-white">{mttrMinutos} min</p>
+              <p className="mt-1 text-[11px] font-medium text-slate-300">Tiempo medio de resolución</p>
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
-              <p className="text-slate-300">SLA 48h</p>
-              <p className="text-base text-white">{cumplimientoSla48h}%</p>
+            <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">SLA 48h</p>
+              <p className="mt-2 text-lg font-black text-white">{cumplimientoSla48h}%</p>
+              <p className="mt-1 text-[11px] font-medium text-slate-300">Finalizadas dentro de objetivo</p>
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
-              <p className="text-slate-300">FTF proxy</p>
-              <p className="text-base text-white">{firstTimeFixProxy}%</p>
+            <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">FTF proxy</p>
+              <p className="mt-2 text-lg font-black text-white">{firstTimeFixProxy}%</p>
+              <p className="mt-1 text-[11px] font-medium text-slate-300">Órdenes cerradas en el ciclo actual</p>
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
-              <p className="text-slate-300">Coste mat.</p>
-              <p className="text-base text-white">{costeTotalMateriales} €</p>
+            <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">Coste mat.</p>
+              <p className="mt-2 text-lg font-black text-white">{costeTotalMateriales} €</p>
+              <p className="mt-1 text-[11px] font-medium text-slate-300">Acumulado del conjunto filtrado</p>
             </div>
           </div>
         )}
 
-        <div className="mt-4 grid grid-cols-2 gap-2 text-center text-xs font-bold sm:grid-cols-4">
-          <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
-            <p className="text-slate-300">Pendientes</p>
-            <p className="text-base text-white">{resumenAnalisis.Pendiente}</p>
+        <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold sm:grid-cols-4">
+          <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">Pendientes</p>
+            <p className="mt-2 text-lg font-black text-white">{resumenAnalisis.Pendiente}</p>
+            <p className="mt-1 text-[11px] font-medium text-slate-300">A la espera de atención</p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
-            <p className="text-slate-300">En Proceso</p>
-            <p className="text-base text-white">{resumenAnalisis['En Proceso']}</p>
+          <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">En Proceso</p>
+            <p className="mt-2 text-lg font-black text-white">{resumenAnalisis['En Proceso']}</p>
+            <p className="mt-1 text-[11px] font-medium text-slate-300">Trabajos actualmente activos</p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
-            <p className="text-slate-300">Pausadas</p>
-            <p className="text-base text-white">{resumenAnalisis.Pausado}</p>
+          <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">Pausadas</p>
+            <p className="mt-2 text-lg font-black text-white">{resumenAnalisis.Pausado}</p>
+            <p className="mt-1 text-[11px] font-medium text-slate-300">Pendientes de reanudación</p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
-            <p className="text-slate-300">Finalizadas</p>
-            <p className="text-base text-white">{resumenAnalisis.Finalizado}</p>
+          <div className="rounded-[1.1rem] border border-white/12 bg-white/10 p-3 text-left shadow-sm">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">Finalizadas</p>
+            <p className="mt-2 text-lg font-black text-white">{resumenAnalisis.Finalizado}</p>
+            <p className="mt-1 text-[11px] font-medium text-slate-300">Cerradas en el conjunto filtrado</p>
           </div>
         </div>
 
@@ -2528,10 +2566,23 @@ export function ListaOrdenesView({ rolUsuario }) {
 
           {totalPaginas > 1 && (
             <div className="toolbar-panel rounded-[1.2rem] px-3 py-3 text-sm">
-              <p className="text-xs font-semibold">
-                Página {paginaSegura} de {totalPaginas} · {totalOrdenesFiltradas} órdenes
-              </p>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sat-faint">Navegación de páginas</p>
+                  <p className="mt-1 text-sm font-bold text-sat-text">
+                    Mostrando {primerElementoPagina}-{ultimoElementoPagina} de {totalOrdenesFiltradas} órdenes
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-sat-muted">
+                    Página {paginaSegura} de {totalPaginas}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                  <span className="inline-flex items-center rounded-full border border-sat-border bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted">
+                    {paginaSegura}/{totalPaginas}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
                   disabled={paginaSegura === 1}
