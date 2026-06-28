@@ -1455,71 +1455,81 @@ function TarjetaOrden({
         </span>
       </div>
 
-      <div className="mb-3 grid gap-2 sm:grid-cols-3">
-        <div className="surface-panel flex items-start gap-3 px-3 py-3">
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-marca-50 text-marca-700">
+      <div className="mb-3 grid gap-2 lg:grid-cols-3">
+        <div className="surface-panel flex min-w-0 items-start gap-3 border-white/80 bg-gradient-to-br from-white to-sat-surface px-3 py-3 shadow-sm">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-marca-50 text-marca-700 shadow-sm">
             <UserRound className="h-4 w-4" />
           </span>
           <div className="min-w-0">
             <p className="metric-label">Cliente</p>
             <p className="mt-1 truncate text-sm font-bold text-sat-text">{orden.cliente}</p>
+            <p className="mt-1 text-xs font-semibold text-sat-subtle">Responsable de la solicitud</p>
           </div>
         </div>
-        <div className="surface-panel flex items-start gap-3 px-3 py-3">
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-marca-50 text-marca-700">
-            <UserRound className="h-4 w-4" />
+        <div className="surface-panel flex min-w-0 items-start gap-3 border-white/80 bg-gradient-to-br from-white to-sat-surface px-3 py-3 shadow-sm">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-marca-50 text-marca-700 shadow-sm">
+            <Wrench className="h-4 w-4" />
           </span>
           <div className="min-w-0">
             <p className="metric-label">Técnico</p>
             <p className="mt-1 truncate text-sm font-bold text-sat-text">{orden.tecnico || 'Sin técnico asignado'}</p>
+            <p className="mt-1 text-xs font-semibold text-sat-subtle">Asignación operativa actual</p>
           </div>
         </div>
-        <div className="surface-panel flex items-start gap-3 px-3 py-3">
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-marca-50 text-marca-700">
+        <div className="surface-panel flex min-w-0 items-start gap-3 border-white/80 bg-gradient-to-br from-white to-sat-surface px-3 py-3 shadow-sm">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-marca-50 text-marca-700 shadow-sm">
             <CalendarClock className="h-4 w-4" />
           </span>
           <div className="min-w-0">
             <p className="metric-label">Fecha</p>
             <p className="mt-1 truncate text-sm font-bold text-sat-text">{orden.fecha || 'Sin fecha'}</p>
+            <p className="mt-1 text-xs font-semibold text-sat-subtle">Referencia de planificación</p>
           </div>
         </div>
       </div>
 
       <div className="space-y-3 text-sm text-sat-muted">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <p className="min-w-0 flex-1 rounded-2xl border border-sat-border-soft bg-sat-surface px-3 py-3">
+        <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="rounded-[1.2rem] border border-sat-border-soft bg-gradient-to-r from-sat-surface to-white px-3 py-3 shadow-sm">
             <span className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-sat-subtle">
               <MapPinned className="h-3.5 w-3.5" />
               Dirección
             </span>
-            {ubicacionCliente.direccion || (ubicacionCliente.tieneUbicacion ? 'Ubicación registrada' : 'Sin ubicación')}
-          </p>
+            <p className="text-sm font-semibold leading-6 text-sat-text">
+              {ubicacionCliente.direccion || (ubicacionCliente.tieneUbicacion ? 'Ubicación registrada' : 'Sin ubicación')}
+            </p>
+            <p className="mt-1 text-xs font-semibold text-sat-subtle">
+              {ubicacionCliente.tieneUbicacion ? 'La ubicación del cliente está disponible para navegación.' : 'No hay coordenadas disponibles para abrir la ruta.'}
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => onIrACliente(orden)}
             disabled={!ubicacionCliente.tieneUbicacion}
-            className="btn-secondary inline-flex shrink-0 items-center justify-center rounded-2xl border-marca-200 bg-marca-50 px-4 py-3 text-xs font-bold text-marca-800 disabled:opacity-60"
+            className="btn-secondary inline-flex min-h-[72px] shrink-0 items-center justify-center rounded-2xl border-marca-200 bg-marca-50 px-5 py-3 text-xs font-bold text-marca-800 disabled:opacity-60 lg:min-w-[112px]"
           >
             Ir
           </button>
         </div>
         {orden.estado !== 'Finalizado' && (
-          <p className="rounded-2xl border border-sat-border-soft bg-white px-3 py-3 shadow-sm">
+          <div className="rounded-[1.2rem] border border-sat-border-soft bg-white px-3 py-3 shadow-sm">
             <span className="mb-1 block text-xs font-bold uppercase tracking-[0.18em] text-sat-subtle">
               {orden.tipoOrden === 'averia' ? 'Descripción de avería' : 'Descripción de orden'}
             </span>
-            {orden.descripcion}
-          </p>
+            <p className="text-sm leading-6 text-sat-text">{orden.descripcion}</p>
+          </div>
         )}
       </div>
 
       {orden.estado !== 'Finalizado' && (
-        <div className="mt-4 flex items-center justify-between rounded-2xl border border-marca-100 bg-gradient-to-r from-marca-50 to-white px-3 py-3 text-xs font-semibold text-marca-700">
-          <span className="inline-flex items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[1.2rem] border border-marca-100 bg-gradient-to-r from-marca-50 to-white px-3 py-3 text-xs font-semibold text-marca-700 shadow-sm">
+          <span className="inline-flex items-center gap-2 rounded-full border border-marca-100 bg-white px-2.5 py-1">
             <Flag className="h-4 w-4" />
             Prioridad actual: {etiquetaPrioridad.texto}
           </span>
-          <span>{orden.fecha}</span>
+          <span className="inline-flex items-center rounded-full border border-marca-100 bg-white px-2.5 py-1">
+            Fecha: {orden.fecha}
+          </span>
         </div>
       )}
 
@@ -2459,7 +2469,15 @@ export function ListaOrdenesView({ rolUsuario }) {
   }
 
   if (cargando) {
-    return <p className="text-sm font-semibold text-sat-muted">Cargando órdenes...</p>;
+    return (
+      <section className="rounded-[1.35rem] border border-sat-border-soft bg-gradient-to-br from-white to-sat-surface p-5 shadow-sm">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sat-subtle">Órdenes</p>
+        <p className="mt-2 text-base font-black tracking-tight text-sat-text">Cargando listado operativo...</p>
+        <p className="mt-1 text-sm leading-6 text-sat-muted">
+          Estamos recuperando las órdenes y preparando el panel con los filtros actuales.
+        </p>
+      </section>
+    );
   }
 
   return (
@@ -2473,8 +2491,10 @@ export function ListaOrdenesView({ rolUsuario }) {
       />
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-          {error}
+        <div className="rounded-[1.2rem] border border-red-200 bg-gradient-to-r from-red-50 to-white p-4 text-sm text-red-700 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">Incidencia</p>
+          <p className="mt-2 text-sm font-black tracking-tight text-red-800">No se pudo cargar el panel de órdenes</p>
+          <p className="mt-1 font-semibold">{error}</p>
         </div>
       )}
 
@@ -2730,7 +2750,7 @@ export function ListaOrdenesView({ rolUsuario }) {
           ))}
 
           {totalPaginas > 1 && (
-            <div className="toolbar-panel rounded-[1.2rem] px-3 py-3 text-sm">
+            <div className="toolbar-panel rounded-[1.2rem] px-3 py-3 text-sm shadow-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sat-faint">Navegación de páginas</p>
@@ -2742,12 +2762,12 @@ export function ListaOrdenesView({ rolUsuario }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 self-start sm:self-auto">
-                  <span className="inline-flex items-center rounded-full border border-sat-border bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted">
+                  <span className="inline-flex items-center rounded-full border border-sat-border bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted shadow-sm">
                     {paginaSegura}/{totalPaginas}
                   </span>
                 </div>
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 rounded-[1rem] border border-sat-border-soft bg-white/80 p-2">
                 <button
                   type="button"
                   disabled={paginaSegura === 1}
@@ -2775,7 +2795,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                   }, [])
                   .map((p, idx) =>
                     p === '...' ? (
-                      <span key={`ellipsis-${idx}`} className="px-1 text-xs text-sat-faint">…</span>
+                      <span key={`ellipsis-${idx}`} className="px-1 text-xs font-bold text-sat-faint">…</span>
                     ) : (
                       <button
                         key={p}
@@ -2818,7 +2838,7 @@ export function ListaOrdenesView({ rolUsuario }) {
               <div className="h-1.5 w-full bg-gradient-to-r from-marca-500 via-marca-600 to-cotepa-rojo-500" />
               <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-marca-50 text-marca-700">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-marca-50 text-marca-700 shadow-sm">
                     <TriangleAlert className="h-5 w-5" />
                   </span>
                   <div>
@@ -2829,6 +2849,17 @@ export function ListaOrdenesView({ rolUsuario }) {
                     <p className="mt-1 text-sm leading-6 text-sat-muted">
                       Ajusta cliente, tipo, estado o búsqueda para volver a mostrar órdenes en el listado.
                     </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center rounded-full border border-sat-border-soft bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted">
+                        Cliente: {nombreClienteAnalisis}
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-sat-border-soft bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted">
+                        Estado: {filtroEstado}
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-sat-border-soft bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted">
+                        Tipo: {filtroTipoOrden === 'todos' ? 'Todas' : filtroTipoOrden.replaceAll('_', ' ')}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <button
@@ -2839,7 +2870,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                     setFiltroEstado('Todas');
                     setBusquedaOrdenes('');
                   }}
-                  className="btn-secondary px-4 py-3 text-sm"
+                  className="btn-secondary rounded-2xl px-4 py-3 text-sm"
                 >
                   Restablecer filtros
                 </button>
