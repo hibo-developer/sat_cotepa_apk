@@ -33,6 +33,7 @@ export function NavbarInferior({
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-marca-100/80 bg-white/92 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-2xl backdrop-blur-xl lg:hidden">
+      <div className="mx-auto mb-2 h-1 w-12 rounded-full bg-marca-100/90" aria-hidden="true" />
       <ul className="mx-auto grid w-full max-w-screen-2xl auto-cols-fr grid-flow-col items-stretch gap-2">
         {itemsVisibles.map((item) => {
           const Icono = item.icono;
@@ -50,7 +51,9 @@ export function NavbarInferior({
                 }`}
                 aria-current={activo ? 'page' : undefined}
               >
-                <Icono className={`mb-1 h-5 w-5 ${activo ? '' : 'text-marca-600'}`} strokeWidth={2.25} />
+                <span className={`mb-1 flex h-8 w-8 items-center justify-center rounded-2xl ${activo ? 'bg-white/15' : 'bg-marca-50'}`}>
+                  <Icono className={`h-5 w-5 ${activo ? '' : 'text-marca-600'}`} strokeWidth={2.25} />
+                </span>
                 <span className="leading-tight">{item.label}</span>
               </button>
             </li>

@@ -40,40 +40,45 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-navegacion-titulo"
-      onClick={onClose}
-    >
+    <>
+      <div className="modal-overlay z-[70]" onClick={onClose} aria-hidden="true" />
       <div
-        className="w-full max-w-lg overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/95 shadow-hero backdrop-blur-xl"
+        className="modal-shell z-[70] items-end sm:items-center"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-navegacion-titulo"
+      >
+      <div
+        className="modal-card relative max-w-lg overflow-hidden"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="border-b border-sat-border-soft px-5 py-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <span className="chip-soft">Navegación externa</span>
-              <p id="modal-navegacion-titulo" className="mt-3 text-xl font-black tracking-tight text-sat-text">
-                Elegir navegación
-              </p>
-              <p className="mt-1 text-sm leading-6 text-sat-muted">
-                Selecciona la app que quieres usar para ir al cliente con el acceso más directo.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="modal-close"
-              aria-label="Cerrar modal"
-            >
-              <X className="h-5 w-5" />
-            </button>
+        <div className="modal-header">
+          <div>
+            <span className="chip-soft">Navegación externa</span>
+            <p id="modal-navegacion-titulo" className="mt-3 text-xl font-black tracking-tight text-sat-text">
+              Elegir navegación
+            </p>
+            <p className="mt-1 text-sm leading-6 text-sat-muted">
+              Selecciona la app que quieres usar para ir al cliente con el acceso más directo.
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="modal-close"
+            aria-label="Cerrar modal"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
-        <div className="space-y-3 px-5 py-5">
+        <div className="modal-body">
+          <div className="modal-section">
+            <p className="metric-label">Ayuda rápida</p>
+            <p className="mt-2 text-[11px] leading-5 text-sat-subtle">
+              Elige la app con la que sueles navegar. Si activas el recordatorio, SAT usará esa opción en futuros accesos.
+            </p>
+          </div>
           {appsDisponibles.map((app) => {
             const meta = APP_META[app];
             const Icono = meta.Icono;
@@ -83,7 +88,7 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
                 key={app}
                 type="button"
                 onClick={() => onSelect(app, recordar)}
-                className="flex w-full items-center gap-3 rounded-[1.3rem] border border-sat-border-soft bg-white/80 px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-marca-300 hover:bg-marca-50 hover:shadow-suave"
+                className="choice-card"
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-sat-surface-alt text-sat-muted shadow-sm">
                   <Icono className="h-5 w-5" />
@@ -103,7 +108,7 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
             </p>
           )}
 
-          <label className="surface-panel flex items-center gap-3 px-4 py-3 text-sm text-sat-muted">
+          <label className="modal-section flex items-center gap-3 text-sm text-sat-muted">
             <input
               type="checkbox"
               checked={recordar}
@@ -117,6 +122,7 @@ export function ModalElegirNavegacion({ isOpen, onClose, onSelect, appsDisponibl
           </label>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

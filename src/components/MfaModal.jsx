@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { X } from 'lucide-react';
 import { desenrolarMfa, enrolarTotpMfa, listarFactoresMfa, verificarTotpMfa } from '../services/authService';
 
 function svgADataUrl(svg) {
@@ -143,11 +144,11 @@ export function MfaModal({ abierto, onCerrar }) {
               className="modal-close"
               aria-label="Cerrar"
             >
-              X
+              <X className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="space-y-4 p-5">
+          <div className="modal-body">
             {modo === 'lista' && (
               <div className="space-y-4">
                 <p className="text-sm leading-6 text-sat-muted">
@@ -155,7 +156,24 @@ export function MfaModal({ abierto, onCerrar }) {
                   Authenticator, etc.).
                 </p>
 
-                <div className="surface-panel p-4 text-sm">
+                <div className="modal-info-grid">
+                  <div className="helper-card">
+                    <p className="metric-label">Proteccion</p>
+                    <p className="mt-2 text-sm font-black tracking-tight text-sat-text">Acceso reforzado</p>
+                    <p className="mt-1 text-xs leading-5 text-sat-subtle">
+                      Añade una segunda verificación para evitar accesos no autorizados.
+                    </p>
+                  </div>
+                  <div className="helper-card">
+                    <p className="metric-label">Uso diario</p>
+                    <p className="mt-2 text-sm font-black tracking-tight text-sat-text">Código temporal</p>
+                    <p className="mt-1 text-xs leading-5 text-sat-subtle">
+                      Necesitarás tu autenticador cuando inicies sesión desde una nueva verificación.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="modal-section text-sm">
                   <p className="metric-label">Estado</p>
                   <p className="mt-2 text-base font-black tracking-tight text-marca-900">
                     {factorTotpActivo ? '2FA activado' : '2FA desactivado'}
@@ -173,7 +191,7 @@ export function MfaModal({ abierto, onCerrar }) {
                   </p>
                 )}
 
-                <div className="flex items-center justify-end gap-2 pt-1">
+                <div className="modal-actions pt-1">
                   {factorTotpActivo ? (
                     <button
                       type="button"
@@ -203,8 +221,15 @@ export function MfaModal({ abierto, onCerrar }) {
                   1) Escanea el QR con tu app autenticadora. 2) Introduce el codigo de 6 digitos para confirmar.
                 </p>
 
+                <div className="modal-section">
+                  <p className="metric-label">Ayuda rápida</p>
+                  <p className="mt-2 text-[11px] leading-5 text-sat-subtle">
+                    Si no puedes escanear el QR, copia manualmente el secreto en tu autenticador y usa después el código generado.
+                  </p>
+                </div>
+
                 {qrDataUrl ? (
-                  <div className="surface-panel flex items-center justify-center p-4">
+                  <div className="modal-section flex items-center justify-center">
                     <img src={qrDataUrl} alt="QR 2FA" className="h-44 w-44 rounded-2xl bg-white p-2 shadow-sm" />
                   </div>
                 ) : (
@@ -214,14 +239,14 @@ export function MfaModal({ abierto, onCerrar }) {
                 )}
 
                 {secreto && (
-                  <div className="surface-panel p-4 text-xs text-marca-900">
+                  <div className="modal-section text-xs text-marca-900">
                     <p className="metric-label">Secreto</p>
                     <p className="mt-2 break-all rounded-xl bg-white p-3 font-mono text-[11px] shadow-sm">{secreto}</p>
                   </div>
                 )}
 
                 {uri && (
-                  <div className="surface-panel p-4 text-xs text-marca-900">
+                  <div className="modal-section text-xs text-marca-900">
                     <p className="metric-label">URI</p>
                     <p className="mt-2 break-all rounded-xl bg-white p-3 font-mono text-[11px] shadow-sm">{uri}</p>
                   </div>
@@ -252,7 +277,7 @@ export function MfaModal({ abierto, onCerrar }) {
                   </p>
                 )}
 
-                <div className="flex items-center justify-end gap-2 pt-2">
+                <div className="modal-actions">
                   <button
                     type="button"
                     onClick={() => {

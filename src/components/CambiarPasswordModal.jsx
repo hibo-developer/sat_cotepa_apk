@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { X } from 'lucide-react';
 import { actualizarPasswordUsuarioActual } from '../services/authService';
 import { asegurarPasswordSegura } from '../services/passwordSecurity';
 
@@ -8,6 +9,13 @@ export function CambiarPasswordModal({ abierto, onCerrar }) {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
+  const comprobaciones = [
+    { label: '10+ caracteres', ok: nueva.length >= 10 },
+    { label: 'Mayúscula', ok: /[A-ZÁÉÍÓÚÜÑ]/.test(nueva) },
+    { label: 'Minúscula', ok: /[a-záéíóúüñ]/.test(nueva) },
+    { label: 'Número', ok: /\d/.test(nueva) },
+    { label: 'Coinciden', ok: nueva.length > 0 && nueva === repetir },
+  ];
 
   if (!abierto) {
     return null;
@@ -76,11 +84,22 @@ export function CambiarPasswordModal({ abierto, onCerrar }) {
               className="modal-close"
               aria-label="Cerrar"
             >
-              X
+              <X className="h-5 w-5" />
             </button>
           </div>
 
-          <form onSubmit={manejarSubmit} className="space-y-4 p-5">
+          <form onSubmit={manejarSubmit} className="modal-body">
+            <div className="modal-info-grid gap-2">
+              {comprobaciones.map((item) => (
+                <div
+                  key={item.label}
+                  className={`helper-chip ${item.ok ? 'helper-chip-ok' : 'helper-chip-pending'}`}
+                >
+                  {item.label}
+                </div>
+              ))}
+            </div>
+
             <label className="block">
               <span className="label-base">
                 Nueva contrasena
@@ -109,11 +128,18 @@ export function CambiarPasswordModal({ abierto, onCerrar }) {
               />
             </label>
 
-            <div className="surface-panel p-4">
+            <div className="modal-section">
               <p className="metric-label">Requisitos</p>
               <p className="mt-2 text-[11px] leading-5 text-sat-subtle">
-                Minimo 10 caracteres con mayusculas, minusculas y numeros. Se comprueba contra
+                Minimo 12 caracteres con mayusculas, minusculas y numeros. Se comprueba contra
                 filtraciones publicas (HaveIBeenPwned) sin enviar la contrasena.
+              </p>
+            </div>
+
+            <div className="modal-section">
+              <p className="metric-label">Consejo</p>
+              <p className="mt-2 text-[11px] leading-5 text-sat-subtle">
+                Usa una clave única para SAT y evita reutilizar contraseñas de otros servicios o dispositivos compartidos.
               </p>
             </div>
 
@@ -128,7 +154,7 @@ export function CambiarPasswordModal({ abierto, onCerrar }) {
               </p>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="modal-actions">
               <button
                 type="button"
                 onClick={cerrar}

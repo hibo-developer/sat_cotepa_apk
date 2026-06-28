@@ -297,11 +297,47 @@ body::after {
     @apply flex items-start justify-between gap-3 border-b border-sat-border-soft px-5 py-4;
   }
 
+  .modal-body {
+    @apply space-y-4 p-5;
+  }
+
+  .modal-section {
+    @apply surface-panel p-4;
+  }
+
+  .modal-info-grid {
+    @apply grid gap-3 sm:grid-cols-2;
+  }
+
+  .modal-actions {
+    @apply flex items-center justify-end gap-2 pt-2;
+  }
+
   .modal-close {
     @apply inline-flex h-9 w-9 items-center justify-center rounded-xl border border-marca-100 bg-white text-sm font-bold text-marca-700 transition hover:bg-marca-50;
   }
 
   .chip-soft {
     @apply inline-flex items-center rounded-full border border-marca-100 bg-marca-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-marca-700;
+  }
+
+  .helper-card {
+    @apply rounded-2xl border border-sat-border-soft bg-white/80 px-3 py-3 shadow-sm backdrop-blur-sm;
+  }
+
+  .helper-chip {
+    @apply rounded-2xl border px-3 py-2 text-xs font-bold transition;
+  }
+
+  .helper-chip-ok {
+    @apply border-emerald-200 bg-emerald-50 text-emerald-700;
+  }
+
+  .helper-chip-pending {
+    @apply border-sat-border-soft bg-sat-surface text-sat-subtle;
+  }
+
+  .choice-card {
+    @apply flex w-full items-center gap-3 rounded-[1.3rem] border border-sat-border-soft bg-white/80 px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-marca-200 hover:bg-marca-50 hover:shadow-suave;
   }
 }
