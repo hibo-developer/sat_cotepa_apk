@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, CircleCheckBig, Clock3, Download, Hammer, Rocket, TriangleAlert, Wrench } from 'lucide-react';
+import { BarChart3, CalendarClock, CircleCheckBig, Clock3, Download, Flag, Hammer, MapPinned, Rocket, TriangleAlert, UserRound, Wrench } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { ToastEstado } from '../components/ToastEstado';
@@ -84,6 +84,34 @@ function resolverEtiquetaTipoOrden(tipoOrden) {
     texto: 'Avería',
     icono: Wrench,
     clase: 'border-rose-200 bg-rose-50 text-rose-800',
+  };
+}
+
+function resolverEtiquetaPrioridad(prioridad) {
+  const valor = String(prioridad || 'media').trim().toLowerCase();
+
+  if (valor === 'urgente') {
+    return {
+      texto: 'Urgente',
+      clase: 'border-rose-200 bg-rose-50 text-rose-800',
+    };
+  }
+  if (valor === 'alta') {
+    return {
+      texto: 'Alta',
+      clase: 'border-orange-200 bg-orange-50 text-orange-800',
+    };
+  }
+  if (valor === 'baja') {
+    return {
+      texto: 'Baja',
+      clase: 'border-slate-200 bg-slate-100 text-slate-700',
+    };
+  }
+
+  return {
+    texto: 'Media',
+    clase: 'border-amber-200 bg-amber-50 text-amber-800',
   };
 }
 
@@ -1076,6 +1104,7 @@ function TarjetaOrden({
   const { icono: IconoEstado, clase } = estilosEstado[orden.estado] || estilosEstado.Pendiente;
   const fechaRegeneracionInforme = obtenerFechaRegeneracionDesdeUrl(orden.informePdfUrl);
   const etiquetaTipo = resolverEtiquetaTipoOrden(orden.tipoOrden);
+  const etiquetaPrioridad = resolverEtiquetaPrioridad(orden.prioridad);
   const IconoTipoOrden = etiquetaTipo.icono;
   const [mostrarEdicion, setMostrarEdicion] = useState(false);
   const [mostrarValoracion, setMostrarValoracion] = useState(false);
@@ -1316,19 +1345,23 @@ function TarjetaOrden({
     + costeDesplazamientoPreview;
 
   return (
-    <article className="rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
-      <div className="mb-3 flex items-start justify-between gap-2">
+    <article className="overflow-hidden rounded-[1.45rem] border border-white bg-white p-4 shadow-suave transition hover:-translate-y-0.5 hover:shadow-lift">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs font-bold uppercase tracking-wide text-sat-subtle">
+            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sat-subtle">
               {orden.numero_ticket ? `SAT-${orden.numero_ticket}` : orden.id}
             </p>
             <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold ${etiquetaTipo.clase}`}>
               <IconoTipoOrden className="h-3.5 w-3.5" />
               {etiquetaTipo.texto}
             </span>
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold ${etiquetaPrioridad.clase}`}>
+              <Flag className="h-3.5 w-3.5" />
+              {etiquetaPrioridad.texto}
+            </span>
           </div>
-          <h3 className="mt-1 text-base font-bold text-sat-text">{orden.equipo}</h3>
+          <h3 className="mt-2 text-lg font-black tracking-tight text-sat-text">{orden.equipo}</h3>
         </div>
         <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${clase}`}>
           <IconoEstado className="h-4 w-4" />
@@ -1336,38 +1369,70 @@ function TarjetaOrden({
         </span>
       </div>
 
-      <div className="space-y-2 text-sm text-sat-muted">
-        <p>
-          <span className="font-semibold text-sat-text">Cliente:</span> {orden.cliente}
-        </p>
+      <div className="mb-3 grid gap-2 sm:grid-cols-3">
+        <div className="surface-panel flex items-start gap-3 px-3 py-3">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-marca-50 text-marca-700">
+            <UserRound className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="metric-label">Cliente</p>
+            <p className="mt-1 truncate text-sm font-bold text-sat-text">{orden.cliente}</p>
+          </div>
+        </div>
+        <div className="surface-panel flex items-start gap-3 px-3 py-3">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-marca-50 text-marca-700">
+            <UserRound className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="metric-label">Técnico</p>
+            <p className="mt-1 truncate text-sm font-bold text-sat-text">{orden.tecnico || 'Sin técnico asignado'}</p>
+          </div>
+        </div>
+        <div className="surface-panel flex items-start gap-3 px-3 py-3">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-marca-50 text-marca-700">
+            <CalendarClock className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="metric-label">Fecha</p>
+            <p className="mt-1 truncate text-sm font-bold text-sat-text">{orden.fecha || 'Sin fecha'}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3 text-sm text-sat-muted">
         <div className="flex items-start justify-between gap-2">
-          <p className="min-w-0 flex-1">
-            <span className="font-semibold text-sat-text">Dirección:</span>{' '}
+          <p className="min-w-0 flex-1 rounded-2xl border border-sat-border-soft bg-sat-surface px-3 py-3">
+            <span className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-sat-subtle">
+              <MapPinned className="h-3.5 w-3.5" />
+              Dirección
+            </span>
             {ubicacionCliente.direccion || (ubicacionCliente.tieneUbicacion ? 'Ubicación registrada' : 'Sin ubicación')}
           </p>
           <button
             type="button"
             onClick={() => onIrACliente(orden)}
             disabled={!ubicacionCliente.tieneUbicacion}
-            className="shrink-0 rounded-lg border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-secondary shrink-0 px-3 py-2 text-xs disabled:opacity-60"
           >
-            🧭 Ir
+            Ir
           </button>
         </div>
-        <p>
-          <span className="font-semibold text-sat-text">Técnico:</span> {orden.tecnico || 'Sin técnico asignado'}
-        </p>
         {orden.estado !== 'Finalizado' && (
-          <p>
-            <span className="font-semibold text-sat-text">{orden.tipoOrden === 'averia' ? 'Avería:' : 'Orden:'}</span>{' '}
+          <p className="rounded-2xl border border-sat-border-soft bg-white px-3 py-3 shadow-sm">
+            <span className="mb-1 block text-xs font-bold uppercase tracking-[0.18em] text-sat-subtle">
+              {orden.tipoOrden === 'averia' ? 'Descripción de avería' : 'Descripción de orden'}
+            </span>
             {orden.descripcion}
           </p>
         )}
       </div>
 
       {orden.estado !== 'Finalizado' && (
-        <div className="mt-4 flex items-center justify-between rounded-xl bg-marca-50 px-3 py-2 text-xs font-semibold text-marca-700">
-          <span>Prioridad: {orden.prioridad}</span>
+        <div className="mt-4 flex items-center justify-between rounded-2xl border border-marca-100 bg-gradient-to-r from-marca-50 to-white px-3 py-3 text-xs font-semibold text-marca-700">
+          <span className="inline-flex items-center gap-2">
+            <Flag className="h-4 w-4" />
+            Prioridad actual: {etiquetaPrioridad.texto}
+          </span>
           <span>{orden.fecha}</span>
         </div>
       )}
@@ -1622,7 +1687,7 @@ function TarjetaOrden({
 
       {orden.estado !== 'Finalizado' && (
         <div className="mt-3 space-y-2">
-          <div className={`grid gap-2 ${puedeEditarOrden ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <div className={`grid gap-2 ${puedeEditarOrden ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
             {puedeEditarOrden && (
               <button
                 type="button"
@@ -1630,7 +1695,7 @@ function TarjetaOrden({
                   setMostrarEdicion((previo) => !previo);
                   setMensajeEdicion('');
                 }}
-                className="w-full rounded-xl border border-sat-border bg-white px-4 py-3 text-sm font-bold text-sat-text active:scale-95"
+                className="btn-secondary w-full px-4 py-3 text-sm"
               >
                 {mostrarEdicion ? 'Cancelar edición' : 'Editar orden'}
               </button>
@@ -1638,14 +1703,14 @@ function TarjetaOrden({
             <button
               type="button"
               onClick={() => onIrAParte(orden)}
-              className="w-full rounded-xl border border-marca-300 bg-marca-50 px-4 py-3 text-sm font-bold text-marca-800 active:scale-95"
+              className="btn-secondary w-full border-marca-300 bg-marca-50 px-4 py-3 text-sm text-marca-800"
             >
               Ir a parte
             </button>
             <button
               type="button"
               onClick={() => onIrAParte(orden)}
-              className="w-full rounded-xl bg-cotepa-rojo-500 px-4 py-3 text-sm font-bold text-white active:scale-95"
+              className="btn-primary w-full px-4 py-3 text-sm"
             >
               Finalizar con informe
             </button>
