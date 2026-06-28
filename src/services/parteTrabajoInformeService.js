@@ -211,6 +211,13 @@ async function obtenerLogoEmpresa() {
 function setFill(doc, color) { doc.setFillColor(color[0], color[1], color[2]); }
 function setStroke(doc, color) { doc.setDrawColor(color[0], color[1], color[2]); }
 function setText(doc, color) { doc.setTextColor(color[0], color[1], color[2]); }
+function obtenerLineasTexto(doc, valor, ancho, fallback = '—') {
+  return doc.splitTextToSize(txt(valor, fallback), ancho);
+}
+function calcularAltoTexto(lineas, altoLinea, paddingVertical = 3) {
+  const totalLineas = Array.isArray(lineas) && lineas.length ? lineas.length : 1;
+  return totalLineas * altoLinea + paddingVertical * 2;
+}
 
 function dibujarCabeceraPagina(doc, opciones = {}) {
   const { mostrarTitulo = true, logoDataUrl } = opciones;
@@ -431,10 +438,11 @@ function dibujarTarjetasResumen(doc, estado, datos) {
 
 function dibujarTablaInfo(doc, estado, filas) {
   if (!filas || !filas.length) return;
-  const xEtiqueta = PAGINA.margenX + 3;
+  const x = PAGINA.margenX;
+  const xEtiqueta = x + 3;
   const xValor = PAGINA.margenX + 65;
   const anchoValor = PAGINA.contenido - (xValor - PAGINA.margenX) - 3;
-  const padFila = 1.5;
+  const padFila = 2;
   const altoLinea = 4.2;
 
   // Pre-medir
@@ -447,15 +455,19 @@ function dibujarTablaInfo(doc, estado, filas) {
 
   reservarEspacio(doc, estado, total + 2);
 
+  setFill(doc, COLOR.fondoTarjeta);
+  doc.roundedRect(x, estado.y, PAGINA.contenido, total, 2, 2, 'F');
   setStroke(doc, COLOR.borde);
   doc.setLineWidth(0.2);
-  doc.roundedRect(PAGINA.margenX, estado.y, PAGINA.contenido, total, 2, 2, 'S');
+  doc.roundedRect(x, estado.y, PAGINA.contenido, total, 2, 2, 'S');
+  setStroke(doc, COLOR.bordeSuave);
+  doc.line(xValor - 4, estado.y + 1.4, xValor - 4, estado.y + total - 1.4);
 
   let y = estado.y;
   items.forEach((it, idx) => {
     if (idx % 2 === 0) {
       setFill(doc, COLOR.fondoZebra);
-      doc.rect(PAGINA.margenX + 0.2, y, PAGINA.contenido - 0.4, it.altoFila, 'F');
+      doc.rect(x + 0.2, y, PAGINA.contenido - 0.4, it.altoFila, 'F');
     }
 
     setText(doc, COLOR.textoSuave);
@@ -488,18 +500,20 @@ function dibujarParrafo(doc, estado, texto) {
       lineas.push(...partidas);
     }
   });
-  const alto = lineas.length * 4.4 + 6;
+  const alto = calcularAltoTexto(lineas, 4.4, 3);
   reservarEspacio(doc, estado, alto);
 
   setFill(doc, COLOR.fondoTarjeta);
   setStroke(doc, COLOR.borde);
   doc.setLineWidth(0.2);
   doc.roundedRect(PAGINA.margenX, estado.y, PAGINA.contenido, alto, 2, 2, 'FD');
+  setFill(doc, COLOR.fondoMarcaTenue);
+  doc.roundedRect(PAGINA.margenX, estado.y, 1.8, alto, 1.2, 1.2, 'F');
 
   setText(doc, COLOR.texto);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
-  doc.text(lineas, PAGINA.margenX + 3, estado.y + 5);
+  doc.text(lineas, PAGINA.margenX + 4, estado.y + 5.2);
 
   estado.y += alto + 4;
 }
@@ -517,10 +531,16 @@ function dibujarTablaMateriales(doc, estado, materiales) {
   const colImporte = 32;
   const colNombre = w - colCantidad - colPrecio - colImporte;
   const altoCab = 8;
-  const altoFila = 7;
+  const altoLinea = 3.7;
   const altoTotal = 9;
+  const items = materiales.map((m) => {
+    const lineasNombre = obtenerLineasTexto(doc, m.nombre, colNombre - 6, 'Material');
+    const altoFila = Math.max(7, calcularAltoTexto(lineasNombre, altoLinea, 1.8));
+    return { ...m, lineasNombre, altoFila };
+  });
+  const altoCuerpo = items.reduce((acc, item) => acc + item.altoFila, 0);
 
-  reservarEspacio(doc, estado, altoCab + materiales.length * altoFila + altoTotal + 4);
+  reservarEspacio(doc, estado, altoCab + altoCuerpo + altoTotal + 4);
 
   // Cabecera
   setFill(doc, COLOR.marca);
@@ -534,22 +554,26 @@ function dibujarTablaMateriales(doc, estado, materiales) {
   doc.text('IMPORTE', x + w - 3, estado.y + 5.5, { align: 'right' });
 
   let y = estado.y + altoCab;
-  materiales.forEach((m, idx) => {
+  items.forEach((m, idx) => {
     if (idx % 2 === 1) {
       setFill(doc, COLOR.fondoZebra);
-      doc.rect(x, y, w, altoFila, 'F');
+      doc.rect(x, y, w, m.altoFila, 'F');
     }
+    setStroke(doc, COLOR.bordeSuave);
+    doc.line(x + colNombre, y, x + colNombre, y + m.altoFila);
+    doc.line(x + colNombre + colCantidad, y, x + colNombre + colCantidad, y + m.altoFila);
+    doc.line(x + colNombre + colCantidad + colPrecio, y, x + colNombre + colCantidad + colPrecio, y + m.altoFila);
     setText(doc, COLOR.texto);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    const nombre = doc.splitTextToSize(txt(m.nombre, 'Material'), colNombre - 4)[0];
-    doc.text(nombre, x + 3, y + 4.7);
-    doc.text(String(m.cantidad ?? '—'), x + colNombre + colCantidad / 2, y + 4.7, { align: 'center' });
+    doc.text(m.lineasNombre, x + 3, y + 4.2);
+    const yCentroFila = y + m.altoFila / 2 + 1.1;
+    doc.text(String(m.cantidad ?? '—'), x + colNombre + colCantidad / 2, yCentroFila, { align: 'center' });
     doc.text(m.precioUnitario != null ? `${m.precioUnitario.toFixed(2)} €` : '—',
-      x + colNombre + colCantidad + colPrecio / 2, y + 4.7, { align: 'center' });
+      x + colNombre + colCantidad + colPrecio / 2, yCentroFila, { align: 'center' });
     doc.setFont('helvetica', 'bold');
-    doc.text(m.importe != null ? `${m.importe.toFixed(2)} €` : '—', x + w - 3, y + 4.7, { align: 'right' });
-    y += altoFila;
+    doc.text(m.importe != null ? `${m.importe.toFixed(2)} €` : '—', x + w - 3, yCentroFila, { align: 'right' });
+    y += m.altoFila;
   });
 
   // Total
@@ -568,9 +592,9 @@ function dibujarTablaMateriales(doc, estado, materiales) {
   // Borde tabla
   setStroke(doc, COLOR.borde);
   doc.setLineWidth(0.2);
-  doc.roundedRect(x, estado.y, w, altoCab + materiales.length * altoFila + altoTotal, 2, 2, 'S');
+  doc.roundedRect(x, estado.y, w, altoCab + altoCuerpo + altoTotal, 2, 2, 'S');
 
-  estado.y += altoCab + materiales.length * altoFila + altoTotal + 5;
+  estado.y += altoCab + altoCuerpo + altoTotal + 5;
 }
 
 function dibujarValoracionEconomica(doc, estado, val, totalMaterialesFallback = 0) {
@@ -599,7 +623,7 @@ function dibujarValoracionEconomica(doc, estado, val, totalMaterialesFallback = 
   const colDesc = w - 35 - 35;
   const colDetalle = 35;
   const colImporte = 35;
-  const altoFila = 6.5;
+  const altoLinea = 3.5;
 
   const filas = [
     ['Materiales', '', materialesFinal],
@@ -623,7 +647,13 @@ function dibujarValoracionEconomica(doc, estado, val, totalMaterialesFallback = 
 
   const altoCab = 7;
   const altoTotal = 10;
-  reservarEspacio(doc, estado, altoCab + filas.length * altoFila + altoTotal + 4);
+  const filasMedidas = filas.map((f) => {
+    const lineasDetalle = obtenerLineasTexto(doc, f[1], colDetalle - 6, '');
+    const altoFila = Math.max(6.5, calcularAltoTexto(lineasDetalle, altoLinea, 1.6));
+    return [...f, lineasDetalle, altoFila];
+  });
+  const altoCuerpo = filasMedidas.reduce((acc, fila) => acc + fila[4], 0);
+  reservarEspacio(doc, estado, altoCab + altoCuerpo + altoTotal + 4);
 
   // Cabecera
   setFill(doc, COLOR.marca);
@@ -636,23 +666,26 @@ function dibujarValoracionEconomica(doc, estado, val, totalMaterialesFallback = 
   doc.text('IMPORTE', x + w - 3, estado.y + 5, { align: 'right' });
 
   let y = estado.y + altoCab;
-  filas.forEach((f, idx) => {
+  filasMedidas.forEach((f, idx) => {
     if (idx % 2 === 1) {
       setFill(doc, COLOR.fondoZebra);
-      doc.rect(x, y, w, altoFila, 'F');
+      doc.rect(x, y, w, f[4], 'F');
     }
+    setStroke(doc, COLOR.bordeSuave);
+    doc.line(x + colDesc, y, x + colDesc, y + f[4]);
+    doc.line(x + colDesc + colDetalle, y, x + colDesc + colDetalle, y + f[4]);
     setText(doc, COLOR.texto);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.text(String(f[0]), x + 3, y + 4.5);
+    doc.text(String(f[0]), x + 3, y + f[4] / 2 + 1.1);
     setText(doc, COLOR.textoSuave);
     doc.setFontSize(8.5);
-    doc.text(String(f[1]), x + colDesc + colDetalle / 2, y + 4.5, { align: 'center' });
+    doc.text(f[3], x + colDesc + 3, y + 4);
     setText(doc, COLOR.texto);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.text(eur(f[2]), x + w - 3, y + 4.5, { align: 'right' });
-    y += altoFila;
+    doc.text(eur(f[2]), x + w - 3, y + f[4] / 2 + 1.1, { align: 'right' });
+    y += f[4];
   });
 
   // Total general destacado
@@ -667,9 +700,9 @@ function dibujarValoracionEconomica(doc, estado, val, totalMaterialesFallback = 
 
   setStroke(doc, COLOR.borde);
   doc.setLineWidth(0.2);
-  doc.roundedRect(x, estado.y, w, altoCab + filas.length * altoFila + altoTotal, 2, 2, 'S');
+  doc.roundedRect(x, estado.y, w, altoCab + altoCuerpo + altoTotal, 2, 2, 'S');
 
-  estado.y += altoCab + filas.length * altoFila + altoTotal + 5;
+  estado.y += altoCab + altoCuerpo + altoTotal + 5;
 }
 
 async function dibujarFotos(doc, estado, urls) {
@@ -700,6 +733,8 @@ async function dibujarFotos(doc, estado, urls) {
       doc.roundedRect(x, y, ancho, alto, 2, 2, 'FD');
       setFill(doc, COLOR.fondoMarcaTenue);
       doc.roundedRect(x, y, ancho, padTitulo, 2, 2, 'F');
+      setFill(doc, COLOR.fondoSuave);
+      doc.roundedRect(x + 2, y + padTitulo + 2, ancho - 4, alto - padTitulo - 4, 1.5, 1.5, 'F');
 
       setText(doc, COLOR.marca);
       doc.setFont('helvetica', 'bold');
@@ -736,30 +771,39 @@ async function dibujarFotos(doc, estado, urls) {
 }
 
 async function dibujarFirma(doc, estado, firmaUrl, nombreFirmante, avisoConformidad) {
-  const alto = 48;
-  reservarEspacio(doc, estado, alto + 3);
-
   const x = PAGINA.margenX;
   const w = PAGINA.contenido;
   const colFirma = w * 0.55;
   const colDatos = w - colFirma;
+  const aviso = avisoConformidad !== undefined
+    ? String(avisoConformidad || '')
+    : 'El cliente declara haber recibido el servicio descrito y dar su conformidad a las tareas realizadas.';
+  const lineasAviso = aviso ? obtenerLineasTexto(doc, aviso, colDatos - 8, '') : [];
+  const altoAviso = lineasAviso.length ? lineasAviso.length * 3.4 + 2 : 0;
+  const alto = Math.max(48, 38 + altoAviso);
+  reservarEspacio(doc, estado, alto + 3);
 
   setFill(doc, COLOR.fondoTarjeta);
   setStroke(doc, COLOR.borde);
   doc.setLineWidth(0.2);
   doc.roundedRect(x, estado.y, w, alto, 2, 2, 'FD');
   doc.line(x + colFirma, estado.y, x + colFirma, estado.y + alto);
+  setFill(doc, COLOR.fondoMarcaTenue);
+  doc.roundedRect(x, estado.y, colFirma, 8, 2, 2, 'F');
+  doc.roundedRect(x + colFirma, estado.y, colDatos, 8, 2, 2, 'F');
 
   // Caja firma
   setText(doc, COLOR.textoSuave);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.text('FIRMA DEL CLIENTE', x + 3, estado.y + 5);
+  setFill(doc, COLOR.fondoSuave);
+  doc.roundedRect(x + 3, estado.y + 10, colFirma - 6, alto - 16, 1.5, 1.5, 'F');
 
   if (firmaUrl) {
     const dataUrl = await urlADataUrl(firmaUrl);
     if (dataUrl) {
-      try { doc.addImage(dataUrl, 'PNG', x + 3, estado.y + 7, colFirma - 6, alto - 12); } catch { /* noop */ }
+      try { doc.addImage(dataUrl, 'PNG', x + 3, estado.y + 10, colFirma - 6, alto - 16); } catch { /* noop */ }
     } else {
       setText(doc, COLOR.textoMute);
       doc.setFont('helvetica', 'italic');
@@ -801,25 +845,27 @@ async function dibujarFirma(doc, estado, firmaUrl, nombreFirmante, avisoConformi
   setText(doc, COLOR.textoMute);
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
-  const aviso = avisoConformidad !== undefined
-    ? String(avisoConformidad || '')
-    : 'El cliente declara haber recibido el servicio descrito y dar su conformidad a las tareas realizadas.';
   if (aviso) {
-    doc.text(doc.splitTextToSize(aviso, colDatos - 8), xD, estado.y + 40);
+    doc.text(lineasAviso, xD, estado.y + 40);
   }
 
   estado.y += alto + 4;
 }
 
 function dibujarBloqueLegal(doc, estado) {
-  reservarEspacio(doc, estado, 22);
   const x = PAGINA.margenX;
   const w = PAGINA.contenido;
+  const aviso = `${EMPRESA.nombre} (${EMPRESA.cif}) · ${EMPRESA.direccion}. Documento generado automáticamente desde la plataforma SAT Móvil COTEPA. La conformidad del cliente se acredita mediante firma digital. Las imágenes incluidas constituyen evidencias de la intervención. Los datos personales se tratan según la normativa vigente; para ejercer derechos, escriba a ${EMPRESA.email}.`;
+  const lineasAviso = obtenerLineasTexto(doc, aviso, w - 8, '');
+  const alto = Math.max(22, 8 + lineasAviso.length * 3.4 + 4);
+  reservarEspacio(doc, estado, alto);
 
   setFill(doc, COLOR.fondoAcentoTenue);
   setStroke(doc, COLOR.borde);
   doc.setLineWidth(0.2);
-  doc.roundedRect(x, estado.y, w, 20, 2, 2, 'FD');
+  doc.roundedRect(x, estado.y, w, alto, 2, 2, 'FD');
+  setFill(doc, COLOR.acentoSuave);
+  doc.roundedRect(x, estado.y, 2, alto, 1, 1, 'F');
 
   setText(doc, COLOR.marca);
   doc.setFont('helvetica', 'bold');
@@ -829,10 +875,9 @@ function dibujarBloqueLegal(doc, estado) {
   setText(doc, COLOR.textoSuave);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  const aviso = `${EMPRESA.nombre} (${EMPRESA.cif}) · ${EMPRESA.direccion}. Documento generado automáticamente desde la plataforma SAT Móvil COTEPA. La conformidad del cliente se acredita mediante firma digital. Las imágenes incluidas constituyen evidencias de la intervención. Los datos personales se tratan según la normativa vigente; para ejercer derechos, escriba a ${EMPRESA.email}.`;
-  doc.text(doc.splitTextToSize(aviso, w - 6), x + 3, estado.y + 9);
+  doc.text(lineasAviso, x + 4.5, estado.y + 9);
 
-  estado.y += 22;
+  estado.y += alto + 2;
 }
 
 // =====================================================================
