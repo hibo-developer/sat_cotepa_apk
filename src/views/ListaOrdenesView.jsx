@@ -46,6 +46,26 @@ const OPCIONES_ESTADO_EDITABLE = [
   { value: 'en_proceso', label: 'En Proceso' },
   { value: 'pausado', label: 'Pausado' },
 ];
+const PASOS_ALTA_RAPIDA = [
+  {
+    numero: '01',
+    titulo: 'Cliente y equipo',
+    descripcion: 'Selecciona el contexto de la incidencia o del PEM.',
+    campos: 'Cliente, equipo',
+  },
+  {
+    numero: '02',
+    titulo: 'Tecnico y tipo',
+    descripcion: 'Asigna responsable y clasifica rapidamente el trabajo.',
+    campos: 'Tecnico, tipo',
+  },
+  {
+    numero: '03',
+    titulo: 'Detalle y prioridad',
+    descripcion: 'Resume la intervencion y marca la urgencia real.',
+    campos: 'Descripcion, prioridad',
+  },
+];
 
 function resolverUbicacionCliente(orden) {
   const direccion = String(orden?.clienteDireccion || '').trim();
@@ -527,247 +547,302 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="surface-panel px-4 py-3">
-          <p className="metric-label">Paso 1</p>
-          <p className="mt-2 text-sm font-black tracking-tight text-sat-text">Cliente y equipo</p>
-          <p className="mt-1 text-xs leading-5 text-sat-subtle">Selecciona el contexto de la incidencia o del PEM.</p>
-        </div>
-        <div className="surface-panel px-4 py-3">
-          <p className="metric-label">Paso 2</p>
-          <p className="mt-2 text-sm font-black tracking-tight text-sat-text">Técnico y tipo</p>
-          <p className="mt-1 text-xs leading-5 text-sat-subtle">Asigna responsable y clasifica rápidamente el trabajo.</p>
-        </div>
-        <div className="surface-panel px-4 py-3">
-          <p className="metric-label">Paso 3</p>
-          <p className="mt-2 text-sm font-black tracking-tight text-sat-text">Detalle y prioridad</p>
-          <p className="mt-1 text-xs leading-5 text-sat-subtle">Resume la intervención y marca la urgencia real.</p>
+      <div>
+        <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(13rem,1fr))]">
+          {PASOS_ALTA_RAPIDA.map((paso) => (
+            <div
+              key={paso.numero}
+              className="surface-panel min-w-0 overflow-hidden border-marca-100 bg-gradient-to-br from-sat-surface to-white px-4 py-3"
+            >
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-marca-900 text-xs font-black tracking-[0.18em] text-white shadow-sm">
+                  {paso.numero}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="metric-label">Paso {Number.parseInt(paso.numero, 10)}</p>
+                  <p className="mt-2 text-sm font-black tracking-tight text-sat-text">{paso.titulo}</p>
+                  <p className="mt-1 text-xs font-semibold text-sat-subtle">{paso.campos}</p>
+                  <p className="mt-2 text-xs leading-5 text-sat-subtle">{paso.descripcion}</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <label className="block">
-        <span className="label-base">Cliente *</span>
-        <input
-          value={busquedaCliente}
-          onChange={(evento) => {
-            setPaginaClientes(1);
-            setBusquedaCliente(evento.target.value);
-          }}
-          className="input-base mb-2"
-          placeholder="Buscar cliente por nombre"
-          disabled={formularioDeshabilitado}
-        />
-        <select
-          required
-          name="cliente_id"
-          value={formulario.cliente_id}
-          onChange={(evento) => {
-            const clienteSeleccionado = clientes.find((cliente) => cliente.id === evento.target.value);
-            setFormulario((previo) => ({
-              ...previo,
-              cliente_id: evento.target.value,
-              equipo_id: '',
-            }));
-            setPaginaEquipos(1);
-            setEquipos([]);
-            setBusquedaEquipo('');
-            if (clienteSeleccionado) {
-              setBusquedaCliente(clienteSeleccionado.nombre);
-            }
-          }}
-          className="select-base"
-          disabled={formularioDeshabilitado}
-        >
-          <option value="">Selecciona cliente</option>
-          {clientes.map((cliente) => (
-            <option key={cliente.id} value={cliente.id}>
-              {cliente.nombre}
-            </option>
-          ))}
-        </select>
-        {!!busquedaClienteDebounce && clientes.length === 0 && (
-          <p className="help-message">No hay clientes que coincidan con la búsqueda.</p>
-        )}
-        {hayMasClientes && (
-          <button
-            type="button"
-            onClick={() => setPaginaClientes((previo) => previo + 1)}
-            className="btn-secondary mt-2 w-full px-3 py-2 text-xs"
-            disabled={cargandoClientes}
-          >
-            {cargandoClientes ? 'Cargando...' : 'Cargar más clientes'}
-          </button>
-        )}
-      </label>
+      <div className="space-y-4">
+        <section className="rounded-[1.25rem] border border-sat-border-soft bg-sat-surface/70 p-4 shadow-sm">
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="metric-label">Paso 1</p>
+              <h4 className="mt-2 text-sm font-black tracking-tight text-sat-text">Cliente y equipo</h4>
+              <p className="mt-1 text-xs leading-5 text-sat-subtle">
+                Selecciona el cliente y, si procede, acota la orden al equipo correcto.
+              </p>
+            </div>
+            <span className="inline-flex items-center rounded-full border border-sat-border-soft bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted">
+              Contexto
+            </span>
+          </div>
+          <div className="grid gap-3 xl:grid-cols-2">
+            <label className="block min-w-0">
+              <span className="label-base">Cliente *</span>
+              <input
+                value={busquedaCliente}
+                onChange={(evento) => {
+                  setPaginaClientes(1);
+                  setBusquedaCliente(evento.target.value);
+                }}
+                className="input-base mb-2"
+                placeholder="Buscar cliente por nombre"
+                disabled={formularioDeshabilitado}
+              />
+              <select
+                required
+                name="cliente_id"
+                value={formulario.cliente_id}
+                onChange={(evento) => {
+                  const clienteSeleccionado = clientes.find((cliente) => cliente.id === evento.target.value);
+                  setFormulario((previo) => ({
+                    ...previo,
+                    cliente_id: evento.target.value,
+                    equipo_id: '',
+                  }));
+                  setPaginaEquipos(1);
+                  setEquipos([]);
+                  setBusquedaEquipo('');
+                  if (clienteSeleccionado) {
+                    setBusquedaCliente(clienteSeleccionado.nombre);
+                  }
+                }}
+                className="select-base"
+                disabled={formularioDeshabilitado}
+              >
+                <option value="">Selecciona cliente</option>
+                {clientes.map((cliente) => (
+                  <option key={cliente.id} value={cliente.id}>
+                    {cliente.nombre}
+                  </option>
+                ))}
+              </select>
+              {!!busquedaClienteDebounce && clientes.length === 0 && (
+                <p className="help-message">No hay clientes que coincidan con la búsqueda.</p>
+              )}
+              {hayMasClientes && (
+                <button
+                  type="button"
+                  onClick={() => setPaginaClientes((previo) => previo + 1)}
+                  className="btn-secondary mt-2 w-full px-3 py-2 text-xs"
+                  disabled={cargandoClientes}
+                >
+                  {cargandoClientes ? 'Cargando...' : 'Cargar más clientes'}
+                </button>
+              )}
+            </label>
 
-      <label className="block">
-        <span className="label-base">Equipo</span>
-        <input
-          value={busquedaEquipo}
-          onChange={(evento) => {
-            setPaginaEquipos(1);
-            setBusquedaEquipo(evento.target.value);
-          }}
-          className="input-base mb-2"
-          placeholder="Buscar equipo por nombre, marca o modelo"
-          disabled={!formulario.cliente_id || formularioDeshabilitado}
-        />
-        <select
-          name="equipo_id"
-          value={formulario.equipo_id}
-          onChange={(evento) => {
-            const equipoSeleccionado = equipos.find((equipo) => equipo.id === evento.target.value);
-            setFormulario((previo) => ({ ...previo, equipo_id: evento.target.value }));
-            if (equipoSeleccionado) {
-              const etiqueta = [equipoSeleccionado.nombre, equipoSeleccionado.marca, equipoSeleccionado.modelo]
-                .filter(Boolean)
-                .join(' ');
-              setBusquedaEquipo(etiqueta);
-            }
-          }}
-          className="select-base"
-          disabled={!formulario.cliente_id || formularioDeshabilitado}
-        >
-          <option value="">Sin equipo</option>
-          {equipos.map((equipo) => (
-            <option key={equipo.id} value={equipo.id}>
-              {equipo.nombre}
-              {equipo.marca ? ` - ${equipo.marca}` : ''}
-              {equipo.modelo ? ` ${equipo.modelo}` : ''}
-            </option>
-          ))}
-        </select>
-        {!!busquedaEquipoDebounce && equipos.length === 0 && (
-          <p className="help-message">No hay equipos que coincidan con la búsqueda.</p>
-        )}
-        {hayMasEquipos && (
-          <button
-            type="button"
-            onClick={() => setPaginaEquipos((previo) => previo + 1)}
-            className="btn-secondary mt-2 w-full px-3 py-2 text-xs"
-            disabled={cargandoEquipos}
-          >
-            {cargandoEquipos ? 'Cargando...' : 'Cargar más equipos'}
-          </button>
-        )}
-      </label>
+            <label className="block min-w-0">
+              <span className="label-base">Equipo</span>
+              <input
+                value={busquedaEquipo}
+                onChange={(evento) => {
+                  setPaginaEquipos(1);
+                  setBusquedaEquipo(evento.target.value);
+                }}
+                className="input-base mb-2"
+                placeholder="Buscar equipo por nombre, marca o modelo"
+                disabled={!formulario.cliente_id || formularioDeshabilitado}
+              />
+              <select
+                name="equipo_id"
+                value={formulario.equipo_id}
+                onChange={(evento) => {
+                  const equipoSeleccionado = equipos.find((equipo) => equipo.id === evento.target.value);
+                  setFormulario((previo) => ({ ...previo, equipo_id: evento.target.value }));
+                  if (equipoSeleccionado) {
+                    const etiqueta = [equipoSeleccionado.nombre, equipoSeleccionado.marca, equipoSeleccionado.modelo]
+                      .filter(Boolean)
+                      .join(' ');
+                    setBusquedaEquipo(etiqueta);
+                  }
+                }}
+                className="select-base"
+                disabled={!formulario.cliente_id || formularioDeshabilitado}
+              >
+                <option value="">Sin equipo</option>
+                {equipos.map((equipo) => (
+                  <option key={equipo.id} value={equipo.id}>
+                    {equipo.nombre}
+                    {equipo.marca ? ` - ${equipo.marca}` : ''}
+                    {equipo.modelo ? ` ${equipo.modelo}` : ''}
+                  </option>
+                ))}
+              </select>
+              {!!busquedaEquipoDebounce && equipos.length === 0 && (
+                <p className="help-message">No hay equipos que coincidan con la búsqueda.</p>
+              )}
+              {hayMasEquipos && (
+                <button
+                  type="button"
+                  onClick={() => setPaginaEquipos((previo) => previo + 1)}
+                  className="btn-secondary mt-2 w-full px-3 py-2 text-xs"
+                  disabled={cargandoEquipos}
+                >
+                  {cargandoEquipos ? 'Cargando...' : 'Cargar más equipos'}
+                </button>
+              )}
+            </label>
+          </div>
+        </section>
 
-      <label className="block">
-        <span className="label-base">Técnico *</span>
-        <input
-          value={busquedaTecnico}
-          onChange={(evento) => {
-            setPaginaTecnicos(1);
-            setBusquedaTecnico(evento.target.value);
-          }}
-          className="input-base mb-2"
-          placeholder="Buscar técnico por nombre o especialidad"
-          disabled={formularioDeshabilitado}
-        />
-        <select
-          required
-          name="tecnico_id"
-          value={formulario.tecnico_id}
-          onChange={(evento) => {
-            const tecnicoSeleccionado = tecnicos.find((tecnico) => tecnico.id === evento.target.value);
-            setFormulario((previo) => ({ ...previo, tecnico_id: evento.target.value }));
-            if (tecnicoSeleccionado) {
-              const etiqueta = [tecnicoSeleccionado.nombre, tecnicoSeleccionado.especialidad]
-                .filter(Boolean)
-                .join(' ');
-              setBusquedaTecnico(etiqueta);
-            }
-          }}
-          className="select-base"
-          disabled={formularioDeshabilitado}
-        >
-          <option value="">Selecciona técnico</option>
-          {tecnicos.map((tecnico) => (
-            <option key={tecnico.id} value={tecnico.id}>
-              {tecnico.nombre}
-              {tecnico.especialidad ? ` (${tecnico.especialidad})` : ''}
-            </option>
-          ))}
-        </select>
-        {!!busquedaTecnicoDebounce && tecnicos.length === 0 && (
-          <p className="help-message">No hay técnicos que coincidan con la búsqueda.</p>
-        )}
-        {hayMasTecnicos && (
-          <button
-            type="button"
-            onClick={() => setPaginaTecnicos((previo) => previo + 1)}
-            className="btn-secondary mt-2 w-full px-3 py-2 text-xs"
-            disabled={cargandoTecnicos}
-          >
-            {cargandoTecnicos ? 'Cargando...' : 'Cargar más técnicos'}
-          </button>
-        )}
-      </label>
+        <section className="rounded-[1.25rem] border border-sat-border-soft bg-sat-surface/70 p-4 shadow-sm">
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="metric-label">Paso 2</p>
+              <h4 className="mt-2 text-sm font-black tracking-tight text-sat-text">Tecnico y tipo</h4>
+              <p className="mt-1 text-xs leading-5 text-sat-subtle">
+                Define el responsable y el tipo de orden para clasificarla correctamente.
+              </p>
+            </div>
+            <span className="inline-flex items-center rounded-full border border-sat-border-soft bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted">
+              Asignacion
+            </span>
+          </div>
+          <div className="grid gap-3 xl:grid-cols-2">
+            <label className="block min-w-0">
+              <span className="label-base">Tecnico *</span>
+              <input
+                value={busquedaTecnico}
+                onChange={(evento) => {
+                  setPaginaTecnicos(1);
+                  setBusquedaTecnico(evento.target.value);
+                }}
+                className="input-base mb-2"
+                placeholder="Buscar tecnico por nombre o especialidad"
+                disabled={formularioDeshabilitado}
+              />
+              <select
+                required
+                name="tecnico_id"
+                value={formulario.tecnico_id}
+                onChange={(evento) => {
+                  const tecnicoSeleccionado = tecnicos.find((tecnico) => tecnico.id === evento.target.value);
+                  setFormulario((previo) => ({ ...previo, tecnico_id: evento.target.value }));
+                  if (tecnicoSeleccionado) {
+                    const etiqueta = [tecnicoSeleccionado.nombre, tecnicoSeleccionado.especialidad]
+                      .filter(Boolean)
+                      .join(' ');
+                    setBusquedaTecnico(etiqueta);
+                  }
+                }}
+                className="select-base"
+                disabled={formularioDeshabilitado}
+              >
+                <option value="">Selecciona tecnico</option>
+                {tecnicos.map((tecnico) => (
+                  <option key={tecnico.id} value={tecnico.id}>
+                    {tecnico.nombre}
+                    {tecnico.especialidad ? ` (${tecnico.especialidad})` : ''}
+                  </option>
+                ))}
+              </select>
+              {!!busquedaTecnicoDebounce && tecnicos.length === 0 && (
+                <p className="help-message">No hay tecnicos que coincidan con la busqueda.</p>
+              )}
+              {hayMasTecnicos && (
+                <button
+                  type="button"
+                  onClick={() => setPaginaTecnicos((previo) => previo + 1)}
+                  className="btn-secondary mt-2 w-full px-3 py-2 text-xs"
+                  disabled={cargandoTecnicos}
+                >
+                  {cargandoTecnicos ? 'Cargando...' : 'Cargar más tecnicos'}
+                </button>
+              )}
+            </label>
 
-      <label className="block">
-        <span className="label-base">Tipo de orden *</span>
-        <select
-          required
-          name="tipo_orden"
-          value={formulario.tipo_orden}
-          onChange={(evento) => {
-            const siguiente = evento.target.value;
-            setFormulario((previo) => {
-              const defaults = {
-                averia: '',
-                montaje: 'PEM · Montaje',
-                puesta_en_marcha: 'PEM · Puesta en marcha',
-              };
-              const descripcionActual = String(previo.descripcion_averia || '');
-              const esDefaultPrevio = Object.values(defaults).includes(descripcionActual);
-              const siguienteDescripcion = esDefaultPrevio ? (defaults[siguiente] ?? descripcionActual) : descripcionActual;
-              return {
-                ...previo,
-                tipo_orden: siguiente,
-                descripcion_averia: siguienteDescripcion,
-              };
-            });
-          }}
-          className="select-base"
-          disabled={formularioDeshabilitado}
-        >
-          <option value="averia">Avería</option>
-          <option value="montaje">Montaje</option>
-          <option value="puesta_en_marcha">Puesta en marcha</option>
-        </select>
-      </label>
+            <label className="block min-w-0">
+              <span className="label-base">Tipo de orden *</span>
+              <select
+                required
+                name="tipo_orden"
+                value={formulario.tipo_orden}
+                onChange={(evento) => {
+                  const siguiente = evento.target.value;
+                  setFormulario((previo) => {
+                    const defaults = {
+                      averia: '',
+                      montaje: 'PEM · Montaje',
+                      puesta_en_marcha: 'PEM · Puesta en marcha',
+                    };
+                    const descripcionActual = String(previo.descripcion_averia || '');
+                    const esDefaultPrevio = Object.values(defaults).includes(descripcionActual);
+                    const siguienteDescripcion = esDefaultPrevio ? (defaults[siguiente] ?? descripcionActual) : descripcionActual;
+                    return {
+                      ...previo,
+                      tipo_orden: siguiente,
+                      descripcion_averia: siguienteDescripcion,
+                    };
+                  });
+                }}
+                className="select-base"
+                disabled={formularioDeshabilitado}
+              >
+                <option value="averia">Averia</option>
+                <option value="montaje">Montaje</option>
+                <option value="puesta_en_marcha">Puesta en marcha</option>
+              </select>
+            </label>
+          </div>
+        </section>
 
-      <label className="block">
-        <span className="label-base">
-          {formulario.tipo_orden === 'averia' ? 'Descripción de la avería *' : 'Descripción de la orden *'}
-        </span>
-        <textarea
-          required
-          name="descripcion_averia"
-          value={formulario.descripcion_averia}
-          onChange={actualizarCampo}
-          rows={3}
-          className="input-base min-h-[96px] resize-y"
-          placeholder={formulario.tipo_orden === 'averia'
-            ? 'Describe el problema detectado'
-            : 'Describe el montaje o la puesta en marcha'}
-        />
-      </label>
+        <section className="rounded-[1.25rem] border border-sat-border-soft bg-sat-surface/70 p-4 shadow-sm">
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="metric-label">Paso 3</p>
+              <h4 className="mt-2 text-sm font-black tracking-tight text-sat-text">Detalle y prioridad</h4>
+              <p className="mt-1 text-xs leading-5 text-sat-subtle">
+                Describe la necesidad real y marca la prioridad antes de crear la orden.
+              </p>
+            </div>
+            <span className="inline-flex items-center rounded-full border border-sat-border-soft bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted">
+              Cierre
+            </span>
+          </div>
+          <div className="grid gap-3">
+            <label className="block min-w-0">
+              <span className="label-base">
+                {formulario.tipo_orden === 'averia' ? 'Descripcion de la averia *' : 'Descripcion de la orden *'}
+              </span>
+              <textarea
+                required
+                name="descripcion_averia"
+                value={formulario.descripcion_averia}
+                onChange={actualizarCampo}
+                rows={3}
+                className="input-base min-h-[112px] resize-y"
+                placeholder={formulario.tipo_orden === 'averia'
+                  ? 'Describe el problema detectado'
+                  : 'Describe el montaje o la puesta en marcha'}
+              />
+            </label>
 
-      <label className="block">
-        <span className="label-base">Prioridad</span>
-        <select
-          name="prioridad"
-          value={formulario.prioridad}
-          onChange={actualizarCampo}
-          className="select-base"
-        >
-          <option value="baja">Baja</option>
-          <option value="media">Media</option>
-          <option value="alta">Alta</option>
-          <option value="urgente">Urgente</option>
-        </select>
-      </label>
+            <label className="block min-w-0">
+              <span className="label-base">Prioridad</span>
+              <select
+                name="prioridad"
+                value={formulario.prioridad}
+                onChange={actualizarCampo}
+                className="select-base"
+              >
+                <option value="baja">Baja</option>
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+                <option value="urgente">Urgente</option>
+              </select>
+            </label>
+          </div>
+        </section>
+      </div>
 
       <div className="surface-panel px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1106,6 +1181,7 @@ function TarjetaOrden({
   const etiquetaTipo = resolverEtiquetaTipoOrden(orden.tipoOrden);
   const etiquetaPrioridad = resolverEtiquetaPrioridad(orden.prioridad);
   const IconoTipoOrden = etiquetaTipo.icono;
+  const identificadorOrden = orden.numero_ticket ? `SAT-${orden.numero_ticket}` : orden.id;
   const [mostrarEdicion, setMostrarEdicion] = useState(false);
   const [mostrarValoracion, setMostrarValoracion] = useState(false);
   const [mostrarEliminar, setMostrarEliminar] = useState(false);
@@ -1347,21 +1423,31 @@ function TarjetaOrden({
   return (
     <article className="overflow-hidden rounded-[1.45rem] border border-white bg-white p-4 shadow-suave transition hover:-translate-y-0.5 hover:shadow-lift">
       <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sat-subtle">
-              {orden.numero_ticket ? `SAT-${orden.numero_ticket}` : orden.id}
-            </p>
-            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold ${etiquetaTipo.clase}`}>
-              <IconoTipoOrden className="h-3.5 w-3.5" />
-              {etiquetaTipo.texto}
-            </span>
-            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold ${etiquetaPrioridad.clase}`}>
-              <Flag className="h-3.5 w-3.5" />
-              {etiquetaPrioridad.texto}
-            </span>
+        <div className="min-w-0 flex-1">
+          <div className="rounded-[1.2rem] border border-sat-border-soft bg-gradient-to-r from-sat-surface to-white px-3 py-3 shadow-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sat-subtle">
+                {identificadorOrden}
+              </p>
+              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold ${etiquetaTipo.clase}`}>
+                <IconoTipoOrden className="h-3.5 w-3.5" />
+                {etiquetaTipo.texto}
+              </span>
+              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold ${etiquetaPrioridad.clase}`}>
+                <Flag className="h-3.5 w-3.5" />
+                {etiquetaPrioridad.texto}
+              </span>
+            </div>
+            <h3 className="mt-2 truncate text-lg font-black tracking-tight text-sat-text">{orden.equipo}</h3>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-sat-muted">
+              <span className="inline-flex items-center rounded-full border border-sat-border-soft bg-white px-2.5 py-1">
+                Cliente: {orden.cliente || 'Sin cliente'}
+              </span>
+              <span className="inline-flex items-center rounded-full border border-sat-border-soft bg-white px-2.5 py-1">
+                Fecha: {orden.fecha || 'Sin fecha'}
+              </span>
+            </div>
           </div>
-          <h3 className="mt-2 text-lg font-black tracking-tight text-sat-text">{orden.equipo}</h3>
         </div>
         <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${clase}`}>
           <IconoEstado className="h-4 w-4" />
@@ -1400,7 +1486,7 @@ function TarjetaOrden({
       </div>
 
       <div className="space-y-3 text-sm text-sat-muted">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <p className="min-w-0 flex-1 rounded-2xl border border-sat-border-soft bg-sat-surface px-3 py-3">
             <span className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-sat-subtle">
               <MapPinned className="h-3.5 w-3.5" />
@@ -1412,7 +1498,7 @@ function TarjetaOrden({
             type="button"
             onClick={() => onIrACliente(orden)}
             disabled={!ubicacionCliente.tieneUbicacion}
-            className="btn-secondary shrink-0 px-3 py-2 text-xs disabled:opacity-60"
+            className="btn-secondary inline-flex shrink-0 items-center justify-center rounded-2xl border-marca-200 bg-marca-50 px-4 py-3 text-xs font-bold text-marca-800 disabled:opacity-60"
           >
             Ir
           </button>
@@ -1687,33 +1773,44 @@ function TarjetaOrden({
 
       {orden.estado !== 'Finalizado' && (
         <div className="mt-3 space-y-2">
-          <div className={`grid gap-2 ${puedeEditarOrden ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
-            {puedeEditarOrden && (
+          <div className="rounded-[1.2rem] border border-sat-border-soft bg-gradient-to-r from-white to-sat-surface px-3 py-3 shadow-sm">
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sat-subtle">Acciones operativas</p>
+                <p className="mt-1 text-sm font-black tracking-tight text-sat-text">Gestiona la orden directamente desde el listado</p>
+              </div>
+              <span className="inline-flex items-center rounded-full border border-sat-border-soft bg-white px-2.5 py-1 text-[11px] font-bold text-sat-muted">
+                {identificadorOrden}
+              </span>
+            </div>
+            <div className={`grid gap-2 ${puedeEditarOrden ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
+              {puedeEditarOrden && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMostrarEdicion((previo) => !previo);
+                    setMensajeEdicion('');
+                  }}
+                  className="btn-secondary w-full rounded-2xl px-4 py-3 text-sm"
+                >
+                  {mostrarEdicion ? 'Cancelar edición' : 'Editar orden'}
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => {
-                  setMostrarEdicion((previo) => !previo);
-                  setMensajeEdicion('');
-                }}
-                className="btn-secondary w-full px-4 py-3 text-sm"
+                onClick={() => onIrAParte(orden)}
+                className="btn-secondary w-full rounded-2xl border-marca-300 bg-marca-50 px-4 py-3 text-sm text-marca-800"
               >
-                {mostrarEdicion ? 'Cancelar edición' : 'Editar orden'}
+                Ir a parte
               </button>
-            )}
-            <button
-              type="button"
-              onClick={() => onIrAParte(orden)}
-              className="btn-secondary w-full border-marca-300 bg-marca-50 px-4 py-3 text-sm text-marca-800"
-            >
-              Ir a parte
-            </button>
-            <button
-              type="button"
-              onClick={() => onIrAParte(orden)}
-              className="btn-primary w-full px-4 py-3 text-sm"
-            >
-              Finalizar con informe
-            </button>
+              <button
+                type="button"
+                onClick={() => onIrAParte(orden)}
+                className="btn-primary w-full rounded-2xl px-4 py-3 text-sm"
+              >
+                Finalizar con informe
+              </button>
+            </div>
           </div>
 
           {mostrarEdicion && puedeEditarOrden && (
