@@ -1031,17 +1031,19 @@ async function crearPdfInforme({
     trabajosTexto || (parte?.tareas_realizadas ? 'Sin descripción adicional.' : 'Sin trabajos registrados.'),
   );
 
-  // ==== Control de tiempos ====
-  const filasTiempo = construirFilasControlTiempos({
-    desplazamiento,
-    intervension,
-    seguimientoTiempo,
-    mostrarInicioFinDesplazamiento: false,
-  });
-  if (filasTiempo.length) {
-    dibujarTituloSeccion(doc, estado, 'Control de tiempos y geolocalización');
-    dibujarTablaInfo(doc, estado, filasTiempo);
-  }
+  // ==== Control de tiempos (sección visual eliminada) ====
+  // Los datos de tiempos y geolocalización se siguen calculando internamente
+  // pero no se muestran en el PDF a petición del usuario.
+  // const filasTiempo = construirFilasControlTiempos({
+  //   desplazamiento,
+  //   intervension,
+  //   seguimientoTiempo,
+  //   mostrarInicioFinDesplazamiento: false,
+  // });
+  // if (filasTiempo.length) {
+  //   dibujarTituloSeccion(doc, estado, 'Control de tiempos y geolocalización');
+  //   dibujarTablaInfo(doc, estado, filasTiempo);
+  // }
 
   // ==== Materiales ====
   const materiales = materialesDesdeTexto(formulario?.materialesTexto || '');
