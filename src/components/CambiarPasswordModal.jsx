@@ -51,90 +51,102 @@ export function CambiarPasswordModal({ abierto, onCerrar }) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="titulo-cambiar-password"
-    >
-      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 id="titulo-cambiar-password" className="text-lg font-extrabold text-marca-900">
-            Cambiar contrasena
-          </h2>
-          <button
-            type="button"
-            onClick={cerrar}
-            className="rounded-lg px-2 py-1 text-sm font-bold text-marca-700 hover:bg-marca-50"
-            aria-label="Cerrar"
-          >
-            X
-          </button>
-        </div>
-
-        <form onSubmit={manejarSubmit} className="space-y-3">
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-sat-muted">
-              Nueva contrasena
-            </span>
-            <input
-              type="password"
-              value={nueva}
-              onChange={(evento) => setNueva(evento.target.value)}
-              required
-              autoComplete="new-password"
-              className="w-full rounded-xl border border-marca-100 bg-white px-3 py-2 text-sm shadow-sm focus:border-cotepa-rojo-500 focus:outline-none"
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-sat-muted">
-              Repetir nueva contrasena
-            </span>
-            <input
-              type="password"
-              value={repetir}
-              onChange={(evento) => setRepetir(evento.target.value)}
-              required
-              autoComplete="new-password"
-              className="w-full rounded-xl border border-marca-100 bg-white px-3 py-2 text-sm shadow-sm focus:border-cotepa-rojo-500 focus:outline-none"
-            />
-          </label>
-
-          <p className="text-[11px] leading-tight text-sat-subtle">
-            Minimo 10 caracteres con mayusculas, minusculas y numeros. Se comprueba contra
-            filtraciones publicas (HaveIBeenPwned) sin enviar la contrasena.
-          </p>
-
-          {error && (
-            <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-              {error}
-            </p>
-          )}
-          {exito && (
-            <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
-              {exito}
-            </p>
-          )}
-
-          <div className="flex items-center justify-end gap-2 pt-2">
+    <>
+      <div className="modal-overlay" onClick={cerrar} aria-hidden="true" />
+      <div
+        className="modal-shell"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-cambiar-password"
+      >
+        <div className="modal-card max-w-md">
+          <div className="modal-header">
+            <div>
+              <span className="chip-soft">Credenciales</span>
+              <h2 id="titulo-cambiar-password" className="mt-3 text-xl font-black tracking-tight text-marca-900">
+                Cambiar contrasena
+              </h2>
+              <p className="mt-1 text-sm text-sat-muted">
+                Actualiza tu acceso manteniendo una contraseña robusta y alineada con las políticas del sistema.
+              </p>
+            </div>
             <button
               type="button"
               onClick={cerrar}
-              className="rounded-xl border border-marca-100 bg-marca-50 px-3 py-2 text-xs font-bold text-marca-700"
+              className="modal-close"
+              aria-label="Cerrar"
             >
-              Cerrar
-            </button>
-            <button
-              type="submit"
-              disabled={enviando}
-              className="rounded-xl bg-cotepa-rojo-500 px-4 py-2 text-xs font-bold text-white shadow-md disabled:opacity-60"
-            >
-              {enviando ? 'Guardando...' : 'Guardar'}
+              X
             </button>
           </div>
-        </form>
+
+          <form onSubmit={manejarSubmit} className="space-y-4 p-5">
+            <label className="block">
+              <span className="label-base">
+                Nueva contrasena
+              </span>
+              <input
+                type="password"
+                value={nueva}
+                onChange={(evento) => setNueva(evento.target.value)}
+                required
+                autoComplete="new-password"
+                className="input-base"
+              />
+            </label>
+
+            <label className="block">
+              <span className="label-base">
+                Repetir nueva contrasena
+              </span>
+              <input
+                type="password"
+                value={repetir}
+                onChange={(evento) => setRepetir(evento.target.value)}
+                required
+                autoComplete="new-password"
+                className="input-base"
+              />
+            </label>
+
+            <div className="surface-panel p-4">
+              <p className="metric-label">Requisitos</p>
+              <p className="mt-2 text-[11px] leading-5 text-sat-subtle">
+                Minimo 10 caracteres con mayusculas, minusculas y numeros. Se comprueba contra
+                filtraciones publicas (HaveIBeenPwned) sin enviar la contrasena.
+              </p>
+            </div>
+
+            {error && (
+              <p className="status-banner-error text-xs">
+                {error}
+              </p>
+            )}
+            {exito && (
+              <p className="status-banner-success text-xs">
+                {exito}
+              </p>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={cerrar}
+                className="btn-secondary px-4 py-2 text-xs"
+              >
+                Cerrar
+              </button>
+              <button
+                type="submit"
+                disabled={enviando}
+                className="btn-primary px-4 py-2 text-xs disabled:opacity-60"
+              >
+                {enviando ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

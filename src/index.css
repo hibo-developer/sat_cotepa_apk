@@ -280,4 +280,28 @@ body::after {
   .list-card {
     @apply rounded-[1.35rem] border border-white bg-white p-4 shadow-suave backdrop-blur-sm transition hover:-translate-y-0.5 hover:shadow-lift;
   }
+
+  .modal-overlay {
+    @apply fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm;
+  }
+
+  .modal-shell {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  }
+
+  .modal-card {
+    @apply w-full rounded-[1.6rem] border border-white/70 bg-white/95 shadow-hero backdrop-blur-xl;
+  }
+
+  .modal-header {
+    @apply flex items-start justify-between gap-3 border-b border-sat-border-soft px-5 py-4;
+  }
+
+  .modal-close {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-xl border border-marca-100 bg-white text-sm font-bold text-marca-700 transition hover:bg-marca-50;
+  }
+
+  .chip-soft {
+    @apply inline-flex items-center rounded-full border border-marca-100 bg-marca-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-marca-700;
+  }
 }

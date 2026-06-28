@@ -32,25 +32,26 @@ export function NavbarInferior({
   });
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-marca-100 bg-white/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-2xl backdrop-blur lg:hidden">
-      <ul className="mx-auto flex w-full max-w-screen-2xl items-center justify-between gap-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-marca-100/80 bg-white/92 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-2xl backdrop-blur-xl lg:hidden">
+      <ul className="mx-auto grid w-full max-w-screen-2xl auto-cols-fr grid-flow-col items-stretch gap-2">
         {itemsVisibles.map((item) => {
           const Icono = item.icono;
           const activo = vistaActiva === item.key;
 
           return (
-            <li key={item.key} className="flex-1">
+            <li key={item.key}>
               <button
                 type="button"
                 onClick={() => onCambiarVista(item.key)}
-                className={`flex w-full flex-col items-center justify-center rounded-2xl px-2 py-3 text-sm font-semibold transition active:scale-95 ${
+                className={`flex w-full flex-col items-center justify-center rounded-[1.35rem] px-2 py-3 text-[11px] font-bold transition active:scale-95 ${
                   activo
-                    ? 'bg-cotepa-rojo-500 text-white shadow-lg'
-                    : 'bg-marca-50 text-marca-700 hover:bg-marca-100'
+                    ? 'bg-gradient-to-br from-cotepa-rojo-500 to-cotepa-rojo-600 text-white shadow-lift'
+                    : 'bg-white/70 text-marca-700 shadow-sm hover:-translate-y-0.5 hover:bg-marca-50'
                 }`}
+                aria-current={activo ? 'page' : undefined}
               >
-                <Icono className="mb-1 h-6 w-6" strokeWidth={2.25} />
-                {item.label}
+                <Icono className={`mb-1 h-5 w-5 ${activo ? '' : 'text-marca-600'}`} strokeWidth={2.25} />
+                <span className="leading-tight">{item.label}</span>
               </button>
             </li>
           );

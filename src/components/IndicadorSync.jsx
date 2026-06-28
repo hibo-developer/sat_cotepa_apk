@@ -65,8 +65,8 @@ export function IndicadorSync() {
 
   const offline = !estado.online;
   const colorBase = offline
-    ? 'bg-amber-50 border-amber-300 text-amber-900'
-    : 'bg-sky-50 border-sky-300 text-sky-900';
+    ? 'border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-950'
+    : 'border-sky-200 bg-gradient-to-r from-sky-50 to-cyan-50 text-sky-950';
 
   const detallePartes = estado.pendientesPartes > 0
     ? ` · ${estado.pendientesPartes} parte${estado.pendientesPartes > 1 ? 's' : ''} por enviar`
@@ -78,17 +78,17 @@ export function IndicadorSync() {
   return (
     <div
       role="status"
-      className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs font-semibold shadow-sm ${colorBase}`}
+      className={`surface-card flex items-center justify-between gap-3 border px-4 py-3 text-xs font-semibold ${colorBase}`}
     >
       <div className="flex items-center gap-2">
         <span
-          className={`inline-block h-2.5 w-2.5 rounded-full ${offline ? 'bg-amber-500 animate-pulse' : 'bg-sky-500'}`}
+          className={`inline-block h-2.5 w-2.5 rounded-full shadow-sm ${offline ? 'bg-amber-500 animate-pulse' : 'bg-sky-500'}`}
           aria-hidden="true"
         />
-        <span>
+        <span className="leading-relaxed">
           {offline ? 'Sin conexión · trabajando en local' : 'Cambios pendientes de sincronizar'}
           {estado.pendientes > 0 && (
-            <span className="ml-1 inline-flex items-center justify-center rounded-full bg-white/70 px-1.5 py-0.5 text-[10px] font-bold">
+            <span className="ml-1 inline-flex items-center justify-center rounded-full border border-white/80 bg-white/80 px-1.5 py-0.5 text-[10px] font-black shadow-sm">
               {estado.pendientes}
             </span>
           )}
@@ -101,7 +101,7 @@ export function IndicadorSync() {
           type="button"
           onClick={sincronizarAhora}
           disabled={sincronizando}
-          className="rounded-lg bg-white/80 px-2.5 py-1 text-[11px] font-bold text-sky-700 transition hover:bg-white disabled:opacity-60"
+          className="btn-secondary px-3 py-1.5 text-[11px] text-sky-700 disabled:opacity-60"
         >
           {sincronizando ? 'Sincronizando…' : 'Sincronizar ahora'}
         </button>
