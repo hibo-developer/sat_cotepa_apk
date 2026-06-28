@@ -482,22 +482,50 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
   return (
     <form
       onSubmit={enviarFormulario}
-      className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta"
+      className="space-y-4 rounded-[1.5rem] border border-white bg-white p-4 shadow-hero lg:p-5"
     >
-      <div className="flex items-center gap-2">
-        <Wrench className="h-5 w-5 text-marca-700" />
-        <h3 className="text-base font-bold text-sat-text">Nueva Orden de Trabajo</h3>
+      <div className="rounded-[1.25rem] border border-marca-100 bg-gradient-to-br from-marca-50 to-white px-4 py-4 shadow-sm">
+        <div className="flex items-start gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-marca-900 text-white shadow-sm">
+            <Wrench className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="metric-label">Alta rápida</p>
+            <h3 className="mt-2 text-base font-black tracking-tight text-sat-text">Nueva Orden de Trabajo</h3>
+            <p className="mt-1 text-sm leading-6 text-sat-muted">
+              Crea una orden operativa en pocos pasos con cliente, técnico y prioridad definidos desde el mismo listado.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="surface-panel px-4 py-3">
+          <p className="metric-label">Paso 1</p>
+          <p className="mt-2 text-sm font-black tracking-tight text-sat-text">Cliente y equipo</p>
+          <p className="mt-1 text-xs leading-5 text-sat-subtle">Selecciona el contexto de la incidencia o del PEM.</p>
+        </div>
+        <div className="surface-panel px-4 py-3">
+          <p className="metric-label">Paso 2</p>
+          <p className="mt-2 text-sm font-black tracking-tight text-sat-text">Técnico y tipo</p>
+          <p className="mt-1 text-xs leading-5 text-sat-subtle">Asigna responsable y clasifica rápidamente el trabajo.</p>
+        </div>
+        <div className="surface-panel px-4 py-3">
+          <p className="metric-label">Paso 3</p>
+          <p className="mt-2 text-sm font-black tracking-tight text-sat-text">Detalle y prioridad</p>
+          <p className="mt-1 text-xs leading-5 text-sat-subtle">Resume la intervención y marca la urgencia real.</p>
+        </div>
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-sat-muted">Cliente *</span>
+        <span className="label-base">Cliente *</span>
         <input
           value={busquedaCliente}
           onChange={(evento) => {
             setPaginaClientes(1);
             setBusquedaCliente(evento.target.value);
           }}
-          className="mb-2 w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+          className="input-base mb-2"
           placeholder="Buscar cliente por nombre"
           disabled={formularioDeshabilitado}
         />
@@ -519,7 +547,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               setBusquedaCliente(clienteSeleccionado.nombre);
             }
           }}
-          className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+          className="select-base"
           disabled={formularioDeshabilitado}
         >
           <option value="">Selecciona cliente</option>
@@ -530,13 +558,13 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           ))}
         </select>
         {!!busquedaClienteDebounce && clientes.length === 0 && (
-          <p className="mt-1 text-xs font-medium text-sat-subtle">No hay clientes que coincidan con la búsqueda.</p>
+          <p className="help-message">No hay clientes que coincidan con la búsqueda.</p>
         )}
         {hayMasClientes && (
           <button
             type="button"
             onClick={() => setPaginaClientes((previo) => previo + 1)}
-            className="mt-2 w-full rounded-xl border border-sat-border px-3 py-2 text-xs font-bold text-sat-muted"
+            className="btn-secondary mt-2 w-full px-3 py-2 text-xs"
             disabled={cargandoClientes}
           >
             {cargandoClientes ? 'Cargando...' : 'Cargar más clientes'}
@@ -545,14 +573,14 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-sat-muted">Equipo</span>
+        <span className="label-base">Equipo</span>
         <input
           value={busquedaEquipo}
           onChange={(evento) => {
             setPaginaEquipos(1);
             setBusquedaEquipo(evento.target.value);
           }}
-          className="mb-2 w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+          className="input-base mb-2"
           placeholder="Buscar equipo por nombre, marca o modelo"
           disabled={!formulario.cliente_id || formularioDeshabilitado}
         />
@@ -569,7 +597,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               setBusquedaEquipo(etiqueta);
             }
           }}
-          className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+          className="select-base"
           disabled={!formulario.cliente_id || formularioDeshabilitado}
         >
           <option value="">Sin equipo</option>
@@ -582,13 +610,13 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           ))}
         </select>
         {!!busquedaEquipoDebounce && equipos.length === 0 && (
-          <p className="mt-1 text-xs font-medium text-sat-subtle">No hay equipos que coincidan con la búsqueda.</p>
+          <p className="help-message">No hay equipos que coincidan con la búsqueda.</p>
         )}
         {hayMasEquipos && (
           <button
             type="button"
             onClick={() => setPaginaEquipos((previo) => previo + 1)}
-            className="mt-2 w-full rounded-xl border border-sat-border px-3 py-2 text-xs font-bold text-sat-muted"
+            className="btn-secondary mt-2 w-full px-3 py-2 text-xs"
             disabled={cargandoEquipos}
           >
             {cargandoEquipos ? 'Cargando...' : 'Cargar más equipos'}
@@ -597,14 +625,14 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-sat-muted">Técnico *</span>
+        <span className="label-base">Técnico *</span>
         <input
           value={busquedaTecnico}
           onChange={(evento) => {
             setPaginaTecnicos(1);
             setBusquedaTecnico(evento.target.value);
           }}
-          className="mb-2 w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+          className="input-base mb-2"
           placeholder="Buscar técnico por nombre o especialidad"
           disabled={formularioDeshabilitado}
         />
@@ -622,7 +650,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               setBusquedaTecnico(etiqueta);
             }
           }}
-          className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+          className="select-base"
           disabled={formularioDeshabilitado}
         >
           <option value="">Selecciona técnico</option>
@@ -634,13 +662,13 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           ))}
         </select>
         {!!busquedaTecnicoDebounce && tecnicos.length === 0 && (
-          <p className="mt-1 text-xs font-medium text-sat-subtle">No hay técnicos que coincidan con la búsqueda.</p>
+          <p className="help-message">No hay técnicos que coincidan con la búsqueda.</p>
         )}
         {hayMasTecnicos && (
           <button
             type="button"
             onClick={() => setPaginaTecnicos((previo) => previo + 1)}
-            className="mt-2 w-full rounded-xl border border-sat-border px-3 py-2 text-xs font-bold text-sat-muted"
+            className="btn-secondary mt-2 w-full px-3 py-2 text-xs"
             disabled={cargandoTecnicos}
           >
             {cargandoTecnicos ? 'Cargando...' : 'Cargar más técnicos'}
@@ -649,7 +677,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-sat-muted">Tipo de orden *</span>
+        <span className="label-base">Tipo de orden *</span>
         <select
           required
           name="tipo_orden"
@@ -672,7 +700,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
               };
             });
           }}
-          className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+          className="select-base"
           disabled={formularioDeshabilitado}
         >
           <option value="averia">Avería</option>
@@ -682,7 +710,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-sat-muted">
+        <span className="label-base">
           {formulario.tipo_orden === 'averia' ? 'Descripción de la avería *' : 'Descripción de la orden *'}
         </span>
         <textarea
@@ -691,7 +719,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
           value={formulario.descripcion_averia}
           onChange={actualizarCampo}
           rows={3}
-          className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+          className="input-base min-h-[96px] resize-y"
           placeholder={formulario.tipo_orden === 'averia'
             ? 'Describe el problema detectado'
             : 'Describe el montaje o la puesta en marcha'}
@@ -699,12 +727,12 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-sat-muted">Prioridad</span>
+        <span className="label-base">Prioridad</span>
         <select
           name="prioridad"
           value={formulario.prioridad}
           onChange={actualizarCampo}
-          className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+          className="select-base"
         >
           <option value="baja">Baja</option>
           <option value="media">Media</option>
@@ -713,23 +741,36 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
         </select>
       </label>
 
-      <button
-        type="submit"
-        disabled={accionEnCurso || formularioDeshabilitado}
-        className="w-full rounded-2xl bg-cotepa-rojo-500 px-4 py-4 text-sm font-bold text-white active:scale-95 disabled:opacity-60"
-      >
-        {cargandoCatalogos
-          ? 'Cargando catálogos...'
-          : !puedeCrearOrdenes
-            ? 'Sin permisos para crear órdenes'
-            : accionEnCurso
-              ? 'Guardando...'
-              : 'Crear Orden'}
-      </button>
+      <div className="surface-panel px-4 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="metric-label">Acción</p>
+            <p className="mt-2 text-sm font-black tracking-tight text-sat-text">
+              {puedeCrearOrdenes ? 'Crear y publicar en el listado' : 'Creación deshabilitada por permisos'}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-sat-subtle">
+              La orden se añadirá al listado actual y quedará lista para asignación y seguimiento.
+            </p>
+          </div>
+          <button
+            type="submit"
+            disabled={accionEnCurso || formularioDeshabilitado}
+            className="btn-primary w-full px-4 py-3 text-sm sm:w-auto"
+          >
+            {cargandoCatalogos
+              ? 'Cargando catálogos...'
+              : !puedeCrearOrdenes
+                ? 'Sin permisos para crear órdenes'
+                : accionEnCurso
+                  ? 'Guardando...'
+                  : 'Crear Orden'}
+          </button>
+        </div>
+      </div>
 
-      {mensaje && <p className="text-xs font-semibold text-sat-muted">{mensaje}</p>}
+      {mensaje && <p className="status-banner-success text-xs">{mensaje}</p>}
       {!puedeCrearOrdenes && (
-        <p className="text-xs font-semibold text-sat-muted">
+        <p className="status-banner-warning text-xs">
           Tu rol técnico no permite crear órdenes nuevas.
         </p>
       )}
@@ -1882,6 +1923,16 @@ export function ListaOrdenesView({ rolUsuario }) {
     },
     { Pendiente: 0, 'En Proceso': 0, Pausado: 0, Finalizado: 0 },
   );
+  const contadoresEstado = {
+    Todas: ordenesAnalisis.length,
+    Pendiente: resumenAnalisis.Pendiente,
+    'En Proceso': resumenAnalisis['En Proceso'],
+    Pausado: resumenAnalisis.Pausado,
+    Finalizado: resumenAnalisis.Finalizado,
+  };
+  const nombreClienteAnalisis = filtroClienteAnalisis === 'todos'
+    ? 'Todos los clientes'
+    : clientesAnalisis.find((cliente) => cliente.id === filtroClienteAnalisis)?.nombre || 'Cliente no disponible';
 
   const ordenesFinalizadas = ordenesAnalisis.filter((orden) => orden.estado === 'Finalizado');
   const informesDisponibles = ordenesFinalizadas.filter((orden) => orden.informePdfUrl).length;
@@ -2256,59 +2307,100 @@ export function ListaOrdenesView({ rolUsuario }) {
           </article>
         </div>
 
-        <div className="mt-3 rounded-xl border border-white/15 bg-white/10 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">Ámbito de análisis</p>
-            <span className="text-[11px] font-semibold text-slate-300">{ordenesAnalisis.length} órdenes en análisis</span>
+        <div className="mt-3 rounded-[1.25rem] border border-white/15 bg-white/10 p-3 shadow-sm backdrop-blur-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">Ámbito de análisis</p>
+              <p className="mt-1 text-sm font-black tracking-tight text-white">{nombreClienteAnalisis}</p>
+              <p className="mt-1 text-xs text-slate-300">
+                Ajusta cliente, tipo, estado y búsqueda para centrar el listado operativo más rápido.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-right">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">Órdenes visibles</p>
+              <p className="mt-1 text-lg font-black text-white">{totalOrdenesFiltradas}</p>
+            </div>
           </div>
-          <label className="mt-2 block">
-            <span className="mb-1 block text-xs font-semibold text-slate-200">Filtrar por cliente</span>
-            <select
-              value={filtroClienteAnalisis}
-              onChange={(evento) => setFiltroClienteAnalisis(evento.target.value)}
-              className="w-full rounded-lg border border-white/20 bg-marca-900 px-3 py-2 text-sm text-white"
-            >
-              <option value="todos">Todos los clientes</option>
-              {clientesAnalisis.map((cliente) => (
-                <option key={cliente.id} value={cliente.id}>
-                  {cliente.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)_minmax(0,1fr)]">
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-slate-200">Filtrar por cliente</span>
+              <select
+                value={filtroClienteAnalisis}
+                onChange={(evento) => setFiltroClienteAnalisis(evento.target.value)}
+                className="w-full rounded-xl border border-white/20 bg-marca-900/90 px-3 py-2.5 text-sm text-white shadow-sm transition hover:border-white/30 focus:border-white/40 focus:outline-none"
+              >
+                <option value="todos">Todos los clientes</option>
+                {clientesAnalisis.map((cliente) => (
+                  <option key={cliente.id} value={cliente.id}>
+                    {cliente.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-slate-200">Filtrar por tipo de orden</span>
+              <select
+                value={filtroTipoOrden}
+                onChange={(evento) => setFiltroTipoOrden(evento.target.value)}
+                className="w-full rounded-xl border border-white/20 bg-marca-900/90 px-3 py-2.5 text-sm text-white shadow-sm transition hover:border-white/30 focus:border-white/40 focus:outline-none"
+              >
+                <option value="todos">Todas</option>
+                <option value="averia">Avería</option>
+                <option value="pem">PEM (Montaje + Puesta en marcha)</option>
+                <option value="montaje">PEM · Montaje</option>
+                <option value="puesta_en_marcha">PEM · Puesta en marcha</option>
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-slate-200">Buscar orden</span>
+              <input
+                value={busquedaOrdenes}
+                onChange={(evento) => setBusquedaOrdenes(evento.target.value)}
+                className="w-full rounded-xl border border-white/20 bg-marca-900/90 px-3 py-2.5 text-sm text-white shadow-sm transition placeholder:text-slate-300 hover:border-white/30 focus:border-white/40 focus:outline-none"
+                placeholder="Ticket, cliente, equipo o técnico"
+              />
+            </label>
+          </div>
         </div>
 
         {!esTecnico && (
           <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs font-bold lg:grid-cols-4">
-            <div className="rounded-xl bg-white/10 p-2">
+            <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
               <p className="text-slate-300">MTTR</p>
               <p className="text-base text-white">{mttrMinutos} min</p>
             </div>
-            <div className="rounded-xl bg-white/10 p-2">
+            <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
               <p className="text-slate-300">SLA 48h</p>
               <p className="text-base text-white">{cumplimientoSla48h}%</p>
             </div>
-            <div className="rounded-xl bg-white/10 p-2">
+            <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
               <p className="text-slate-300">FTF proxy</p>
               <p className="text-base text-white">{firstTimeFixProxy}%</p>
             </div>
-            <div className="rounded-xl bg-white/10 p-2">
+            <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
               <p className="text-slate-300">Coste mat.</p>
               <p className="text-base text-white">{costeTotalMateriales} €</p>
             </div>
           </div>
         )}
 
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs font-bold">
-          <div className="rounded-xl bg-white/10 p-2">
+        <div className="mt-4 grid grid-cols-2 gap-2 text-center text-xs font-bold sm:grid-cols-4">
+          <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
             <p className="text-slate-300">Pendientes</p>
             <p className="text-base text-white">{resumenAnalisis.Pendiente}</p>
           </div>
-          <div className="rounded-xl bg-white/10 p-2">
+          <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
             <p className="text-slate-300">En Proceso</p>
             <p className="text-base text-white">{resumenAnalisis['En Proceso']}</p>
           </div>
-          <div className="rounded-xl bg-white/10 p-2">
+          <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
+            <p className="text-slate-300">Pausadas</p>
+            <p className="text-base text-white">{resumenAnalisis.Pausado}</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
             <p className="text-slate-300">Finalizadas</p>
             <p className="text-base text-white">{resumenAnalisis.Finalizado}</p>
           </div>
@@ -2320,42 +2412,21 @@ export function ListaOrdenesView({ rolUsuario }) {
               key={filtro}
               type="button"
               onClick={() => setFiltroEstado(filtro)}
-              className={`rounded-full px-3 py-2 text-xs font-bold transition ${
-                filtroEstado === filtro ? 'bg-cotepa-rojo-500 text-white' : 'bg-white/10 text-white'
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition ${
+                filtroEstado === filtro
+                  ? 'border-cotepa-rojo-500 bg-cotepa-rojo-500 text-white shadow-md'
+                  : 'border-white/10 bg-white/10 text-white hover:border-white/20 hover:bg-white/15'
               }`}
             >
               {filtro}
+              <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                filtroEstado === filtro ? 'bg-white/15 text-white' : 'bg-white/10 text-slate-200'
+              }`}
+              >
+                {contadoresEstado[filtro] ?? 0}
+              </span>
             </button>
           ))}
-        </div>
-
-        <div className="mt-3">
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-slate-200">Filtrar por tipo de orden</span>
-            <select
-              value={filtroTipoOrden}
-              onChange={(evento) => setFiltroTipoOrden(evento.target.value)}
-              className="w-full rounded-lg border border-white/20 bg-marca-900 px-3 py-2 text-sm text-white"
-            >
-              <option value="todos">Todas</option>
-              <option value="averia">Avería</option>
-              <option value="pem">PEM (Montaje + Puesta en marcha)</option>
-              <option value="montaje">PEM · Montaje</option>
-              <option value="puesta_en_marcha">PEM · Puesta en marcha</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="mt-3">
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-slate-200">Buscar orden</span>
-            <input
-              value={busquedaOrdenes}
-              onChange={(evento) => setBusquedaOrdenes(evento.target.value)}
-              className="w-full rounded-lg border border-white/20 bg-marca-900 px-3 py-2 text-sm text-white placeholder:text-slate-300"
-              placeholder="Ticket, cliente, equipo o técnico"
-            />
-          </label>
         </div>
       </header>
 
@@ -2391,16 +2462,16 @@ export function ListaOrdenesView({ rolUsuario }) {
           ))}
 
           {totalPaginas > 1 && (
-            <div className="flex items-center justify-between gap-2 rounded-xl border border-sat-border-soft bg-sat-surface px-3 py-2 text-sm text-sat-muted">
+            <div className="toolbar-panel rounded-[1.2rem] px-3 py-3 text-sm">
               <p className="text-xs font-semibold">
                 Página {paginaSegura} de {totalPaginas} · {totalOrdenesFiltradas} órdenes
               </p>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   disabled={paginaSegura === 1}
                   onClick={() => setPaginaActual(1)}
-                  className="rounded-lg border border-sat-border bg-white px-2 py-1 text-xs font-bold text-sat-muted disabled:opacity-40"
+                  className="btn-secondary rounded-xl px-2.5 py-1.5 text-xs disabled:opacity-40"
                   title="Primera página"
                 >
                   «
@@ -2409,7 +2480,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                   type="button"
                   disabled={paginaSegura === 1}
                   onClick={() => setPaginaActual((p) => p - 1)}
-                  className="rounded-lg border border-sat-border bg-white px-2 py-1 text-xs font-bold text-sat-muted disabled:opacity-40"
+                  className="btn-secondary rounded-xl px-2.5 py-1.5 text-xs disabled:opacity-40"
                   title="Página anterior"
                 >
                   ‹
@@ -2429,10 +2500,10 @@ export function ListaOrdenesView({ rolUsuario }) {
                         key={p}
                         type="button"
                         onClick={() => setPaginaActual(p)}
-                        className={`rounded-lg border px-2 py-1 text-xs font-bold ${
+                        className={`rounded-xl border px-2.5 py-1.5 text-xs font-bold transition ${
                           p === paginaSegura
-                            ? 'border-cotepa-rojo-500 bg-cotepa-rojo-500 text-white'
-                            : 'border-sat-border bg-white text-sat-muted'
+                            ? 'border-cotepa-rojo-500 bg-cotepa-rojo-500 text-white shadow-sm'
+                            : 'border-sat-border bg-white text-sat-muted hover:border-marca-200 hover:bg-marca-50'
                         }`}
                       >
                         {p}
@@ -2443,7 +2514,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                   type="button"
                   disabled={paginaSegura === totalPaginas}
                   onClick={() => setPaginaActual((p) => p + 1)}
-                  className="rounded-lg border border-sat-border bg-white px-2 py-1 text-xs font-bold text-sat-muted disabled:opacity-40"
+                  className="btn-secondary rounded-xl px-2.5 py-1.5 text-xs disabled:opacity-40"
                   title="Página siguiente"
                 >
                   ›
@@ -2452,7 +2523,7 @@ export function ListaOrdenesView({ rolUsuario }) {
                   type="button"
                   disabled={paginaSegura === totalPaginas}
                   onClick={() => setPaginaActual(totalPaginas)}
-                  className="rounded-lg border border-sat-border bg-white px-2 py-1 text-xs font-bold text-sat-muted disabled:opacity-40"
+                  className="btn-secondary rounded-xl px-2.5 py-1.5 text-xs disabled:opacity-40"
                   title="Última página"
                 >
                   »
@@ -2462,9 +2533,36 @@ export function ListaOrdenesView({ rolUsuario }) {
           )}
 
           {!ordenesListado.length && (
-            <div className="flex items-center gap-2 rounded-xl border border-dashed border-sat-border bg-sat-surface p-3 text-sm font-medium text-sat-muted">
-              <TriangleAlert className="h-4 w-4" />
-              No hay órdenes disponibles con los filtros y búsqueda seleccionados.
+            <div className="overflow-hidden rounded-[1.35rem] border border-dashed border-marca-200 bg-gradient-to-br from-sat-surface to-white shadow-sm">
+              <div className="h-1.5 w-full bg-gradient-to-r from-marca-500 via-marca-600 to-cotepa-rojo-500" />
+              <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-marca-50 text-marca-700">
+                    <TriangleAlert className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="metric-label">Sin resultados</p>
+                    <p className="mt-2 text-base font-black tracking-tight text-sat-text">
+                      No hay órdenes visibles con los filtros actuales
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-sat-muted">
+                      Ajusta cliente, tipo, estado o búsqueda para volver a mostrar órdenes en el listado.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFiltroClienteAnalisis('todos');
+                    setFiltroTipoOrden('todos');
+                    setFiltroEstado('Todas');
+                    setBusquedaOrdenes('');
+                  }}
+                  className="btn-secondary px-4 py-3 text-sm"
+                >
+                  Restablecer filtros
+                </button>
+              </div>
             </div>
           )}
         </div>
