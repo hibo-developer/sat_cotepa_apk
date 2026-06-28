@@ -1943,6 +1943,9 @@ export function ListaOrdenesView({ rolUsuario }) {
 
   const ordenesFinalizadas = ordenesAnalisis.filter((orden) => orden.estado === 'Finalizado');
   const informesDisponibles = ordenesFinalizadas.filter((orden) => orden.informePdfUrl).length;
+  const coberturaInformesPct = ordenesFinalizadas.length
+    ? Math.round((informesDisponibles / ordenesFinalizadas.length) * 100)
+    : 0;
   const terminoBusqueda = busquedaOrdenesDebounce.trim().toLowerCase();
   const ordenesListado = terminoBusqueda
     ? ordenesFiltradasPorTipo.filter((orden) => {
@@ -2279,14 +2282,33 @@ export function ListaOrdenesView({ rolUsuario }) {
             </div>
             <p className="mt-2 text-xl font-extrabold text-white">{informesDisponibles}</p>
             <p className="text-xs text-slate-200">listos para incluir en ZIP</p>
+            <div className="mt-3 space-y-2 rounded-2xl border border-white/10 bg-white/10 p-3">
+              <div className="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-200">
+                <span>Cobertura</span>
+                <span>{coberturaInformesPct}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-white transition-all"
+                  style={{ width: `${coberturaInformesPct}%` }}
+                />
+              </div>
+              <p className="text-[11px] leading-5 text-slate-200">
+                {informesDisponibles} de {ordenesFinalizadas.length} órdenes finalizadas tienen ya su PDF listo.
+              </p>
+            </div>
             <button
               type="button"
               onClick={exportarInformesZip}
               disabled={exportandoZip}
-              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-bold text-marca-900 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-marca-900 disabled:opacity-60"
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-bold text-marca-900 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-marca-900 disabled:opacity-60"
             >
+              <Download className="h-4 w-4" />
               {exportandoZip ? 'Generando ZIP...' : 'Descargar ZIP de informes'}
             </button>
+            <p className="mt-2 text-[11px] leading-5 text-slate-200">
+              La descarga agrupa los informes disponibles sin modificar ninguno de los PDF originales.
+            </p>
           </article>
 
           {!esTecnico && (
