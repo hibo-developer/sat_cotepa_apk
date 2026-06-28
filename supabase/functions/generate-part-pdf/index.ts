@@ -255,13 +255,7 @@ async function generarPdf({
   seccion('Descripción', [txt(parte?.descripcion_averia || formulario?.descripcion_problema, 'Sin descripción')]);
   seccion('Trabajos realizados', [txt(parte?.tareas_realizadas, 'Sin trabajos registrados')]);
 
-  const desplazamientoLineas = [
-    `Inicio desplazamiento: ${formatFecha(desplazamiento?.inicioIso)}`,
-    `Fin desplazamiento: ${formatFecha(desplazamiento?.finIso)}`,
-    `Inicio intervención: ${formatFecha(intervension?.inicioIso)}`,
-    `Fin intervención: ${formatFecha(intervension?.finIso)}`,
-  ];
-  seccion('Tiempos', desplazamientoLineas);
+  // La seccion de tiempos y geolocalizacion se oculta visualmente en el PDF.
 
   const materialesTexto = String(formulario?.materialesTexto || '').trim();
   seccion('Materiales', [materialesTexto || 'No se registraron materiales.']);
