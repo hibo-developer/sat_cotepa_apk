@@ -3,9 +3,13 @@
 @tailwind utilities;
 
 :root {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --sat-color-bg: #eff4fc;
   --sat-color-text: #0f172a;
+  --sat-color-surface: rgba(255, 255, 255, 0.9);
+  --sat-color-panel: rgba(248, 250, 252, 0.9);
+  --sat-shadow-soft: 0 18px 48px -28px rgba(15, 23, 42, 0.24);
+  --sat-ring: rgba(51, 74, 155, 0.16);
 }
 
 html {
@@ -30,6 +34,7 @@ body {
   backface-visibility: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body,
@@ -97,6 +102,17 @@ body::after {
    ============================================ */
 
 @layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  ::selection {
+    background: rgba(34, 52, 127, 0.18);
+    color: #0f172a;
+  }
+
   /* Estados de focus accesibles para todos los elementos interactivos */
   button:focus-visible,
   a:focus-visible,
@@ -106,7 +122,8 @@ body::after {
   [tabindex]:focus-visible {
     outline: 2px solid #22347f;
     outline-offset: 2px;
-    transition: outline-color 0.15s ease, outline-offset 0.15s ease;
+    box-shadow: 0 0 0 4px var(--sat-ring);
+    transition: outline-color 0.15s ease, outline-offset 0.15s ease, box-shadow 0.2s ease;
   }
 
   /* Focus para elementos con error */
@@ -120,7 +137,13 @@ body::after {
   button,
   a,
   [role="button"] {
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.18s ease,
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      color 0.18s ease,
+      opacity 0.18s ease;
   }
 
   /* Estado active para feedback táctil */
@@ -137,6 +160,12 @@ body::after {
     opacity: 1;
   }
 
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
   /* Mejora de contraste para campos deshabilitados */
   input:disabled,
   select:disabled,
@@ -150,32 +179,32 @@ body::after {
 @layer components {
   /* Botón primario reutilizable */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-cotepa-rojo-500 px-4 py-3 text-sm font-bold text-white shadow-md transition hover:bg-cotepa-rojo-600 focus-visible:ring-2 focus-visible:ring-cotepa-rojo-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-cotepa-rojo-500 px-4 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-cotepa-rojo-600 hover:shadow-lift focus-visible:ring-2 focus-visible:ring-cotepa-rojo-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   /* Botón secundario reutilizable */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-marca-200 bg-white px-4 py-3 text-sm font-bold text-marca-700 shadow-sm transition hover:bg-marca-50 focus-visible:ring-2 focus-visible:ring-marca-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-marca-200 bg-white px-4 py-3 text-sm font-bold text-marca-700 shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-marca-50 hover:shadow-suave focus-visible:ring-2 focus-visible:ring-marca-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   /* Botón fantasma */
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-sat-muted transition hover:bg-sat-surface-alt focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-sat-muted transition hover:bg-sat-surface-alt hover:text-sat-text focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   /* Input base mejorado */
   .input-base {
-    @apply w-full rounded-xl border border-sat-border bg-white px-4 py-3 text-sm text-sat-text transition placeholder:text-sat-faint hover:border-slate-400 focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-sat-surface;
+    @apply w-full rounded-xl border border-sat-border bg-white px-4 py-3 text-sm text-sat-text shadow-sm transition placeholder:text-sat-faint hover:border-slate-400 hover:shadow-sm focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-sat-surface;
   }
 
   /* Select base mejorado */
   .select-base {
-    @apply w-full rounded-xl border border-sat-border bg-white px-4 py-3 text-sm text-sat-text transition hover:border-slate-400 focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-sat-surface;
+    @apply w-full rounded-xl border border-sat-border bg-white px-4 py-3 text-sm text-sat-text shadow-sm transition hover:border-slate-400 hover:shadow-sm focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-sat-surface;
   }
 
   /* Etiqueta de formulario */
   .label-base {
-    @apply mb-1.5 block text-xs font-semibold text-sat-muted;
+    @apply mb-1.5 block text-xs font-semibold tracking-[0.02em] text-sat-muted;
   }
 
   /* Mensaje de error de formulario */
@@ -186,5 +215,69 @@ body::after {
   /* Mensaje de ayuda de formulario */
   .help-message {
     @apply mt-1 text-xs text-sat-subtle;
+  }
+
+  .app-shell {
+    @apply rounded-[1.75rem] border border-white bg-white shadow-hero backdrop-blur-xl;
+  }
+
+  .section-hero {
+    @apply overflow-hidden rounded-[1.75rem] border border-marca-100 bg-gradient-to-br from-marca-900 via-marca-800 to-marca-600 text-white shadow-hero;
+  }
+
+  .surface-card {
+    @apply rounded-[1.5rem] border border-white bg-white shadow-suave backdrop-blur-md;
+  }
+
+  .surface-panel {
+    @apply rounded-2xl border border-marca-100 bg-sat-surface shadow-sm backdrop-blur-sm;
+  }
+
+  .status-banner {
+    @apply rounded-2xl border px-4 py-3 text-sm font-medium shadow-sm;
+  }
+
+  .status-banner-error {
+    @apply status-banner border-red-200 bg-red-50 text-red-700;
+  }
+
+  .status-banner-success {
+    @apply status-banner border-emerald-200 bg-emerald-50 text-emerald-700;
+  }
+
+  .status-banner-warning {
+    @apply status-banner border-amber-200 bg-amber-50 text-amber-800;
+  }
+
+  .metric-card {
+    @apply rounded-2xl border border-white bg-white p-4 shadow-sm backdrop-blur-md;
+  }
+
+  .metric-value {
+    @apply text-2xl font-black tracking-tight text-sat-text;
+  }
+
+  .metric-label {
+    @apply text-[11px] font-bold uppercase tracking-[0.24em] text-sat-subtle;
+  }
+
+  .segmented-control {
+    @apply grid gap-2 rounded-[1.35rem] border border-marca-100 bg-white p-1.5 shadow-sm backdrop-blur-md;
+  }
+
+  .segmented-item {
+    @apply rounded-xl px-3 py-3 text-sm font-bold text-marca-700 transition;
+  }
+
+  .segmented-item-active {
+    @apply bg-cotepa-rojo-500 text-white shadow-md;
+  }
+
+  .toolbar-panel {
+    @apply flex flex-col gap-3 rounded-2xl border border-sat-border-soft bg-sat-surface px-4 py-3 text-xs font-semibold text-sat-muted shadow-sm sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .list-card {
+    @apply rounded-[1.35rem] border border-white bg-white p-4 shadow-suave backdrop-blur-sm transition hover:-translate-y-0.5 hover:shadow-lift;
   }
 }

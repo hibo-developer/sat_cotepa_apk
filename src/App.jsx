@@ -269,46 +269,56 @@ export default function App() {
   });
 
   return (
-    <div className="mx-auto min-h-[100dvh] w-full max-w-screen-2xl px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-[calc(1.25rem+env(safe-area-inset-top))] md:px-5 lg:px-6 lg:pb-8">
-      <header className="mb-4 overflow-hidden rounded-2xl border border-marca-100 bg-white shadow-tarjeta">
-        <div className="h-2 w-full bg-cotepa-rojo-500" />
-        <div className="flex items-center gap-3 p-3 lg:gap-4 lg:px-5 lg:py-4">
+    <div className="mx-auto min-h-[100dvh] w-full max-w-screen-2xl px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] md:px-5 lg:px-6 lg:pb-8">
+      <header className="section-hero mb-4">
+        <div className="h-1.5 w-full bg-gradient-to-r from-cotepa-rojo-500 via-cotepa-rojo-600 to-marca-600" />
+        <div className="flex items-center gap-3 p-4 lg:gap-4 lg:px-6 lg:py-5">
           <img
             src={logoCotepa}
             alt="Logo COTEPA"
-            className="h-16 w-16 rounded-xl border border-marca-100 object-cover lg:h-20 lg:w-20"
+            className="h-16 w-16 rounded-2xl border border-white/40 object-cover shadow-lg ring-4 ring-white/15 lg:h-20 lg:w-20"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold uppercase tracking-widest text-marca-700">SAT Móvil COTEPA</p>
-            <p className="truncate text-base font-extrabold text-marca-900 lg:text-xl">Hornos y equipos para panificación</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.28em] text-white/70">SAT Móvil COTEPA</p>
+            <p className="truncate text-lg font-black tracking-tight text-white lg:text-[1.65rem]">
+              Hornos y equipos para panificación
+            </p>
+            <p className="mt-1 max-w-2xl text-sm text-slate-200/90">
+              Operativa técnica, administración y catálogo SAT con una navegación más clara y consistente.
+            </p>
           </div>
         </div>
 
-        <div className="border-t border-marca-100 px-3 py-3 lg:px-5 lg:py-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <h1 className="text-2xl font-extrabold text-marca-900 lg:text-3xl">
-              {tituloActual}
-            </h1>
+        <div className="border-t border-white/10 px-4 py-4 lg:px-6 lg:py-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="space-y-3">
+              <div className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-slate-100">
+                Espacio de trabajo activo
+              </div>
+              <h1 className="text-3xl font-black tracking-tight text-white lg:text-4xl">
+                {tituloActual}
+              </h1>
+            </div>
             {requiereLogin && sesion && (
               <div className="flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap">
                 <button
                   type="button"
                   onClick={() => setMostrarCambiarPassword(true)}
-                  className="rounded-xl border border-marca-100 bg-white px-3 py-2 text-xs font-bold text-marca-700"
+                  className="btn-secondary text-xs"
                 >
                   Contraseña
                 </button>
                 <button
                   type="button"
                   onClick={() => setMostrarMfa(true)}
-                  className="rounded-xl border border-marca-100 bg-white px-3 py-2 text-xs font-bold text-marca-700"
+                  className="btn-secondary text-xs"
                 >
                   2FA
                 </button>
                 <button
                   type="button"
                   onClick={() => logout()}
-                  className="rounded-xl border border-marca-100 bg-marca-50 px-3 py-2 text-xs font-bold text-marca-700"
+                  className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-bold text-white transition hover:bg-white/15"
                 >
                   Cerrar sesion
                 </button>
@@ -317,19 +327,19 @@ export default function App() {
           </div>
 
           {!accesoBloqueado && sesion && (
-            <div className="mt-2 rounded-xl border border-marca-100 bg-marca-50 px-3 py-2 text-xs text-marca-900">
-              <span className="font-semibold">Sesión:</span>{' '}
-              {nombreVisibleUsuario || sesion.user?.email || 'Usuario'}
-              {' · '}
-              <span className="font-semibold">Rol:</span>{' '}
-              {rolUsuario || 'sin rol'}
+            <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+              <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-slate-100 backdrop-blur-sm">
+                <span className="font-semibold text-white">Sesión:</span>{' '}
+                {nombreVisibleUsuario || sesion.user?.email || 'Usuario'}
+                {' · '}
+                <span className="font-semibold text-white">Rol:</span>{' '}
+                {rolUsuario || 'sin rol'}
+              </div>
+              <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-slate-100 backdrop-blur-sm">
+                <span className="font-semibold text-white">Ubicación actual:</span>{' '}
+                {navItemsVisibles.find((item) => item.key === vistaActiva)?.label || 'Órdenes'}
+              </div>
             </div>
-          )}
-
-          {!accesoBloqueado && (
-            <p className="mt-3 text-xs font-semibold text-marca-700 lg:text-sm">
-              Ubicación actual: {navItemsVisibles.find((item) => item.key === vistaActiva)?.label || 'Órdenes'}
-            </p>
           )}
         </div>
       </header>
@@ -337,7 +347,7 @@ export default function App() {
       {!accesoBloqueado && (
         <nav
           aria-label="Navegación fija de secciones principales"
-          className="mb-4 hidden rounded-2xl border border-marca-100 bg-white/95 p-2 shadow-md backdrop-blur lg:sticky lg:top-[calc(0.45rem+env(safe-area-inset-top))] lg:z-40 lg:block"
+          className="app-shell mb-4 hidden p-2.5 lg:sticky lg:top-[calc(0.45rem+env(safe-area-inset-top))] lg:z-40 lg:block"
         >
           <ul className="flex items-center gap-2 overflow-x-auto pb-1">
             {navItemsVisibles.map((item) => {
@@ -347,10 +357,10 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => cambiarVistaSegura(item.key)}
-                    className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold transition lg:px-4 lg:text-sm ${
+                    className={`whitespace-nowrap rounded-2xl px-3 py-2.5 text-xs font-bold transition lg:px-4 lg:text-sm ${
                       activo
-                        ? 'bg-cotepa-rojo-500 text-white shadow-md'
-                        : 'bg-marca-50 text-marca-700 hover:bg-marca-100'
+                        ? 'bg-cotepa-rojo-500 text-white shadow-lift'
+                        : 'bg-white/70 text-marca-700 hover:bg-marca-50'
                     }`}
                     aria-current={activo ? 'page' : undefined}
                   >
@@ -363,9 +373,9 @@ export default function App() {
         </nav>
       )}
 
-      <main className="lg:rounded-2xl lg:border lg:border-marca-100 lg:bg-white lg:p-5 lg:shadow-tarjeta">
+      <main className="app-shell lg:p-5">
         {!accesoBloqueado && (
-          <div className="mb-3">
+          <div className="mb-4">
             <IndicadorSync />
           </div>
         )}

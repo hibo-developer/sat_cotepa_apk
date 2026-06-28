@@ -257,23 +257,42 @@ export function ClientesView({ rolUsuario }) {
 
   return (
     <section className="space-y-4 pb-20 lg:pb-0">
-      <header className="rounded-2xl bg-marca-900 p-4 text-white shadow-lg lg:p-5">
-        <h2 className="text-lg font-bold">Catálogos SAT</h2>
-        <p className="mt-1 text-sm text-slate-200">Gestión de clientes y equipos.</p>
+      <header className="section-hero p-5 lg:p-6">
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-[0.24em] text-white/70">Catálogos operativos</p>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-white">Clientes y equipos</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
+            Vista unificada de clientes y maquinaria para trabajar con mejor legibilidad, jerarquía y consulta rápida.
+          </p>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="metric-card bg-white/10 text-white">
+            <p className="metric-label text-white/65">Clientes</p>
+            <p className="mt-2 text-2xl font-black text-white">{clientes.length}</p>
+          </div>
+          <div className="metric-card bg-white/10 text-white">
+            <p className="metric-label text-white/65">Equipos</p>
+            <p className="mt-2 text-2xl font-black text-white">{equipos.length}</p>
+          </div>
+          <div className="metric-card bg-white/10 text-white">
+            <p className="metric-label text-white/65">Modo</p>
+            <p className="mt-2 text-sm font-bold text-white">{modoSoloLectura ? 'Consulta' : 'Edición activa'}</p>
+          </div>
+        </div>
       </header>
 
       {modoSoloLectura && (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+        <p className="status-banner-warning">
           Tu rol técnico solo tiene acceso de consulta a catálogos. La edición está reservada a administración/oficina.
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-2 rounded-2xl border border-marca-100 bg-marca-50 p-1">
+      <div className="segmented-control grid-cols-2">
         <button
           type="button"
           onClick={() => setTabActiva('clientes')}
-          className={`rounded-xl px-3 py-3 text-sm font-bold ${
-            tabActiva === 'clientes' ? 'bg-cotepa-rojo-500 text-white shadow' : 'text-marca-700'
+          className={`segmented-item ${
+            tabActiva === 'clientes' ? 'segmented-item-active' : ''
           }`}
         >
           Clientes
@@ -281,17 +300,17 @@ export function ClientesView({ rolUsuario }) {
         <button
           type="button"
           onClick={() => setTabActiva('equipos')}
-          className={`rounded-xl px-3 py-3 text-sm font-bold ${
-            tabActiva === 'equipos' ? 'bg-cotepa-rojo-500 text-white shadow' : 'text-marca-700'
+          className={`segmented-item ${
+            tabActiva === 'equipos' ? 'segmented-item-active' : ''
           }`}
         >
           Equipos
         </button>
       </div>
 
-      {error && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="status-banner-error">{error}</p>}
       {mensaje && (
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+        <p className="status-banner-success">
           {mensaje}
         </p>
       )}
@@ -299,35 +318,38 @@ export function ClientesView({ rolUsuario }) {
       {tabActiva === 'clientes' && (
         <div className="lg:grid lg:grid-cols-12 lg:gap-4">
           {puedeEditarCatalogos && (
-            <form onSubmit={guardarCliente} className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
-              <h3 className="text-base font-bold text-sat-text">
+            <form onSubmit={guardarCliente} className="surface-card space-y-3 p-4 lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
+              <div>
+                <p className="metric-label">{clienteEditandoId ? 'Edición activa' : 'Alta rápida'}</p>
+                <h3 className="mt-2 text-lg font-black tracking-tight text-sat-text">
                 {clienteEditandoId ? 'Editar cliente' : 'Nuevo cliente'}
-              </h3>
+                </h3>
+              </div>
 
               <input
                 required
                 value={clienteForm.nombre}
                 onChange={(e) => setClienteForm((p) => ({ ...p, nombre: e.target.value }))}
-                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+                className="input-base"
                 placeholder="Nombre del cliente"
               />
               <input
                 value={clienteForm.direccion}
                 onChange={(e) => setClienteForm((p) => ({ ...p, direccion: e.target.value }))}
-                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+                className="input-base"
                 placeholder="Dirección"
               />
               <input
                 value={clienteForm.telefono}
                 onChange={(e) => setClienteForm((p) => ({ ...p, telefono: e.target.value }))}
-                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+                className="input-base"
                 placeholder="Teléfono"
               />
               <input
                 type="email"
                 value={clienteForm.email}
                 onChange={(e) => setClienteForm((p) => ({ ...p, email: e.target.value }))}
-                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+                className="input-base"
                 placeholder="Email"
               />
               <div className="grid grid-cols-2 gap-2">
@@ -335,24 +357,24 @@ export function ClientesView({ rolUsuario }) {
                   inputMode="decimal"
                   value={clienteForm.lat}
                   onChange={(e) => setClienteForm((p) => ({ ...p, lat: e.target.value }))}
-                  className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+                  className="input-base"
                   placeholder="Latitud"
                 />
                 <input
                   inputMode="decimal"
                   value={clienteForm.lng}
                   onChange={(e) => setClienteForm((p) => ({ ...p, lng: e.target.value }))}
-                  className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+                  className="input-base"
                   placeholder="Longitud"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <button className="rounded-xl bg-cotepa-rojo-500 px-4 py-3 text-sm font-bold text-white" type="submit">
+                <button className="btn-primary w-full" type="submit">
                   {clienteEditandoId ? 'Actualizar' : 'Crear'}
                 </button>
                 <button
-                  className="rounded-xl bg-slate-200 px-4 py-3 text-sm font-bold text-sat-muted"
+                  className="btn-secondary w-full"
                   type="button"
                   onClick={limpiarFormCliente}
                 >
@@ -365,7 +387,7 @@ export function ClientesView({ rolUsuario }) {
           <div className={`space-y-2 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
             {cargando && <p className="text-sm font-semibold text-sat-muted">Cargando clientes...</p>}
             {!cargando && clientes.length > 0 && (
-              <div className="flex items-center justify-between rounded-xl border border-sat-border-soft bg-sat-surface px-3 py-2 text-xs font-semibold text-sat-muted">
+              <div className="toolbar-panel">
                 <div className="flex items-center gap-3">
                   <span>Pagina {paginaClientes} de {totalPaginasClientes}</span>
                   <label className="flex items-center gap-1">
@@ -376,7 +398,7 @@ export function ClientesView({ rolUsuario }) {
                         setItemsPaginaClientes(Number(e.target.value));
                         setPaginaClientes(1);
                       }}
-                      className="rounded-md border border-sat-border bg-white px-2 py-1 text-xs"
+                      className="select-base max-w-[5rem] px-2 py-1 text-xs"
                     >
                       {OPCIONES_ITEMS_PAGINA.map((opcion) => (
                         <option key={opcion} value={opcion}>{opcion}</option>
@@ -389,7 +411,7 @@ export function ClientesView({ rolUsuario }) {
                     type="button"
                     onClick={() => setPaginaClientes((previo) => Math.max(1, previo - 1))}
                     disabled={paginaClientes === 1}
-                    className="rounded-lg border border-sat-border bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="btn-secondary px-3 py-1.5 text-xs"
                   >
                     Anterior
                   </button>
@@ -397,7 +419,7 @@ export function ClientesView({ rolUsuario }) {
                     type="button"
                     onClick={() => setPaginaClientes((previo) => Math.min(totalPaginasClientes, previo + 1))}
                     disabled={paginaClientes === totalPaginasClientes}
-                    className="rounded-lg border border-sat-border bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="btn-secondary px-3 py-1.5 text-xs"
                   >
                     Siguiente
                   </button>
@@ -407,7 +429,7 @@ export function ClientesView({ rolUsuario }) {
 
             {!cargando &&
               clientesPaginados.map((cliente) => (
-                <article key={cliente.id} className="rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
+                <article key={cliente.id} className="list-card">
                   <p className="text-sm font-bold text-sat-text">{cliente.nombre}</p>
                   <p className="text-xs text-sat-muted">{cliente.telefono || 'Sin teléfono'} · {cliente.email || 'Sin email'}</p>
                   <p className="mt-1 text-xs text-sat-subtle">{cliente.direccion || 'Sin dirección'}</p>
@@ -419,7 +441,7 @@ export function ClientesView({ rolUsuario }) {
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        className="rounded-xl bg-marca-50 px-3 py-2 text-xs font-bold text-marca-700"
+                        className="btn-secondary px-3 py-2 text-xs"
                         onClick={() => {
                           setClienteEditandoId(cliente.id);
                           setClienteForm({
@@ -436,7 +458,7 @@ export function ClientesView({ rolUsuario }) {
                       </button>
                       <button
                         type="button"
-                        className="rounded-xl bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700"
+                        className="inline-flex items-center justify-center rounded-2xl bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-200"
                         onClick={() => borrarCliente(cliente.id)}
                       >
                         Eliminar
@@ -452,18 +474,21 @@ export function ClientesView({ rolUsuario }) {
       {tabActiva === 'equipos' && (
         <div className="lg:grid lg:grid-cols-12 lg:gap-4">
           {puedeEditarCatalogos && (
-            <form onSubmit={guardarEquipo} className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
-              <h3 className="text-base font-bold text-sat-text">
+            <form onSubmit={guardarEquipo} className="surface-card space-y-3 p-4 lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
+              <div>
+                <p className="metric-label">{equipoEditandoId ? 'Edición activa' : 'Alta rápida'}</p>
+                <h3 className="mt-2 text-lg font-black tracking-tight text-sat-text">
                 {equipoEditandoId ? 'Editar equipo' : 'Nuevo equipo'}
-              </h3>
+                </h3>
+              </div>
 
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-sat-muted">Cliente *</span>
+                <span className="label-base">Cliente *</span>
                 <select
                   required
                   value={equipoForm.cliente_id}
                   onChange={(e) => setEquipoForm((p) => ({ ...p, cliente_id: e.target.value }))}
-                  className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+                  className="select-base"
                 >
                   <option value="">Selecciona cliente</option>
                   {clientes.map((cliente) => (
@@ -478,43 +503,43 @@ export function ClientesView({ rolUsuario }) {
                 required
                 value={equipoForm.nombre}
                 onChange={(e) => setEquipoForm((p) => ({ ...p, nombre: e.target.value }))}
-                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+                className="input-base"
                 placeholder="Nombre del equipo"
               />
               <input
                 value={equipoForm.marca}
                 onChange={(e) => setEquipoForm((p) => ({ ...p, marca: e.target.value }))}
-                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+                className="input-base"
                 placeholder="Marca"
               />
               <input
                 value={equipoForm.modelo}
                 onChange={(e) => setEquipoForm((p) => ({ ...p, modelo: e.target.value }))}
-                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+                className="input-base"
                 placeholder="Modelo"
               />
               <input
                 value={equipoForm.numero_serie}
                 onChange={(e) => setEquipoForm((p) => ({ ...p, numero_serie: e.target.value }))}
-                className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+                className="input-base"
                 placeholder="Número de serie"
               />
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-sat-muted">Última revisión</span>
+                <span className="label-base">Última revisión</span>
                 <input
                   type="date"
                   value={equipoForm.ultima_revision}
                   onChange={(e) => setEquipoForm((p) => ({ ...p, ultima_revision: e.target.value }))}
-                  className="w-full rounded-xl border border-sat-border px-4 py-3 text-sm"
+                  className="input-base"
                 />
               </label>
 
               <div className="grid grid-cols-2 gap-2">
-                <button className="rounded-xl bg-cotepa-rojo-500 px-4 py-3 text-sm font-bold text-white" type="submit">
+                <button className="btn-primary w-full" type="submit">
                   {equipoEditandoId ? 'Actualizar' : 'Crear'}
                 </button>
                 <button
-                  className="rounded-xl bg-slate-200 px-4 py-3 text-sm font-bold text-sat-muted"
+                  className="btn-secondary w-full"
                   type="button"
                   onClick={limpiarFormEquipo}
                 >
@@ -528,12 +553,12 @@ export function ClientesView({ rolUsuario }) {
             <input
               value={busquedaEquipo}
               onChange={(e) => setBusquedaEquipo(e.target.value)}
-              className="w-full rounded-xl border border-sat-border bg-white px-4 py-3 text-sm"
+              className="input-base"
               placeholder="Buscar por cliente, nombre, marca, modelo o serie"
             />
             {cargando && <p className="text-sm font-semibold text-sat-muted">Cargando equipos...</p>}
             {!cargando && equiposFiltrados.length > 0 && (
-              <div className="flex items-center justify-between rounded-xl border border-sat-border-soft bg-sat-surface px-3 py-2 text-xs font-semibold text-sat-muted">
+              <div className="toolbar-panel">
                 <div className="flex items-center gap-3">
                   <span>Pagina {paginaEquipos} de {totalPaginasEquipos}</span>
                   <label className="flex items-center gap-1">
@@ -544,7 +569,7 @@ export function ClientesView({ rolUsuario }) {
                         setItemsPaginaEquipos(Number(e.target.value));
                         setPaginaEquipos(1);
                       }}
-                      className="rounded-md border border-sat-border bg-white px-2 py-1 text-xs"
+                      className="select-base max-w-[5rem] px-2 py-1 text-xs"
                     >
                       {OPCIONES_ITEMS_PAGINA.map((opcion) => (
                         <option key={opcion} value={opcion}>{opcion}</option>
@@ -557,7 +582,7 @@ export function ClientesView({ rolUsuario }) {
                     type="button"
                     onClick={() => setPaginaEquipos((previo) => Math.max(1, previo - 1))}
                     disabled={paginaEquipos === 1}
-                    className="rounded-lg border border-sat-border bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="btn-secondary px-3 py-1.5 text-xs"
                   >
                     Anterior
                   </button>
@@ -565,7 +590,7 @@ export function ClientesView({ rolUsuario }) {
                     type="button"
                     onClick={() => setPaginaEquipos((previo) => Math.min(totalPaginasEquipos, previo + 1))}
                     disabled={paginaEquipos === totalPaginasEquipos}
-                    className="rounded-lg border border-sat-border bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="btn-secondary px-3 py-1.5 text-xs"
                   >
                     Siguiente
                   </button>
@@ -575,7 +600,7 @@ export function ClientesView({ rolUsuario }) {
 
             {!cargando &&
               equiposPaginados.map((equipo) => (
-                <article key={equipo.id} className="rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta">
+                <article key={equipo.id} className="list-card">
                   <p className="text-sm font-bold text-sat-text">{equipo.nombre}</p>
                   <p className="text-xs text-sat-muted">
                     {(equipo.clientes && equipo.clientes.nombre) || 'Cliente no disponible'}
@@ -591,7 +616,7 @@ export function ClientesView({ rolUsuario }) {
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        className="rounded-xl bg-marca-50 px-3 py-2 text-xs font-bold text-marca-700"
+                        className="btn-secondary px-3 py-2 text-xs"
                         onClick={() => {
                           setEquipoEditandoId(equipo.id);
                           setEquipoForm({
@@ -608,7 +633,7 @@ export function ClientesView({ rolUsuario }) {
                       </button>
                       <button
                         type="button"
-                        className="rounded-xl bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700"
+                        className="inline-flex items-center justify-center rounded-2xl bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-200"
                         onClick={() => borrarEquipo(equipo.id)}
                       >
                         Eliminar
@@ -619,7 +644,7 @@ export function ClientesView({ rolUsuario }) {
               ))}
 
             {!cargando && busquedaEquipo.trim() && equiposFiltrados.length === 0 && (
-              <p className="rounded-xl border border-dashed border-sat-border bg-sat-surface p-3 text-sm text-sat-muted">
+              <p className="surface-panel border-dashed p-3 text-sm text-sat-muted">
                 No hay equipos que coincidan con la búsqueda.
               </p>
             )}

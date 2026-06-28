@@ -31,6 +31,8 @@ export function AdminView() {
   const [paginaUsuarios, setPaginaUsuarios] = useState(1);
 
   const totalPaginasUsuarios = Math.max(1, Math.ceil(usuarios.length / USUARIOS_POR_PAGINA));
+  const totalAdmins = usuarios.filter((usuario) => usuario.rol === 'admin').length;
+  const totalTecnicos = usuarios.filter((usuario) => usuario.rol === 'tecnico').length;
   const usuariosPaginados = usuarios.slice(
     (paginaUsuarios - 1) * USUARIOS_POR_PAGINA,
     (paginaUsuarios - 1) * USUARIOS_POR_PAGINA + USUARIOS_POR_PAGINA,
@@ -202,17 +204,34 @@ export function AdminView() {
 
   return (
     <section className="space-y-4 pb-20 lg:pb-0">
-      <header className="rounded-2xl bg-marca-900 p-4 text-white shadow-lg lg:p-5">
+      <header className="section-hero p-5 lg:p-6">
         <div className="flex items-center gap-2">
-          <ShieldUser className="h-5 w-5" />
-          <h2 className="text-lg font-bold">Administración</h2>
+          <ShieldUser className="h-5 w-5 text-white/90" />
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-white/70">Control interno</p>
+            <h2 className="text-2xl font-black tracking-tight text-white">Administración</h2>
+          </div>
         </div>
-        <p className="mt-2 text-sm text-slate-300">
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
           Gestión de usuarios y roles del sistema SAT.
         </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="metric-card bg-white/10 text-white">
+            <p className="metric-label text-white/65">Usuarios</p>
+            <p className="mt-2 text-2xl font-black text-white">{usuarios.length}</p>
+          </div>
+          <div className="metric-card bg-white/10 text-white">
+            <p className="metric-label text-white/65">Admins</p>
+            <p className="mt-2 text-2xl font-black text-white">{totalAdmins}</p>
+          </div>
+          <div className="metric-card bg-white/10 text-white">
+            <p className="metric-label text-white/65">Tecnicos</p>
+            <p className="mt-2 text-2xl font-black text-white">{totalTecnicos}</p>
+          </div>
+        </div>
       </header>
 
-      <section className="space-y-3 rounded-2xl border border-marca-100 bg-white p-4 shadow-tarjeta lg:p-5">
+      <section className="surface-card space-y-4 p-4 lg:p-5">
         <header className="flex items-center gap-2">
           <ShieldUser className="h-5 w-5 text-marca-700" />
           <h3 className="text-base font-bold text-sat-text">Usuarios y Roles</h3>
@@ -224,39 +243,45 @@ export function AdminView() {
         </p>
 
         {errorUsuarios && (
-          <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+          <p className="status-banner-error">
             {errorUsuarios}
           </p>
         )}
 
         {mensajeUsuarios && (
-          <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">
+          <p className="status-banner-success">
             {mensajeUsuarios}
           </p>
         )}
 
         {puedeAdministrar === false && (
-          <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+          <p className="status-banner-warning">
             Esta sección solo está disponible para usuarios con rol admin.
           </p>
         )}
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-4">
-          <form onSubmit={guardarUsuario} className="space-y-2 rounded-xl border border-sat-border-soft bg-sat-surface p-3 lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
+          <form onSubmit={guardarUsuario} className="surface-panel space-y-3 p-4 lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
+            <div>
+              <p className="metric-label">{usuarioEditandoId ? 'Edición activa' : 'Alta de usuario'}</p>
+              <h4 className="mt-2 text-lg font-black tracking-tight text-sat-text">
+                {usuarioEditandoId ? 'Actualizar usuario' : 'Crear nuevo acceso'}
+              </h4>
+            </div>
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-sat-muted">Email *</span>
+              <span className="label-base">Email *</span>
               <input
                 required
                 type="email"
                 value={formUsuario.email}
                 onChange={(evento) => setFormUsuario((previo) => ({ ...previo, email: evento.target.value }))}
-                className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
+                className="input-base"
                 disabled={guardandoUsuario || !puedeAdministrar}
               />
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-sat-muted">
+              <span className="label-base">
                 {usuarioEditandoId ? 'Nueva contrasena (opcional)' : 'Contrasena inicial *'}
               </span>
               <input
@@ -265,30 +290,30 @@ export function AdminView() {
                 required={!usuarioEditandoId}
                 minLength={12}
                 onChange={(evento) => setFormUsuario((previo) => ({ ...previo, password: evento.target.value }))}
-                className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
+                className="input-base"
                 disabled={guardandoUsuario || !puedeAdministrar}
                 placeholder={usuarioEditandoId ? 'Dejar vacio para mantener la actual' : 'Minimo 12, con mayuscula, minuscula, numero y simbolo'}
               />
-              <span className="mt-1 block text-[11px] text-sat-subtle">
+              <span className="help-message">
                 Requisito: minimo 12 caracteres con mayuscula, minuscula, numero y simbolo.
               </span>
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-sat-muted">Nombre visible</span>
+              <span className="label-base">Nombre visible</span>
               <input
                 type="text"
                 value={formUsuario.nombre_visible}
                 onChange={(evento) =>
                   setFormUsuario((previo) => ({ ...previo, nombre_visible: evento.target.value }))
                 }
-                className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
+                className="input-base"
                 disabled={guardandoUsuario || !puedeAdministrar}
               />
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-sat-muted">Rol *</span>
+              <span className="label-base">Rol *</span>
               <select
                 value={formUsuario.rol}
                 onChange={(evento) =>
@@ -297,7 +322,7 @@ export function AdminView() {
                     rol: evento.target.value,
                   }))
                 }
-                className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
+                className="select-base"
                 disabled={guardandoUsuario || !puedeAdministrar}
               >
                 <option value="admin">Admin</option>
@@ -309,28 +334,28 @@ export function AdminView() {
             {formUsuario.rol === 'tecnico' && (
               <>
                 <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-sat-muted">Nombre del tecnico</span>
+                  <span className="label-base">Nombre del tecnico</span>
                   <input
                     type="text"
                     value={formUsuario.tecnico_nombre}
                     onChange={(evento) =>
                       setFormUsuario((previo) => ({ ...previo, tecnico_nombre: evento.target.value }))
                     }
-                    className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
+                    className="input-base"
                     disabled={guardandoUsuario || !puedeAdministrar}
                     placeholder="Si se deja vacio se usa el nombre visible"
                   />
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-sat-muted">Especialidad</span>
+                  <span className="label-base">Especialidad</span>
                   <input
                     type="text"
                     value={formUsuario.tecnico_especialidad}
                     onChange={(evento) =>
                       setFormUsuario((previo) => ({ ...previo, tecnico_especialidad: evento.target.value }))
                     }
-                    className="w-full rounded-lg border border-sat-border px-3 py-2 text-sm"
+                    className="input-base"
                     disabled={guardandoUsuario || !puedeAdministrar}
                     placeholder="Ej: Hornos industriales"
                   />
@@ -342,7 +367,7 @@ export function AdminView() {
               <button
                 type="submit"
                 disabled={guardandoUsuario || !puedeAdministrar}
-                className="w-full rounded-xl bg-marca-900 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+                className="btn-primary w-full"
               >
                 {guardandoUsuario ? 'Guardando...' : usuarioEditandoId ? 'Actualizar usuario' : 'Crear usuario'}
               </button>
@@ -351,7 +376,7 @@ export function AdminView() {
                 type="button"
                 onClick={resetFormularioUsuario}
                 disabled={guardandoUsuario || !puedeAdministrar}
-                className="w-full rounded-xl border border-sat-border bg-white px-4 py-3 text-sm font-bold text-sat-muted disabled:opacity-60"
+                className="btn-secondary w-full"
               >
                 Limpiar formulario
               </button>
@@ -359,27 +384,27 @@ export function AdminView() {
           </form>
 
           <div className="space-y-2 lg:col-span-8">
-            <div className="flex items-center justify-between">
+            <div className="toolbar-panel">
               <p className="text-sm font-semibold text-sat-muted">Usuarios registrados: {usuarios.length}</p>
               <button
                 type="button"
                 onClick={recargarUsuarios}
                 disabled={cargandoUsuarios || guardandoUsuario || !puedeAdministrar}
-                className="rounded-lg border border-sat-border bg-white px-3 py-2 text-xs font-bold text-sat-muted disabled:opacity-60"
+                className="btn-secondary px-3 py-2 text-xs"
               >
                 {cargandoUsuarios ? 'Actualizando...' : 'Recargar'}
               </button>
             </div>
 
             {!cargandoUsuarios && usuarios.length > 0 && (
-              <div className="flex items-center justify-between rounded-xl border border-sat-border-soft bg-sat-surface px-3 py-2 text-xs font-semibold text-sat-muted">
+              <div className="toolbar-panel">
                 <span>Pagina {paginaUsuarios} de {totalPaginasUsuarios}</span>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setPaginaUsuarios((previo) => Math.max(1, previo - 1))}
                     disabled={paginaUsuarios === 1}
-                    className="rounded-lg border border-sat-border bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="btn-secondary px-3 py-1.5 text-xs"
                   >
                     Anterior
                   </button>
@@ -387,7 +412,7 @@ export function AdminView() {
                     type="button"
                     onClick={() => setPaginaUsuarios((previo) => Math.min(totalPaginasUsuarios, previo + 1))}
                     disabled={paginaUsuarios === totalPaginasUsuarios}
-                    className="rounded-lg border border-sat-border bg-white px-3 py-1.5 disabled:opacity-50"
+                    className="btn-secondary px-3 py-1.5 text-xs"
                   >
                     Siguiente
                   </button>
@@ -400,9 +425,11 @@ export function AdminView() {
             ) : (
               <ul className="space-y-2">
                 {usuariosPaginados.map((usuario) => (
-                  <li key={usuario.user_id} className="rounded-xl border border-sat-border-soft bg-white p-3">
+                  <li key={usuario.user_id} className="list-card">
                     <p className="text-sm font-bold text-sat-text">{usuario.email}</p>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-sat-subtle">Rol: {usuario.rol}</p>
+                    <p className="mt-1 inline-flex rounded-full bg-marca-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-marca-700">
+                      Rol: {usuario.rol}
+                    </p>
                     <p className="mt-1 text-xs text-sat-muted">
                       Nombre visible: {usuario.nombre_visible || 'Sin definir'}
                     </p>
@@ -417,7 +444,7 @@ export function AdminView() {
                       <button
                         type="button"
                         onClick={() => editarUsuario(usuario)}
-                        className="rounded-lg border border-sat-border bg-white px-3 py-2 text-xs font-bold text-sat-muted"
+                        className="btn-secondary px-3 py-2 text-xs"
                         disabled={guardandoUsuario || !puedeAdministrar}
                       >
                         Editar
@@ -426,7 +453,7 @@ export function AdminView() {
                       <button
                         type="button"
                         onClick={() => borrarUsuario(usuario.user_id)}
-                        className="rounded-lg bg-rose-600 px-3 py-2 text-xs font-bold text-white"
+                        className="inline-flex items-center justify-center rounded-2xl bg-rose-600 px-3 py-2 text-xs font-bold text-white transition hover:-translate-y-0.5 hover:bg-rose-700 disabled:opacity-60"
                         disabled={guardandoUsuario || !puedeAdministrar}
                       >
                         Eliminar
