@@ -283,9 +283,6 @@ export default function App() {
             <p className="truncate text-lg font-black tracking-tight text-white lg:text-[1.65rem]">
               Hornos y equipos para panificación
             </p>
-            <p className="mt-1 max-w-2xl text-sm text-slate-200/90">
-              Operativa técnica, administración y catálogo SAT con una navegación más clara y consistente.
-            </p>
           </div>
         </div>
 
