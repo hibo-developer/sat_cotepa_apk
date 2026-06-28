@@ -1357,22 +1357,49 @@ function TarjetaOrden({
       )}
 
       {orden.estado === 'Finalizado' && (
-        <div className="mt-3 space-y-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-          {orden.informePdfUrl && (
-            <button
-              type="button"
-              onClick={descargarInformePdf}
-              disabled={descargandoInforme}
-              className="inline-flex rounded-lg bg-marca-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-60"
-            >
-              {descargandoInforme ? 'Generando enlace...' : 'Descargar informe PDF'}
-            </button>
-          )}
-          {!orden.informePdfUrl && (
-            <p className="text-xs font-semibold text-emerald-800">
-              Informe PDF pendiente: el administrador debe completar la valoración económica para generarlo.
-            </p>
-          )}
+        <div className="mt-3 space-y-3 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-emerald-100/70 p-3 text-sm text-emerald-900 shadow-sm shadow-emerald-100">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-2">
+              <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${
+                orden.informePdfUrl
+                  ? 'border-emerald-200 bg-white text-emerald-700'
+                  : 'border-amber-200 bg-amber-50 text-amber-700'
+              }`}>
+                {orden.informePdfUrl ? <CircleCheckBig className="h-3.5 w-3.5" /> : <Clock3 className="h-3.5 w-3.5" />}
+                {orden.informePdfUrl ? 'Informe listo' : 'Informe pendiente'}
+              </span>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-emerald-950">
+                  {orden.informePdfUrl
+                    ? 'El informe PDF definitivo ya está disponible para esta orden.'
+                    : 'El informe PDF definitivo se habilitará cuando el administrador complete la valoración económica.'}
+                </p>
+                <p className="text-xs leading-5 text-emerald-800/90">
+                  {orden.informePdfUrl
+                    ? 'La descarga abre el mismo documento final asociado a la orden, sin alterar su contenido ni su formato.'
+                    : 'Hasta entonces, la orden queda registrada y el PDF final se generará más adelante desde administración.'}
+                </p>
+                {orden.informePdfUrl && fechaRegeneracionInforme && (
+                  <p className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                    <Clock3 className="h-3.5 w-3.5" />
+                    Actualizado: {fechaRegeneracionInforme}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {orden.informePdfUrl && (
+              <button
+                type="button"
+                onClick={descargarInformePdf}
+                disabled={descargandoInforme}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-marca-900 px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-marca-900/20 transition hover:bg-marca-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              >
+                <Download className="h-4 w-4" />
+                {descargandoInforme ? 'Generando enlace...' : 'Descargar informe PDF'}
+              </button>
+            )}
+          </div>
 
           {puedeValorarFinalizada && (
             <>
@@ -1750,6 +1777,11 @@ function BloqueEliminarOrden({
       {mostrarEliminar && (
         <div className="space-y-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900">
           <p className="font-semibold">Antes de eliminar, guarda una copia del informe o de la orden.</p>
+          {orden.informePdfUrl && (
+            <p className="rounded-lg border border-rose-200 bg-white/90 px-3 py-2 text-[11px] font-medium text-rose-700">
+              Si necesitas conservar el documento final, descarga primero el PDF asociado a esta orden.
+            </p>
+          )}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
               type="button"
@@ -1764,6 +1796,7 @@ function BloqueEliminarOrden({
               disabled={!orden.informePdfUrl || accionEnCurso}
               className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 font-bold ${orden.informePdfUrl ? 'border-rose-300 bg-white text-rose-700' : 'border-slate-300 bg-slate-100 text-slate-400 pointer-events-none'}`}
             >
+              <Download className="mr-2 h-4 w-4" />
               Descargar informe PDF
             </button>
           </div>
