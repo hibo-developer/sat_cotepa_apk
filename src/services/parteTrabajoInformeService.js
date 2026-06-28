@@ -18,6 +18,9 @@ const COLOR = {
   bordeSuave: [241, 245, 249],
   fondoZebra: [248, 250, 252],
   fondoSuave: [249, 250, 252],
+  fondoTarjeta: [255, 255, 255],
+  fondoMarcaTenue: [244, 247, 251],
+  fondoAcentoTenue: [255, 245, 245],
   blanco: [255, 255, 255],
   okFondo: [220, 252, 231],
   okTexto: [21, 128, 61],
@@ -221,32 +224,44 @@ function dibujarCabeceraPagina(doc, opciones = {}) {
   // Logo
   const logoX = PAGINA.margenX;
   const logoY = 8;
-  const logoSize = 14;
+  const logoSize = 15;
   if (logoDataUrl) {
     try { doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoSize, logoSize); } catch { /* noop */ }
+  }
+
+  // Panel derecho de metadatos
+  if (mostrarTitulo) {
+    setFill(doc, COLOR.fondoMarcaTenue);
+    setStroke(doc, COLOR.borde);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(PAGINA.ancho - PAGINA.margenX - 74, 7.5, 74, 16, 2, 2, 'FD');
   }
 
   // Texto cabecera
   setText(doc, COLOR.marca);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text('COTEPA', logoX + logoSize + 3, logoY + 5.5);
+  doc.setFontSize(12.5);
+  doc.text('COTEPA', logoX + logoSize + 3.5, logoY + 5.5);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   setText(doc, COLOR.textoSuave);
-  doc.text('Servicio de Asistencia Técnica', logoX + logoSize + 3, logoY + 10);
+  doc.text('Servicio de Asistencia Técnica', logoX + logoSize + 3.5, logoY + 10);
+  doc.setFontSize(7.2);
+  setText(doc, COLOR.textoMute);
+  doc.text(EMPRESA.web, logoX + logoSize + 3.5, logoY + 14.1);
 
   if (mostrarTitulo) {
     // Bloque derecha: título informe + referencia
-    const xDer = PAGINA.ancho - PAGINA.margenX;
+    const xDer = PAGINA.ancho - PAGINA.margenX - 4;
     setText(doc, COLOR.marca);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('PARTE DE TRABAJO', xDer, logoY + 5.5, { align: 'right' });
+    doc.setFontSize(11.5);
+    doc.text('PARTE DE TRABAJO', xDer, logoY + 6, { align: 'right' });
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
+    doc.setFontSize(8.2);
     setText(doc, COLOR.textoSuave);
-    doc.text(`Ref. ${txt(metaInforme.referencia)}  ·  ${txt(metaInforme.fechaEmision)}`, xDer, logoY + 10, { align: 'right' });
+    doc.text(`Ref. ${txt(metaInforme.referencia)}`, xDer, logoY + 10.8, { align: 'right' });
+    doc.text(txt(metaInforme.fechaEmision), xDer, logoY + 14.5, { align: 'right' });
   }
 
   // Línea separadora bajo la cabecera
@@ -267,7 +282,12 @@ function dibujarPiePaginas(doc) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.text(`${EMPRESA.nombre}  ·  ${EMPRESA.cif}  ·  ${EMPRESA.web}`, PAGINA.margenX, PAGINA.alto - 7);
-    doc.text(`Página ${p} de ${total}`, PAGINA.ancho - PAGINA.margenX, PAGINA.alto - 7, { align: 'right' });
+    setFill(doc, COLOR.fondoSuave);
+    setStroke(doc, COLOR.borde);
+    doc.roundedRect(PAGINA.ancho - PAGINA.margenX - 22, PAGINA.alto - 10.7, 22, 5.8, 1.5, 1.5, 'FD');
+    setText(doc, COLOR.textoSuave);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Página ${p} de ${total}`, PAGINA.ancho - PAGINA.margenX - 1.5, PAGINA.alto - 7, { align: 'right' });
   }
 }
 
@@ -284,7 +304,7 @@ function reservarEspacio(doc, estado, alto, opciones = {}) {
 function dibujarTituloSeccion(doc, estado, titulo) {
   reservarEspacio(doc, estado, 11);
   setFill(doc, COLOR.acento);
-  doc.rect(PAGINA.margenX, estado.y, 2.5, 6.5, 'F');
+  doc.roundedRect(PAGINA.margenX, estado.y, 2.5, 6.5, 0.8, 0.8, 'F');
 
   setText(doc, COLOR.marca);
   doc.setFont('helvetica', 'bold');
@@ -372,7 +392,7 @@ function dibujarTarjetasResumen(doc, estado, datos) {
   const cols = 3;
   const gap = 4;
   const ancho = (PAGINA.contenido - gap * (cols - 1)) / cols;
-  const alto = 18;
+  const alto = 20;
   const filas = Math.ceil(datos.length / cols);
   const altoTotal = filas * alto + (filas - 1) * gap;
 
@@ -385,21 +405,25 @@ function dibujarTarjetasResumen(doc, estado, datos) {
     const y = estado.y + fila * (alto + gap);
     const [titulo, valor] = datos[i];
 
-    setFill(doc, COLOR.fondoSuave);
+    setFill(doc, COLOR.fondoTarjeta);
     setStroke(doc, COLOR.borde);
     doc.setLineWidth(0.2);
-    doc.roundedRect(x, y, ancho, alto, 1.5, 1.5, 'FD');
+    doc.roundedRect(x, y, ancho, alto, 2, 2, 'FD');
+    setFill(doc, COLOR.fondoMarcaTenue);
+    doc.roundedRect(x, y, ancho, 5.5, 2, 2, 'F');
+    setFill(doc, COLOR.acento);
+    doc.roundedRect(x, y, 2.2, 5.5, 1.2, 1.2, 'F');
 
     setText(doc, COLOR.textoMute);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7);
-    doc.text(String(titulo).toUpperCase(), x + 3, y + 5);
+    doc.text(String(titulo).toUpperCase(), x + 5, y + 3.9);
 
     setText(doc, COLOR.marca);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10.5);
     const lineas = doc.splitTextToSize(txt(valor), ancho - 6);
-    doc.text(lineas.slice(0, 2), x + 3, y + 10.5);
+    doc.text(lineas.slice(0, 2), x + 3, y + 11.8);
   }
 
   estado.y += altoTotal + 5;
@@ -423,11 +447,15 @@ function dibujarTablaInfo(doc, estado, filas) {
 
   reservarEspacio(doc, estado, total + 2);
 
+  setStroke(doc, COLOR.borde);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(PAGINA.margenX, estado.y, PAGINA.contenido, total, 2, 2, 'S');
+
   let y = estado.y;
   items.forEach((it, idx) => {
     if (idx % 2 === 0) {
       setFill(doc, COLOR.fondoZebra);
-      doc.rect(PAGINA.margenX, y, PAGINA.contenido, it.altoFila, 'F');
+      doc.rect(PAGINA.margenX + 0.2, y, PAGINA.contenido - 0.4, it.altoFila, 'F');
     }
 
     setText(doc, COLOR.textoSuave);
@@ -442,11 +470,6 @@ function dibujarTablaInfo(doc, estado, filas) {
 
     y += it.altoFila;
   });
-
-  // Borde envolvente sutil
-  setStroke(doc, COLOR.borde);
-  doc.setLineWidth(0.2);
-  doc.rect(PAGINA.margenX, estado.y, PAGINA.contenido, total);
 
   estado.y += total + 4;
 }
@@ -468,9 +491,10 @@ function dibujarParrafo(doc, estado, texto) {
   const alto = lineas.length * 4.4 + 6;
   reservarEspacio(doc, estado, alto);
 
+  setFill(doc, COLOR.fondoTarjeta);
   setStroke(doc, COLOR.borde);
   doc.setLineWidth(0.2);
-  doc.rect(PAGINA.margenX, estado.y, PAGINA.contenido, alto);
+  doc.roundedRect(PAGINA.margenX, estado.y, PAGINA.contenido, alto, 2, 2, 'FD');
 
   setText(doc, COLOR.texto);
   doc.setFont('helvetica', 'normal');
@@ -500,7 +524,7 @@ function dibujarTablaMateriales(doc, estado, materiales) {
 
   // Cabecera
   setFill(doc, COLOR.marca);
-  doc.rect(x, estado.y, w, altoCab, 'F');
+  doc.roundedRect(x, estado.y, w, altoCab, 2, 2, 'F');
   setText(doc, COLOR.blanco);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
@@ -544,7 +568,7 @@ function dibujarTablaMateriales(doc, estado, materiales) {
   // Borde tabla
   setStroke(doc, COLOR.borde);
   doc.setLineWidth(0.2);
-  doc.rect(x, estado.y, w, altoCab + materiales.length * altoFila + altoTotal);
+  doc.roundedRect(x, estado.y, w, altoCab + materiales.length * altoFila + altoTotal, 2, 2, 'S');
 
   estado.y += altoCab + materiales.length * altoFila + altoTotal + 5;
 }
@@ -603,7 +627,7 @@ function dibujarValoracionEconomica(doc, estado, val, totalMaterialesFallback = 
 
   // Cabecera
   setFill(doc, COLOR.marca);
-  doc.rect(x, estado.y, w, altoCab, 'F');
+  doc.roundedRect(x, estado.y, w, altoCab, 2, 2, 'F');
   setText(doc, COLOR.blanco);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
@@ -643,7 +667,7 @@ function dibujarValoracionEconomica(doc, estado, val, totalMaterialesFallback = 
 
   setStroke(doc, COLOR.borde);
   doc.setLineWidth(0.2);
-  doc.rect(x, estado.y, w, altoCab + filas.length * altoFila + altoTotal);
+  doc.roundedRect(x, estado.y, w, altoCab + filas.length * altoFila + altoTotal, 2, 2, 'S');
 
   estado.y += altoCab + filas.length * altoFila + altoTotal + 5;
 }
@@ -670,11 +694,12 @@ async function dibujarFotos(doc, estado, urls) {
       const x = PAGINA.margenX + c * (ancho + gap);
       const y = estado.y;
 
+      setFill(doc, COLOR.fondoTarjeta);
       setStroke(doc, COLOR.borde);
       doc.setLineWidth(0.2);
-      doc.rect(x, y, ancho, alto);
-      setFill(doc, COLOR.bordeSuave);
-      doc.rect(x, y, ancho, padTitulo, 'F');
+      doc.roundedRect(x, y, ancho, alto, 2, 2, 'FD');
+      setFill(doc, COLOR.fondoMarcaTenue);
+      doc.roundedRect(x, y, ancho, padTitulo, 2, 2, 'F');
 
       setText(doc, COLOR.marca);
       doc.setFont('helvetica', 'bold');
@@ -719,9 +744,10 @@ async function dibujarFirma(doc, estado, firmaUrl, nombreFirmante, avisoConformi
   const colFirma = w * 0.55;
   const colDatos = w - colFirma;
 
+  setFill(doc, COLOR.fondoTarjeta);
   setStroke(doc, COLOR.borde);
   doc.setLineWidth(0.2);
-  doc.rect(x, estado.y, w, alto);
+  doc.roundedRect(x, estado.y, w, alto, 2, 2, 'FD');
   doc.line(x + colFirma, estado.y, x + colFirma, estado.y + alto);
 
   // Caja firma
@@ -790,10 +816,10 @@ function dibujarBloqueLegal(doc, estado) {
   const x = PAGINA.margenX;
   const w = PAGINA.contenido;
 
-  setFill(doc, COLOR.bordeSuave);
+  setFill(doc, COLOR.fondoAcentoTenue);
   setStroke(doc, COLOR.borde);
   doc.setLineWidth(0.2);
-  doc.rect(x, estado.y, w, 20, 'FD');
+  doc.roundedRect(x, estado.y, w, 20, 2, 2, 'FD');
 
   setText(doc, COLOR.marca);
   doc.setFont('helvetica', 'bold');
