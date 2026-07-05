@@ -883,8 +883,8 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
   const [descripcionAveria, setDescripcionAveria] = useState(orden.descripcion || '');
   const [tareasLibre, setTareasLibre] = useState(() => {
     const texto = String(orden.tareasRealizadas || '');
-    const primerBloque = texto.split('|')[0] || '';
-    return primerBloque.trim();
+    const primerBloque = (texto.split('|')[0] || '').trim();
+    return primerBloque === 'Parte registrado desde movilidad' ? '' : primerBloque;
   });
   const [materiales, setMateriales] = useState(() =>
     (Array.isArray(orden.materiales) ? orden.materiales : []).map((m) => ({
@@ -906,8 +906,8 @@ function BloqueEditarParteCompleto({ orden, accionEnCurso, onEditarParteCompleto
     setDescripcionAveria(orden.descripcion || '');
     setTareasLibre(() => {
       const texto = String(orden.tareasRealizadas || '');
-      const primerBloque = texto.split('|')[0] || '';
-      return primerBloque.trim();
+      const primerBloque = (texto.split('|')[0] || '').trim();
+      return primerBloque === 'Parte registrado desde movilidad' ? '' : primerBloque;
     });
     setMateriales(
       (Array.isArray(orden.materiales) ? orden.materiales : []).map((m) => ({

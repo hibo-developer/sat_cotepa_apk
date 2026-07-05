@@ -100,8 +100,8 @@ async function resolverNombreLugar(latitud, longitud) {
 
     const tramoVia = [via, numero].filter(Boolean).join(', ');
     const partes = [tramoVia, barrio, localidad, provincia].filter(Boolean);
-    const nombreLugarCompleto = partes.join(' | ') || data.display_name || null;
-    const nombreLugarCorto = [localidad, provincia].filter(Boolean).join(' | ') || nombreLugarCompleto;
+    const nombreLugarCompleto = partes.join(', ') || data.display_name || null;
+    const nombreLugarCorto = [localidad, provincia].filter(Boolean).join(', ') || nombreLugarCompleto;
 
     return {
       nombreLugar: nombreLugarCorto,
