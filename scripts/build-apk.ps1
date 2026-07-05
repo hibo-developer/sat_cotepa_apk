@@ -298,7 +298,8 @@ try {
   }
   Remove-DirSafe (Join-Path $repoRoot "node_modules\@capacitor\android\capacitor\build")
   $apkPath = Join-Path $repoRoot "android\app\build\outputs\apk\release\app-release.apk"
-  $apkPrevio = if (Test-Path $apkPath) { Get-Item $apkPath } else { $null }
+  $apkUnsignedPath = Join-Path $repoRoot "android\app\build\outputs\apk\release\app-release-unsigned.apk"
+  $apkPrevio = if (Test-Path $apkPath) { Get-Item $apkPath } elseif (Test-Path $apkUnsignedPath) { Get-Item $apkUnsignedPath } else { $null }
 
   Push-Location (Join-Path $repoRoot "android")
   try {
@@ -308,8 +309,12 @@ try {
     Pop-Location
   }
 
+  if (-not (Test-Path $apkPath) -and (Test-Path $apkUnsignedPath)) {
+    $apkPath = $apkUnsignedPath
+  }
+
   if (-not (Test-Path $apkPath)) {
-    throw "No se encontró el APK release en: $apkPath"
+    throw "No se encontró el APK release en: $apkPath (ni la versión unsigned en: $apkUnsignedPath)"
   }
 
   $apkActual = Get-Item $apkPath

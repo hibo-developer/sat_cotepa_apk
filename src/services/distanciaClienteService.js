@@ -44,9 +44,20 @@ export function calcularDistanciaFacturableMetros(origen, destino) {
 }
 
 export function obtenerCoordenadasCliente(cliente) {
-  const latitud = Number(cliente?.lat);
-  const longitud = Number(cliente?.lng);
-  if (!Number.isFinite(latitud) || !Number.isFinite(longitud)) {
+  const latRaw = cliente?.lat;
+  const lngRaw = cliente?.lng;
+
+  if (latRaw === null || latRaw === undefined || String(latRaw).trim() === '') {
+    return null;
+  }
+  if (lngRaw === null || lngRaw === undefined || String(lngRaw).trim() === '') {
+    return null;
+  }
+
+  const latitud = Number(latRaw);
+  const longitud = Number(lngRaw);
+
+  if (!Number.isFinite(latitud) || !Number.isFinite(longitud) || (latitud === 0 && longitud === 0)) {
     return null;
   }
 

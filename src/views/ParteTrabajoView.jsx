@@ -42,6 +42,7 @@ import {
   calcularDistanciaMetros,
   normalizarKmDesplazamientoFacturable,
   resolverDestinoFacturable,
+  obtenerCoordenadasCliente,
   UBICACION_COTEPA,
 } from '../services/distanciaClienteService';
 
@@ -164,18 +165,13 @@ function parsearNumeroDecimal(valor) {
 
 function resolverUbicacionCliente(cliente) {
   const direccion = String(cliente?.direccion || '').trim();
-  const lat = Number(cliente?.lat);
-  const lng = Number(cliente?.lng);
-  const tieneCoords =
-    Number.isFinite(lat) &&
-    Number.isFinite(lng) &&
-    !(lat === 0 && lng === 0);
+  const coords = obtenerCoordenadasCliente(cliente);
 
   return {
     direccion,
-    lat: tieneCoords ? lat : null,
-    lng: tieneCoords ? lng : null,
-    tieneUbicacion: tieneCoords || Boolean(direccion),
+    lat: coords ? coords.latitud : null,
+    lng: coords ? coords.longitud : null,
+    tieneUbicacion: Boolean(coords) || Boolean(direccion),
   };
 }
 
@@ -1439,13 +1435,49 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
       setMensaje(`Desplazamiento finalizado.${mensajeReferencia}${mensajeConsistencia}`);
     } catch (err) {
       const finIso = new Date().toISOString();
+      const clienteSeleccionado = clientes.find((item) => item.id === formulario.cliente_id);
+      const coordenadasCliente = obtenerCoordenadasCliente(clienteSeleccionado);
+
+      if (coordenadasCliente) {
+        try {
+          const distanciaMetros = await calcularDistanciaCarreteraMetros(UBICACION_COTEPA, coordenadasCliente);
+          const kmFacturables = normalizarKmDesplazamientoFacturable(distanciaMetros);
+          const analisisConsistencia = await obtenerAnalisisConsistenciaKmCliente(
+            formulario.cliente_id,
+            kmFacturables,
+            formulario.orden_id,
+          );
+
+          setDesplazamiento({
+            inicioIso: desplazamiento.inicioIso,
+            finIso,
+            ubicacionInicio: UBICACION_COTEPA,
+            ubicacionFin: {
+              latitud: coordenadasCliente.latitud,
+              longitud: coordenadasCliente.longitud,
+              nombreLugar: 'Ubicación fija de cliente (GPS no disponible)',
+              nombreLugarCompleto: `Calculado desde dirección del cliente (sin geolocalización activa)`,
+            },
+            distanciaMetros,
+            minutosGeo: null,
+          });
+
+          const mensajeConsistencia = analisisConsistencia?.alerta
+            ? ` Aviso: el kilometraje difiere un ${analisisConsistencia.variacionPct}% del histórico del cliente (referencia ${analisisConsistencia.kmReferencia} km).`
+            : '';
+          setMensaje(`Desplazamiento finalizado. Distancia calculada con las coordenadas fijas del cliente por fallo de geolocalización o conexión.${mensajeConsistencia}`);
+          return;
+        } catch (innerErr) {
+          // Si por alguna razón falla el cálculo alternativo, caemos en el catch general
+        }
+      }
 
       setDesplazamiento((prev) => ({
         ...prev,
         finIso,
         minutosGeo: null,
       }));
-      setError('No se pudo capturar ubicación del cliente.');
+      setError('No se pudo capturar ubicación del cliente y el cliente no tiene coordenadas configuradas.');
     } finally {
       setCapturandoDesplazamiento(false);
     }
@@ -1545,13 +1577,33 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
     } catch (err) {
       const sinConexion = navigator.onLine === false;
 
-      // Sin geolocalización no podemos calcular km, pero igualmente
-      // cerramos el desplazamiento para que el técnico pueda continuar.
+      // Sin geolocalización no podemos calcular km mediante GPS, pero si el
+      // cliente tiene coordenadas fijas, calculamos el kilometraje de forma determinista.
       if (!desplazamiento.finIso) {
+        const clienteSeleccionado = clientes.find((item) => item.id === formulario.cliente_id);
+        const coordenadasCliente = obtenerCoordenadasCliente(clienteSeleccionado);
+        let distMetros = null;
+        let ubicFin = null;
+
+        if (coordenadasCliente) {
+          try {
+            distMetros = await calcularDistanciaCarreteraMetros(UBICACION_COTEPA, coordenadasCliente);
+            ubicFin = {
+              latitud: coordenadasCliente.latitud,
+              longitud: coordenadasCliente.longitud,
+              nombreLugar: 'Ubicación fija de cliente (GPS no disponible)',
+              nombreLugarCompleto: `Calculado desde dirección del cliente (sin geolocalización activa)`,
+            };
+          } catch (innerErr) {}
+        }
+
         setDesplazamiento((prev) => ({
           ...prev,
           inicioIso: prev?.inicioIso || inicioIntervIso,
           finIso: inicioIntervIso,
+          ubicacionInicio: prev.ubicacionInicio || UBICACION_COTEPA,
+          ubicacionFin: ubicFin || prev.ubicacionFin,
+          distanciaMetros: distMetros !== null ? distMetros : prev.distanciaMetros,
           minutosGeo: null,
         }));
       }
@@ -1567,10 +1619,17 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
         pausaComidaActiva: null,
       });
       setPendienteGeoIntervension(sinConexion);
+
+      const clienteSeleccionado = clientes.find((item) => item.id === formulario.cliente_id);
+      const coordenadasCliente = obtenerCoordenadasCliente(clienteSeleccionado);
+      const msgCalculadoCliente = (!desplazamiento.finIso && coordenadasCliente)
+        ? ' (Kilometraje calculado desde dirección de cliente).'
+        : '';
+
       setMensaje(
         sinConexion
-          ? 'Intervención iniciada con hora del sistema (sin conexión). Se registrará la geolocalización al recuperar internet.'
-          : 'Intervención iniciada (sin geolocalización).',
+          ? `Intervención iniciada con hora del sistema (sin conexión). Se registrará la geolocalización al recuperar internet.${msgCalculadoCliente}`
+          : `Intervención iniciada (sin geolocalización).${msgCalculadoCliente}`,
       );
       setError('');
     } finally {

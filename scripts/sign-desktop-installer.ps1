@@ -48,14 +48,8 @@ if ([string]::IsNullOrWhiteSpace($plainPassword)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($plainPassword)) {
-  $password = Read-Host "Introduce la contrasena del PFX" -AsSecureString
-  $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
-  try {
-    $plainPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
-  }
-  finally {
-    if ($bstr -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
-  }
+  Write-Warning "No se proporciono contraseña para el PFX (CODE_SIGNING_PFX_PASSWORD no esta definido). Se omite la firma adicional del instalador."
+  exit 0
 }
 
 $arguments = @(

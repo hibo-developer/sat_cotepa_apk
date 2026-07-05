@@ -5,6 +5,7 @@ import {
   calcularDistanciaMetros,
   normalizarKmDesplazamientoFacturable,
   resolverDestinoFacturable,
+  obtenerCoordenadasCliente,
   UBICACION_COTEPA,
 } from './distanciaClienteService';
 
@@ -57,5 +58,26 @@ describe('distanciaClienteService', () => {
 
   it('normaliza kilómetros facturables como ida y vuelta con dos decimales', () => {
     expect(normalizarKmDesplazamientoFacturable(12456)).toBe(24.91);
+  });
+
+  it('detecta y descarta coordenadas inválidas, vacías o por defecto (0,0)', () => {
+    expect(obtenerCoordenadasCliente(null)).toBeNull();
+    expect(obtenerCoordenadasCliente(undefined)).toBeNull();
+    expect(obtenerCoordenadasCliente({ lat: null, lng: null })).toBeNull();
+    expect(obtenerCoordenadasCliente({ lat: '', lng: '' })).toBeNull();
+    expect(obtenerCoordenadasCliente({ lat: '  ', lng: '  ' })).toBeNull();
+    expect(obtenerCoordenadasCliente({ lat: 0, lng: 0 })).toBeNull();
+    expect(obtenerCoordenadasCliente({ lat: '0', lng: '0' })).toBeNull();
+    
+    // Coordenadas válidas
+    expect(obtenerCoordenadasCliente({ lat: 39.4699, lng: -0.3763 })).toEqual({
+      latitud: 39.4699,
+      longitud: -0.3763,
+    });
+    // Coordenadas en formato texto numérico
+    expect(obtenerCoordenadasCliente({ lat: '39.4699', lng: '-0.3763' })).toEqual({
+      latitud: 39.4699,
+      longitud: -0.3763,
+    });
   });
 });
