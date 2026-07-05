@@ -728,10 +728,7 @@ function FormularioNuevaOrden({ onCrear, accionEnCurso, onNotificar, puedeCrearO
                   const tecnicoSeleccionado = tecnicos.find((tecnico) => tecnico.id === evento.target.value);
                   setFormulario((previo) => ({ ...previo, tecnico_id: evento.target.value }));
                   if (tecnicoSeleccionado) {
-                    const etiqueta = [tecnicoSeleccionado.nombre, tecnicoSeleccionado.especialidad]
-                      .filter(Boolean)
-                      .join(' ');
-                    setBusquedaTecnico(etiqueta);
+                    setBusquedaTecnico(tecnicoSeleccionado.nombre);
                   }
                 }}
                 className="select-base"
