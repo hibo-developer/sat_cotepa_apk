@@ -16,8 +16,11 @@ function esActivoEstatico(url) {
 }
 
 async function networkOnlyNoStore(request) {
-  const noStoreRequest = new Request(request, { cache: 'no-store' });
-  return fetch(noStoreRequest);
+  try {
+    return await fetch(request.url, { cache: 'no-store' });
+  } catch {
+    return fetch(request);
+  }
 }
 
 async function cacheFirst(request) {
