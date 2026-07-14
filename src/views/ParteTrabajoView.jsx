@@ -46,6 +46,8 @@ import {
   UBICACION_COTEPA,
 } from '../services/distanciaClienteService';
 
+const soportaPointerEventos = typeof window !== 'undefined' && 'PointerEvent' in window;
+
 function obtenerUbicacionActual() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -967,6 +969,30 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
 
   useEffect(() => {
     prepararCanvasFirma();
+
+    const canvas = canvasFirmaRef.current;
+    if (!canvas) {
+      return undefined;
+    }
+
+    const redimensionarFirma = () => {
+      prepararCanvasFirma();
+    };
+
+    let observador = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      observador = new ResizeObserver(redimensionarFirma);
+      observador.observe(canvas);
+    }
+
+    window.addEventListener('resize', redimensionarFirma);
+    window.addEventListener('orientationchange', redimensionarFirma);
+
+    return () => {
+      observador?.disconnect();
+      window.removeEventListener('resize', redimensionarFirma);
+      window.removeEventListener('orientationchange', redimensionarFirma);
+    };
   }, []);
 
   useEffect(() => {
@@ -1188,8 +1214,27 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
       return;
     }
 
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      return;
+    }
+
+    const dpr = window.devicePixelRatio || 1;
+    const anchoCanvas = Math.max(1, Math.round(rect.width * dpr));
+    const altoCanvas = Math.max(1, Math.round(rect.height * dpr));
+
+    if (canvas.width !== anchoCanvas) {
+      canvas.width = anchoCanvas;
+    }
+
+    if (canvas.height !== altoCanvas) {
+      canvas.height = altoCanvas;
+    }
+
+    contexto.setTransform(dpr, 0, 0, dpr, 0, 0);
+
     contexto.fillStyle = '#ffffff';
-    contexto.fillRect(0, 0, canvas.width, canvas.height);
+    contexto.fillRect(0, 0, rect.width, rect.height);
     contexto.lineWidth = 2;
     contexto.lineCap = 'round';
     contexto.lineJoin = 'round';
@@ -1208,14 +1253,21 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
       return null;
     }
 
+    const fuente = evento.touches?.[0] || evento.changedTouches?.[0] || evento;
+    if (typeof fuente.clientX !== 'number' || typeof fuente.clientY !== 'number') {
+      return null;
+    }
+
     const rect = canvas.getBoundingClientRect();
     return {
-      x: evento.clientX - rect.left,
-      y: evento.clientY - rect.top,
+      x: fuente.clientX - rect.left,
+      y: fuente.clientY - rect.top,
     };
   }
 
   function iniciarTrazoFirma(evento) {
+    evento.preventDefault();
+
     const canvas = canvasFirmaRef.current;
     if (!canvas) {
       return;
@@ -1227,6 +1279,10 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
       return;
     }
 
+    if (typeof canvas.setPointerCapture === 'function' && typeof evento.pointerId === 'number') {
+      canvas.setPointerCapture(evento.pointerId);
+    }
+
     dibujandoFirmaRef.current = true;
     contexto.beginPath();
     contexto.moveTo(punto.x, punto.y);
@@ -1236,6 +1292,8 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
     if (!dibujandoFirmaRef.current) {
       return;
     }
+
+    evento.preventDefault();
 
     const canvas = canvasFirmaRef.current;
     if (!canvas) {
@@ -2790,12 +2848,22 @@ export function ParteTrabajoView({ rolUsuario, sesion }) {
             ref={canvasFirmaRef}
             width={320}
             height={140}
-            onPointerDown={iniciarTrazoFirma}
-            onPointerMove={trazarFirma}
-            onPointerUp={terminarTrazoFirma}
-            onPointerLeave={terminarTrazoFirma}
             className="w-full rounded-lg border border-sat-border bg-white"
             style={{ touchAction: 'none' }}
+            {...(soportaPointerEventos
+              ? {
+                  onPointerDown: iniciarTrazoFirma,
+                  onPointerMove: trazarFirma,
+                  onPointerUp: terminarTrazoFirma,
+                  onPointerLeave: terminarTrazoFirma,
+                  onPointerCancel: terminarTrazoFirma,
+                }
+              : {
+                  onTouchStart: iniciarTrazoFirma,
+                  onTouchMove: trazarFirma,
+                  onTouchEnd: terminarTrazoFirma,
+                  onTouchCancel: terminarTrazoFirma,
+                })}
           />
           <p className="mt-1 text-xs text-sat-subtle">
             Firma requerida para completar el parte.

@@ -13,6 +13,8 @@ import { estaOnline } from '../services/offlineSyncService';
 import { abrirGoogleMaps } from '../services/externalNavigationService';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
 
+const soportaPointerEventos = typeof window !== 'undefined' && 'PointerEvent' in window;
+
 async function comprimirImagenA1280(archivo, nombreFinal) {
   if (!archivo) return null;
   const blobEntrada = archivo instanceof Blob ? archivo : null;
@@ -381,8 +383,27 @@ export function PartePemView({ rolUsuario, sesion }) {
     if (!canvas) return;
     const contexto = canvas.getContext('2d');
     if (!contexto) return;
+
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      return;
+    }
+
+    const dpr = window.devicePixelRatio || 1;
+    const anchoCanvas = Math.max(1, Math.round(rect.width * dpr));
+    const altoCanvas = Math.max(1, Math.round(rect.height * dpr));
+
+    if (canvas.width !== anchoCanvas) {
+      canvas.width = anchoCanvas;
+    }
+
+    if (canvas.height !== altoCanvas) {
+      canvas.height = altoCanvas;
+    }
+
+    contexto.setTransform(dpr, 0, 0, dpr, 0, 0);
     contexto.fillStyle = '#ffffff';
-    contexto.fillRect(0, 0, canvas.width, canvas.height);
+    contexto.fillRect(0, 0, rect.width, rect.height);
     contexto.lineWidth = 2;
     contexto.lineCap = 'round';
     contexto.lineJoin = 'round';
@@ -391,6 +412,30 @@ export function PartePemView({ rolUsuario, sesion }) {
 
   useEffect(() => {
     prepararCanvasFirma();
+
+    const canvas = canvasFirmaRef.current;
+    if (!canvas) {
+      return undefined;
+    }
+
+    const redimensionarFirma = () => {
+      prepararCanvasFirma();
+    };
+
+    let observador = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      observador = new ResizeObserver(redimensionarFirma);
+      observador.observe(canvas);
+    }
+
+    window.addEventListener('resize', redimensionarFirma);
+    window.addEventListener('orientationchange', redimensionarFirma);
+
+    return () => {
+      observador?.disconnect();
+      window.removeEventListener('resize', redimensionarFirma);
+      window.removeEventListener('orientationchange', redimensionarFirma);
+    };
   }, []);
 
   function limpiarFirma() {
@@ -402,16 +447,29 @@ export function PartePemView({ rolUsuario, sesion }) {
   function obtenerPuntoFirma(evento) {
     const canvas = canvasFirmaRef.current;
     if (!canvas) return null;
+
+    const fuente = evento.touches?.[0] || evento.changedTouches?.[0] || evento;
+    if (typeof fuente.clientX !== 'number' || typeof fuente.clientY !== 'number') {
+      return null;
+    }
+
     const rect = canvas.getBoundingClientRect();
-    return { x: evento.clientX - rect.left, y: evento.clientY - rect.top };
+    return { x: fuente.clientX - rect.left, y: fuente.clientY - rect.top };
   }
 
   function iniciarTrazoFirma(evento) {
+    evento.preventDefault();
+
     const canvas = canvasFirmaRef.current;
     if (!canvas) return;
     const contexto = canvas.getContext('2d');
     const punto = obtenerPuntoFirma(evento);
     if (!contexto || !punto) return;
+
+    if (typeof canvas.setPointerCapture === 'function' && typeof evento.pointerId === 'number') {
+      canvas.setPointerCapture(evento.pointerId);
+    }
+
     dibujandoFirmaRef.current = true;
     contexto.beginPath();
     contexto.moveTo(punto.x, punto.y);
@@ -419,6 +477,9 @@ export function PartePemView({ rolUsuario, sesion }) {
 
   function trazarFirma(evento) {
     if (!dibujandoFirmaRef.current) return;
+
+    evento.preventDefault();
+
     const canvas = canvasFirmaRef.current;
     if (!canvas) return;
     const contexto = canvas.getContext('2d');
@@ -1071,11 +1132,21 @@ export function PartePemView({ rolUsuario, sesion }) {
             ref={canvasFirmaRef}
             width={900}
             height={240}
-            onPointerDown={iniciarTrazoFirma}
-            onPointerMove={trazarFirma}
-            onPointerUp={terminarTrazoFirma}
-            onPointerLeave={terminarTrazoFirma}
             className="h-40 w-full rounded-xl border border-sat-border bg-white touch-none"
+            {...(soportaPointerEventos
+              ? {
+                  onPointerDown: iniciarTrazoFirma,
+                  onPointerMove: trazarFirma,
+                  onPointerUp: terminarTrazoFirma,
+                  onPointerLeave: terminarTrazoFirma,
+                  onPointerCancel: terminarTrazoFirma,
+                }
+              : {
+                  onTouchStart: iniciarTrazoFirma,
+                  onTouchMove: trazarFirma,
+                  onTouchEnd: terminarTrazoFirma,
+                  onTouchCancel: terminarTrazoFirma,
+                })}
           />
           {!firmaClienteDataUrl && (
             <p className="text-xs font-semibold text-rose-700">
