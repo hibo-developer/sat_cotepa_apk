@@ -9,9 +9,9 @@
 | **Rama de staging** | `staging/auditoria-seguridad` |
 | **Commit baseline (pre-fixes)** | `014a5fe` sec(step-0): baseline |
 | **Commit final staging a desplegar** | `__________` (hash HEAD) |
-| **Ventana baja demanda confirmada** | `SABADO 06/09/2026 02:00 - 04:00 CET` |
-| **Proyecto Supabase Staging REF** | `__________` (crear proyecto staging OQ-1) |
-| **Proyecto Supabase Produccion REF** | `__________` |
+| **Ventana baja demanda confirmada** | `HOY 03/09/2026 INMEDIATO (Aprobador Unico OQ3 valida baja demanda). Valida antes CLI Supabase OK y git status clean. ANTERIORMENTE PROGRAMADA: SABADO 06/09/2026 02:00 - 04:00 CET (cambio por creador=aprobador).` |
+| **Proyecto Supabase Staging REF** | `koutjthilycablkhgbmh` (confirmado 03/09) |
+| **Proyecto Supabase Produccion REF** | `soqrcatqtzaggitqsmlz` (confirmado 03/09) |
 
 ---
 
