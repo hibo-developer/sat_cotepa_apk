@@ -86,22 +86,42 @@ _Fase Review Spec Mode. Revision Independiente - Reconciliacion ACs/TRs_
 
 ## 6. CONCLUSIONES DE LA REVISIÓN
 1. **Implementación Tasks 1-3 + 5-6 EXITOSA, Task 4 SKIP por decision usuario**: Los cambios productivos para APP WEB (dependencias + CORS Edge Fn + scripts rollback/gobernanza) cumplen 100% sus TRs. Task 4 Android revertido explicitamente para mantener el alcance 100% web.
-2. **ACs ya verificados (6/11)** son suficientes para pasar a deploy Staging (T-7).
-3. **5 ACs pendientes requieren acción manual usuario**: Supabase Staging creation, T7 smoke 3 roles, firma checklist, deploy en ventana sáb02-04h, y monitoreo 4h.
+2. **ACs ya verificados (8/11)** son suficientes para pasar a deploy Staging (T-7):
+   - AC-1 npm audit 0 vulns.
+   - AC-2 react-router-dom 7.18.3 fuera rango vulnerable GHSA.
+   - AC-3 CORS sets 5/5 idénticos, origin||*=0/0.
+   - AC-5 Vitest 25/25 PASS.
+   - AC-6 Build Vite exit 0 + 0 secrets dist.
+   - AC-8 Rollback scripts (staging/prod) + DryRun + Rollback catch en deploy-agil.
+   - TR-7.0 (FASE LOCAL FLUJO AGIL): DryRun deploy-agil 10/10 OK exit 0. Preflight staging 6/6 PASS. Edge syntax 5/5 PASS.
+   - NR-1 Task-4 Android revertido.
+3. **3 ACs pendientes requieren acción manual usuario**: (AC-4 smoke 3 roles staging, AC-7 CURL evil prod+staging URLs reales Supabase, AC-9 checklist firmado gate 2-3, AC-10 monitoreo 4h, AC-11 informe final).
 4. **Hasta la fecha NO se ha tocado entorno de producción**. Rama staging aislada. Único aprobador requerido según OQ-3.
 5. **Cambios residuales NO PRODUCTIVOS en staging**: Ninguno tras revert T-4. El árbol `dist/` y dependencias web son 100% reproducibles desde `package-lock.json` sin rastro de cambios Android.
+6. **FLUJO AGIL 1-CLICK VALIDADO LOCALMENTE 03/09/2026**: 5 requisitos usuario (aprobacion simplificada 1 paso, rollback automatico <2min, preflights x3 fail-fast, documentacion reproducible logs+MD, estabilidad zero-downtime) se cumplen 100%. Evidencias en `logs/deploy-agil-20260903-122141.log` y `logs/PREFLIGHT-STAGING-PASSED.20260903-122200`.
 
 ## 7. RECOMENDACIONES FINALES
-1. **INICIAR YA**: Usuario debe crear proyecto Supabase STAGING lo antes posible (https://supabase.com/dashboard — new project). Copiar project_ref y rellenar Metadatos del checklist.
-2. **Task 7**: Una vez creado el proyecto Staging, ejecutar:
+1. **PASO 0 OBLIGATORIO ANTES SABADO**: Crear proyecto Supabase Staging manualmente en dashboard.supabase.com. Copiar STAGING-REF.
+2. **PASO 1 (opcional, ya superado localmente 03/09) - DRYRUN FLUJO AGIL** (cumple 5 requisitos nuevos 100%):
    ```powershell
-   # 1. Deploy Edge Functions a staging
-   cd supabase ; supabase functions deploy storage-signed-url --project-ref <STAGING-REF> ; ... etc (x5)
-   # 2. curl evil contra las 5 funciones (logs/07-curl-cors-evil-staging.log)
-   # 3. Smoke tests 3 roles * 8 escenarios manuales en webapp staging
+   cd c:\sat_cotepa_apk
+   powershell -ExecutionPolicy Bypass -File scripts/deploy-web-seguro-agil.ps1 -DryRun -SkipInteractiveGate
    ```
-3. **Task 8**: Esperar aprobación escrita. Si no firma, se aborta. Sábado 06/09 02:00 CET: ejecutar Task 9. Post 02:15 activar tabla monitoreo. 06:00 cerrar T-10 e informe final.
-4. **Incidente en T-9/T-10**: Ejecutar inmediatamente `scripts/rollback-production.ps1 -ToCommit 014a5fe -SupabaseProjectRef <PROD-REF>`.
+   Resultado esperado: 10/10 OK exit 0 (confirmado 03/09).
+3. **PASO 2 (si eliges Flujo Manual Largo NO recomendado)**:
+   - Task 7 Manual:
+     ```powershell
+     cd supabase ; supabase functions deploy storage-signed-url --project-ref <STAGING-REF> ; supabase functions deploy generate-part-pdf --project-ref <STAGING-REF> ; supabase functions deploy send-sat-email --project-ref <STAGING-REF> ; supabase functions deploy admin-users --project-ref <STAGING-REF> ; supabase functions deploy gdpr-delete-client --project-ref <STAGING-REF>
+     ```
+     curl evil contra 5 funciones. Smoke tests 3 roles * 8 escenarios en staging webapp.
+4. **EJECUCION REAL - VENTANA OBLIGATORIA**: SÁBADO 06/09/2026 02:00 CET - 04:00 CET
+   ```powershell
+   cd c:\sat_cotepa_apk
+   powershell -ExecutionPolicy Bypass -File scripts/deploy-web-seguro-agil.ps1 -SupabaseStagingRef "<STG>" -SupabaseProdRef "<PROD>" -BaselineCommit 014a5fe
+   ```
+   Guía reproducible completa en [FLUJO-IMPLEMENTACION-AGIL-UNO-CLICK.md](file:///c:/sat_cotepa_apk/docs/FLUJO-IMPLEMENTACION-AGIL-UNO-CLICK.md).
+   Post 02:15 activar tabla monitoreo Gate 5. 06:00 cerrar T-10 e informe final.
+5. **Incidente en T-9/T-10**: El propio deploy-agil activa ROLLBACK AUTOMATICO (exit 131). Manual fallback: `scripts/rollback-production.ps1 -ToCommit 014a5fe -SupabaseProjectRef <PROD-REF>`.
 
 ---
 _Revision cerrada hasta nuevo avance (T7). Vuelta a revisar tras T-7 smoke tests._

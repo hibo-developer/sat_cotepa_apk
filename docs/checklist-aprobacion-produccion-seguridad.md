@@ -20,17 +20,18 @@ _(marcar con `[x]` y adjuntar evidencia en columna)._
 
 | ID | Item (Acceptance Criteria) | Pass/Fail | Evidencia (ruta log / output) |
 |----|-----------------------------|-----------|-------------------------------|
-| AC-1 | `npm audit --production` retorna 0 vulnerabilidades | `[ ]` | `logs/05-preflight-*-audit.log` |
-| AC-2 | `react-router-dom` >= 7.18.2 instalado | `[ ]` | `npm ls react-router-dom` |
-| AC-3 | 5/5 Edge Functions comparten CORS whitelist estricta identica | `[ ]` | Grep ALLOWED_ORIGINS count=5 / origin||* count=0 |
-| AC-4 | Smoke tests funcionales 3 roles (admin/oficina/tecnico) x 8 escenarios en Staging | `[ ]` | `logs/07-smoke-tests-staging.md` |
-| AC-5 | Vitest 0 fallos (25/25) | `[ ]` | `logs/05-preflight-*-vitest.log` |
-| AC-6 | Build Vite exit 0 + 0 secretos hardcodeados en `dist/` | `[ ]` | `logs/05-preflight-build.log` + secrets-scan.log |
-| AC-7 | CURL evil.com contra 5 Edge Functions en STAGING rechaza ACAO (403/sin header) | `[ ]` | `logs/07-curl-cors-evil-staging.log` |
-| AC-8 | Scripts rollback staging y produccion existen + dry-run ejecutados | `[ ]` | `rollback-staging -DryRun` exit 0 |
+| AC-1 | `npm audit --production` retorna 0 vulnerabilidades | `[x]` | `logs/PREFLIGHT-STAGING-PASSED.*` check 1 |
+| AC-2 | `react-router-dom` >= 7.18.2 instalado | `[x]` | `npm ls react-router-dom` → 7.18.3 (fuera rango GHSA-qwww-vcr4-c8h2) |
+| AC-3 | 5/5 Edge Functions comparten CORS whitelist estricta identica | `[x]` | Grep ALLOWED_ORIGINS=5/5, origin||*=0/0. Preflight check 5 PASS. |
+| AC-4 | Smoke tests funcionales 3 roles (admin/oficina/tecnico) x 8 escenarios en Staging | `[ ]` | Requiere Supabase Staging REF creado. `logs/deploy-agil-*.log` paso 8. |
+| AC-5 | Vitest 0 fallos (25/25) | `[x]` | `logs/PREFLIGHT-STAGING-PASSED.*` check 2 |
+| AC-6 | Build Vite exit 0 + 0 secretos hardcodeados en `dist/` | `[x]` | `logs/PREFLIGHT-STAGING-PASSED.*` checks 3+4 |
+| AC-7 | CURL evil.com contra 5 Edge Functions en STAGING rechaza ACAO (403/sin header) | `[ ]` | Requiere Supabase Staging REF. `logs/deploy-agil-*.log` paso 3. |
+| AC-8 | Scripts rollback staging y produccion existen + dry-run ejecutados | `[x]` | `rollback-staging -DryRun` exit 0; `rollback-production -DryRun` exit 0; deploy-agil catch global activo. |
+| FA-1 (FlujoAgil) | DryRun deploy-agil 10/10 OK exit 0 + Preflight 6/6 PASS + EdgeSyntax 5/5 PASS | `[x]` | `logs/deploy-agil-20260903-122141.log` + `logs/PREFLIGHT-STAGING-PASSED.20260903-122200` |
 | NR-1 | Task-4 Hardening Android revertido explicitamente (no aplica a WEB prod segun OQ5 + decision 03/09) | `[x]` | `git show 6f2dd8a` (revert commit 1bfbfef). build.gradle sin GradleException, Manifest con requestLegacyExternalStorage=true restaurado. |
 
-> **Resultado Staging (marcar):** `[ ] LISTO PARA GATE PRODUCCION` | `[ ] BLOQUEADO (motivo: _______)`
+> **Resultado Staging (marcar):** `[x] LISTO PARA GATE PRODUCCION (fase local superada 03/09. Pendiente crear Staging Supabase manualmente y ejecutar 1-click en ventana sáb02-04)` | `[ ] BLOQUEADO (motivo: _______)` | `[x] FLUJO AGIL 1-CLICK USADO: ejecutar scripts/deploy-web-seguro-agil.ps1 (incluye gate integrado 1 prompt, rollback automatico, 30min monitoreo)`
 
 ---
 

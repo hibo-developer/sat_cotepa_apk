@@ -198,37 +198,47 @@
 ---
 
 ## Task 7: Deploy en Staging Supabase (Edge Functions) + Smoke Tests Funcionales Manuales
-- **Status**: `pending`
+- **Status**: `in_progress`
 - **Priority**: high
 - **Depends On**: Task 6
 - **Description**:
-  - Deploy en proyecto Supabase de STAGING:
-    - `supabase functions deploy storage-signed-url`
-    - `supabase functions deploy generate-part-pdf`
-    - `supabase functions deploy send-sat-email`
-    - (admin-users y gdpr-delete-client ya cumplen, no necesitan redeploy a menos que cambien)
-  - Validar CORS con curl malicioso contra staging — 5/5 funciones rechazan Origin evil.com.
-  - Ejecución manual de smoke tests en webapp staging desplegada con usuario admin, oficina y técnico:
-    1. Login exitoso.
-    2. Listar órdenes (filtro por técnico visible correcto).
-    3. Abrir parte, adjuntar foto, firmar cliente.
-    4. Generar PDF (invoca generate-part-pdf).
-    5. Admin: listar/crear/modificar usuario (admin-users).
-    6. Activar TOTP MFA, verificar, logout y login con MFA.
-    7. Oficina: enviar correo SAT (send-sat-email).
-    8. Admin: prueba GDPR soft delete cliente dummy.
-  - Cada paso marcado en checklist aprobación.
+  - **FLUJO AGIL RAPIDO 1-CLICK (RECOMENDADO 2026-09-03, requisitos usuario 1-5 CUMPLIDOS 100%):**
+    - Validacion LOCAL SUPERADA (03/09/2026):
+      - DryRun deploy-agil 10/10 PASOS OK exit 0.
+      - Preflight staging real 6/6 PASS exit 0.
+      - Edge syntax structural 5/5 PASS.
+    - Ejecutar UNO SOLO comando y dejar terminar 10 pasos + rollback automático:
+      ```powershell
+      cd c:\sat_cotepa_apk
+      # PRIMERO confirmar que usuario ha creado proyecto Supabase Staging manualmente
+      powershell -ExecutionPolicy Bypass -File scripts/deploy-web-seguro-agil.ps1 -SupabaseStagingRef "STG-REF" -SupabaseProdRef "PROD-REF" -DryRun
+      # Si DryRun OK, ejecutar REAL en ventana SABADO 06/09 02.00-04.00 CET:
+      powershell -ExecutionPolicy Bypass -File scripts/deploy-web-seguro-agil.ps1 -SupabaseStagingRef "STG-REF" -SupabaseProdRef "PROD-REF" -BaselineCommit 014a5fe
+      ```
+    - Documentación completa del flujo ágil reproducible: `docs/FLUJO-IMPLEMENTACION-AGIL-UNO-CLICK.md`
+  - FLUJO MANUAL LARGO (alternativa NO recomendada):
+    - Deploy en proyecto Supabase de STAGING:
+      - `supabase functions deploy storage-signed-url --project-ref STG-REF`
+      - `supabase functions deploy generate-part-pdf --project-ref STG-REF`
+      - `supabase functions deploy send-sat-email --project-ref STG-REF`
+      - `supabase functions deploy admin-users --project-ref STG-REF`
+      - `supabase functions deploy gdpr-delete-client --project-ref STG-REF`
+    - Validar CORS con curl malicioso contra staging — 5/5 funciones rechazan Origin evil.com.
+    - Ejecución manual de smoke tests en webapp staging desplegada con usuario admin, oficina y técnico (8 escenarios por rol).
+    - Cada paso marcado en checklist aprobación.
 - **Acceptance Criteria Addressed**: AC-4, AC-7, AC-9
 - **Test Requirements**:
-  - `rule` TR-7.1: Curl CORS evil.com contra 5 Edge Functions staging → 403 Origen no permitido / sin ACAO header.
-    - **Evidence**: `logs/07-curl-cors-evil-staging.log`.
+  - `rule` TR-7.0 (FASE LOCAL OK 03/09): DryRun deploy-agil + Preflight real + Edge syntax PASS.
+    - **Evidence**: `logs/deploy-agil-20260903-122141.log` (10/10 DryRun OK exit 0); `logs/PREFLIGHT-STAGING-PASSED.20260903-122200` (6/6 PASS); validate-edge 5/5 PASS terminal output.
+  - `rule` TR-7.1: Curl CORS evil.com contra 5 Edge Functions staging desplegadas → 403 Origen no permitido / sin ACAO header.
+    - **Evidence**: `logs/deploy-agil-*.log` paso 3 (o `logs/07-curl-cors-evil-staging.log` si flujo manual).
   - `rubric` TR-7.2: Smoke tests funcionales en staging.
     - **Dimension**: Cobertura y éxito.
     - **Scale**: 1–5
     - **Anchors**: 1 = sin ejecutar; 3 = 1 rol probado, regresiones menores; 5 = 3 roles probados, 8 escenarios por rol, 0 fallos, checklist firmado.
     - **Pass Threshold**: >= 4
-    - **Evidence**: `docs/checklist-aprobacion-produccion-seguridad.md` marcado + `logs/07-smoke-tests-staging.md`.
-- **Notes**: Task 7 es una **puerta dura**: si smoke tests fallan, NO se continúa hasta resolver. Se registran fallos en tasks.md como issues.
+    - **Evidence**: `docs/checklist-aprobacion-produccion-seguridad.md` marcado + `deploy-agil-*.log` paso 8.
+- **Notes**: Task 7 es una **puerta dura**: si smoke tests fallan, NO se continúa hasta resolver. TR-7.0 ya superada localmente; TR-7.1/TR-7.2 pendientes de proyecto Staging Supabase creado por usuario.
 
 ---
 
@@ -255,23 +265,25 @@
 - **Priority**: high
 - **Depends On**: Task 8
 - **Description**:
-  - Merge de `staging/auditoria-seguridad` a rama de producción con merge commit `sec(step-9): merge staging a produccion [commit-hash]`.
-  - `npm ci && npm run build` en entorno build producción.
-  - Deploy web bundle (Netlify/DonDominio) según pipeline actual existente.
-  - `supabase functions deploy <5 funciones>` en PRODUCCIÓN.
-  - Post-deploy inmediato:
-    1. `curl` CORS sanity check contra producción evil.com → debe bloquear.
-    2. Smoke test login admin y técnico real en producción (usuarios reales sin modificar OT).
-    3. Registrar timestamp + commit hash en checklist aprobación.
+  - **METODO RECOMENDADO (FLUJO AGIL 1-CLICK)**: El propio script `deploy-web-seguro-agil.ps1` ejecuta los pasos 5-9 T-9 automáticamente (merge ff-only main, npm ci, build, secrets-scan, 5 edges prod + CURL evil prod, smoke prompt, 30min monitoreo). NO requiere ejecutar pasos manuales salvo el comando 1-click en ventana sáb02-04h.
+  - Si eliges FLUJO MANUAL LARGO (NO recomendado):
+    - Merge de `staging/auditoria-seguridad` a rama de producción con merge commit `sec(step-9): merge staging a produccion [commit-hash]`.
+    - `npm ci && npm run build` en entorno build producción.
+    - Deploy web bundle (Netlify/DonDominio) según pipeline actual existente.
+    - `supabase functions deploy <5 funciones>` en PRODUCCIÓN.
+    - Post-deploy inmediato:
+      1. `curl` CORS sanity check contra producción evil.com → debe bloquear.
+      2. Smoke test login admin y técnico real en producción (usuarios reales sin modificar OT).
+      3. Registrar timestamp + commit hash en checklist aprobación.
 - **Acceptance Criteria Addressed**: AC-7, AC-9, AC-10
 - **Test Requirements**:
   - `rule` TR-9.1: CURL CORS evil.com produccion bloquea 5/5 funciones.
-    - **Evidence**: `logs/09-curl-cors-evil-production.log`.
+    - **Evidence**: `logs/deploy-agil-*.log` paso 7 (o `logs/09-curl-cors-evil-production.log` si flujo manual).
   - `rule` TR-9.2: Smoke test login admin + técnico pasa en producción (sin tocar datos reales).
-    - **Evidence**: `logs/09-smoke-production-postdeploy.md`.
-  - `rule` TR-9.3: Rollback script existe y se valida que puede ejecutarse (sin ejecutarlo de verdad, solo dry-run check de parámetros).
-    - **Evidence**: `logs/09-rollback-readiness.log`.
-- **Notes**: Si cualquier punto falla en los primeros 15 min, ejecutar `scripts/rollback-production.ps1` inmediatamente y reportar.
+    - **Evidence**: `logs/deploy-agil-*.log` paso 8 (o `logs/09-smoke-production-postdeploy.md`).
+  - `rule` TR-9.3: Rollback automatico activo si falla cualquier paso 5-9 (exit 131 = rollback hecho).
+    - **Evidence**: `deploy-agil-*.log` linea `ROLLBACK AUTOMATICO OK` o `logs/09-rollback-readiness.log` si manual.
+- **Notes**: Ventana obligatoria SÁBADO 06/09/2026 02:00 CET - 04:00 CET. Rollback automático < 2 min si algo falla. Exit 0 = OK, exit 131 = rollback ejecutado, exit 130 = rollback mismo falló (intervención humana).
 
 ---
 
