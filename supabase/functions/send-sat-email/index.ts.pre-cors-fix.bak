@@ -2,23 +2,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 function buildCorsHeaders(req: Request): { headers: Record<string, string>; originAllowed: boolean } {
   const origin = req.headers.get('Origin');
-
-  // Allowed origins: production Netlify domain, localhost for dev.
-  // Requests without Origin (server-to-server, mobile native) are always allowed.
-  const ALLOWED_ORIGINS = new Set([
-    'https://sat.cotepa.com',
-    'https://sat-cotepa.netlify.app',
-    'http://localhost:5173',
-    'http://localhost:4173',
-  ]);
-
-  const originAllowed = !origin || ALLOWED_ORIGINS.has(origin);
-  const allowOrigin = originAllowed ? (origin || '') : '';
-
+  const allowOrigin = origin || '*';
   return {
-    originAllowed,
+    originAllowed: true,
     headers: {
-      ...(allowOrigin ? { 'Access-Control-Allow-Origin': allowOrigin } : {}),
+      'Access-Control-Allow-Origin': allowOrigin,
       'Vary': 'Origin',
       'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
