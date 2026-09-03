@@ -1,7 +1,7 @@
 # Implementación Escalonada Segura de Hallazgos de Seguridad - Implementation Plan
 
 ## Task 1: Bootstrap entorno Staging (rama + carpetas logs + guardado baseline)
-- **Status**: `pending`
+- **Status**: `completed`
 - **Priority**: high
 - **Depends On**: None
 - **Description**:
@@ -19,11 +19,20 @@
   - `rule` TR-1.3: `package-lock.json.baseline` es idéntico al `package-lock.json` actual.
     - **Evidence**: `Compare-Object (Get-FileHash package-lock.json.baseline).Hash (Get-FileHash package-lock.json).Hash`.
 - **Notes**: Si no existe rama `main`, adaptar a rama de producción actual. Este paso NO modifica código fuente.
+- **Completion Evidence**:
+  - Commit baseline: `014a5fe` (`sec(step-0): baseline staging seguridad 2026-09-03 - crea carpeta .trae/specs...`) en rama `staging/auditoria-seguridad`.
+  - TR-1.1: **PASS** — HEAD commit `014a5fe` empieza por `sec(step-0)`.
+  - TR-1.2: **PASS** — `logs/00-baseline-npm-audit.log` (2.3 KB), `logs/00-baseline-vitest.log` (1.1 KB), `logs/00-baseline-build.log` (1.4 KB).
+  - TR-1.3: **PASS** — `Compare-Object` devuelve vacío (hashes idénticos entre package-lock.json y .baseline).
+  - Baseline audit: **6 vulnerabilities (2 mod, 3 high, 1 critical)** — valor esperado antes de fixes.
+  - Baseline vitest: **7 archivos / 25 tests PASADOS (exit 0)** en 2.02s.
+  - Baseline build: **Vite build EXIT 0** en 2.04s, 345 módulos transformados.
+  - `.gitignore` actualizado: añadidas `logs/`, `backup/`, `package-lock.json.baseline`.
 
 ---
 
 ## Task 2: Aplicar actualizaciones de dependencias (npm audit fix + react-router bump)
-- **Status**: `pending`
+- **Status**: `completed`
 - **Priority**: high
 - **Depends On**: Task 1
 - **Description**:
@@ -48,11 +57,20 @@
   - `rule` TR-2.5: Grep `service_role` en `dist/` devuelve 0 matches.
     - **Evidence**: `logs/02-post-updates-secrets-scan.log`.
 - **Notes**: Si `npm audit fix` rompe builds/tests, aplicar rollback automático del script (restaurar package-lock.baseline + `npm ci`) y marcar task como blocked con detalle.
+- **Completion Evidence**:
+  - Commit: `16d3716` sec(step-2): fix 6 dependencias vulnerables (tar critical, brace-expansion high x5, xmldom mod, dompurify mod, react-router 7.14.2→7.18.3)
+  - TR-2.1: **PASS** — `npm audit --production --omit=dev` → `found 0 vulnerabilities` (exit 0).
+  - TR-2.2: **PASS** — `react-router-dom@7.18.3` + `react-router@7.18.3` (ambos >7.18.2, fuera del rango vulnerable 7.12.0–7.18.1).
+  - TR-2.3: **PASS** — Vitest 7/7 archivos, 25/25 tests pasan en 1.66s.
+  - TR-2.4: **PASS** — Vite build exit 0 en 2.27s.
+  - TR-2.5: **PASS** — `Get-ChildItem dist -Recurse | Select-String` → 0 coincidencias `service_role|JWT`.
+  - Archivos nuevos: `scripts/apply-security-updates.ps1` (script idempotente con rollback automático si fallan tests/build).
+  - Backups creados en `backup/package-*-GOOD.json` para rollback manual de emergencia.
 
 ---
 
 ## Task 3: Unificar CORS whitelist estricta en 3 Edge Functions pendientes
-- **Status**: `pending`
+- **Status**: `completed`
 - **Priority**: high
 - **Depends On**: Task 2
 - **Description**:
@@ -84,11 +102,18 @@
   - `rule` TR-3.4: Prueba unitaria local de `buildCorsHeaders` con mock de Origin evil.com → `originAllowed == false` y `Access-Control-Allow-Origin` vacío.
     - **Evidence**: Resultado test inline en logs.
 - **Notes**: Si no hay `deno` disponible, validación sintáctica por revisión estructural con TypeScript de Node. No se deployan aún las funciones: deploy se hace en Task 7 (staging Supabase).
+- **Completion Evidence**:
+  - Commit: `e274f51` sec(step-3): unificar CORS whitelist estricta storage-signed-url, generate-part-pdf, send-sat-email; copiada estrategia ALLOWED_ORIGINS de admin-users y gdpr-delete-client.
+  - TR-3.1: **PASS** — Grep ALLOWED_ORIGINS new Set() devuelve 5 coincidencias (admin-users, gdpr-delete-client, generate-part-pdf, send-sat-email, storage-signed-url).
+  - TR-3.2: **PASS** — Grep `origin || '\*'` en supabase/functions/ devuelve 0 coincidencias.
+  - TR-3.3: **PASS** — Las 3 funciones conservan `createClient(` y `Deno.serve` — validación estructural PASADA.
+  - TR-3.4: **PASS** — Test mock local (logs/03-cors-mock-test.cjs, ejecutado con Node): 5 escenarios PASADOS (evil.com originAllowed=false + ACAO vacío; 3 orígenes whitelist OK; Origin null permitido para móvil).
+  - Backups rollback incluidos en commit: 3x `index.ts.pre-cors-fix.bak` en carpetas de cada función.
 
 ---
 
 ## Task 4: Endurecer build Android release (fallar si no hay keystore) + limpiar legacy storage flag
-- **Status**: `pending`
+- **Status**: `completed`
 - **Priority**: medium
 - **Depends On**: Task 2 (independe de CORS, puede paralelizar pero orden secuencial para rollback limpio)
 - **Description**:
@@ -107,11 +132,15 @@
   - `rule` TR-4.2: `android/app/build.gradle` contiene la cadena `new GradleException("❌ Release build bloqueado` exactamente.
     - **Evidence**: Diff guardado.
 - **Notes**: Cambio solo afecta APK. Si el usuario en OQ-4 no aprueba el bloqueo, se cancela la parte de GradleException.
+- **Completion Evidence**:
+  - Commit: `1bfbfef` sec(step-4): endurecer build Android bloqueando release sin firma valida, eliminar requestLegacyExternalStorage obsoleto.
+  - TR-4.1: **PASS** — 0 coincidencias `requestLegacyExternalStorage` en AndroidManifest.xml (atributo eliminado).
+  - TR-4.2: **PASS** — build.gradle contiene: `throw new GradleException("\u274C Release build bloqueado: falta firma release Android...")`.
 
 ---
 
 ## Task 5: Crear scripts de Preflight, Rollback y logs centralizados
-- **Status**: `pending`
+- **Status**: `completed`
 - **Priority**: high
 - **Depends On**: Task 3
 - **Description**:
@@ -143,6 +172,12 @@
   - `rule` TR-5.3: Ejecución `./scripts/preflight-staging.ps1` en staging pasa todos los checks (exit code 0).
     - **Evidence**: `logs/05-preflight-staging.log`.
 - **Notes**: Rollback debe probarse en staging ANTES de usarse en producción — prueba de dry-run incluida.
+- **Completion Evidence**:
+  - Commit: `b16c7a8` sec(step-5): 4 scripts PowerShell idempotentes (rollback-staging, rollback-production, preflight-staging 6 checks, validate-edge-syntax structural 4 patterns requeridos).
+  - TR-5.1: **PASS** — 5 scripts existen (apply-security-updates.ps1 creado en Task 2).
+  - TR-5.2: **SCORE 5 / 5 (PASS)** — `rollback-staging -DryRun` exit 0; `rollback-production -DryRun` exit 0; 6 pasos staging y 8 pasos producción completos, pasos Supabase/CDN marcados como manuales a ejecutar en el momento.
+  - TR-5.3: **PASS** — Ejecución real `preflight-staging.ps1` exit 0: 6/6 checks OK (audit 0 vuln, vitest 25/25, build OK, 0 secrets en dist, CORS 5/5 whitelist, edge-syntax 5/5 PASS). Stamp creado: `logs/PREFLIGHT-STAGING-PASSED.20260903-090513`.
+  - TR-5.4 adicional: `validate-edge-functions-syntax.ps1` PASS — 5/5 Edge Functions contienen ALLOWED_ORIGINS Set + createClient + buildCorsHeaders + Deno.serve, 0 patrones origin||*
 
 ---
 
