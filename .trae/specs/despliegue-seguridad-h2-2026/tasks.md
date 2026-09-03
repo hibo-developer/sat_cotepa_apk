@@ -112,30 +112,19 @@
 
 ---
 
-## Task 4: Endurecer build Android release (fallar si no hay keystore) + limpiar legacy storage flag
-- **Status**: `completed`
-- **Priority**: medium
-- **Depends On**: Task 2 (independe de CORS, puede paralelizar pero orden secuencial para rollback limpio)
+## Task 4: Endurecer build Android release + limpiar legacy storage flag
+- **Status**: `skipped` (revertido por decisión del usuario 2026-09-03: no aplica a APP WEB en producción según OQ-5. Mantener en futuro si se despliega APK.)
+- **Priority**: medium (anulada para este despliegue)
+- **Depends On**: Task 2
 - **Description**:
-  - En `android/app/build.gradle` (líneas 52-63): después del `println` de advertencia, añadir bloque condicional:
-    ```
-    if (releaseBuildRequested && !releaseSigningAvailable) {
-        throw new GradleException("❌ Release build bloqueado: falta firma release Android. Configura KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS.")
-    }
-    ```
-  - En `android/app/src/main/AndroidManifest.xml`: eliminar atributo `android:requestLegacyExternalStorage="true"` (linea que empieza por `android:requestLegacyExternalStorage`).
-  - Commit: `sec(step-4): endurecer android release + limpiar legacy storage flag`.
-- **Acceptance Criteria Addressed**: (MEJORAS OPERATIVAS M6, M7 — coverage adicional)
-- **Test Requirements**:
-  - `rule` TR-4.1: `grep "requestLegacyExternalStorage" android/app/src/main/AndroidManifest.xml` devuelve 0 resultados.
-    - **Evidence**: Grep count == 0.
-  - `rule` TR-4.2: `android/app/build.gradle` contiene la cadena `new GradleException("❌ Release build bloqueado` exactamente.
-    - **Evidence**: Diff guardado.
-- **Notes**: Cambio solo afecta APK. Si el usuario en OQ-4 no aprueba el bloqueo, se cancela la parte de GradleException.
+  - REVERTIDO (no aplicar en este lanzamiento web). Tarea original: bloquear release build Android sin keystore y limpiar `requestLegacyExternalStorage`.
+  - Decisión aprobada por usuario en conversación 2026-09-03: eliminar todo cambio que no afecte a WEB prod.
+- **Acceptance Criteria Addressed**: (Ninguno para target WEB)
+- **Test Requirements**: N/A
+- **Notes**: El commit `1bfbfef` ha sido revertido sin alterar baseline de Android. Si en el futuro se despliega la APK, reabrir esta Task.
 - **Completion Evidence**:
-  - Commit: `1bfbfef` sec(step-4): endurecer build Android bloqueando release sin firma valida, eliminar requestLegacyExternalStorage obsoleto.
-  - TR-4.1: **PASS** — 0 coincidencias `requestLegacyExternalStorage` en AndroidManifest.xml (atributo eliminado).
-  - TR-4.2: **PASS** — build.gradle contiene: `throw new GradleException("\u274C Release build bloqueado: falta firma release Android...")`.
+  - Revert aplicado con `git revert --no-commit 1bfbfef` → commit subsiguiente elimina los cambios GradleException + restaura `requestLegacyExternalStorage=true` en Manifest al estado original.
+  - Estado post-revert: `android/app/build.gradle` sin `throw new GradleException`; `AndroidManifest.xml` vuelve a contener `android:requestLegacyExternalStorage="true"`.
 
 ---
 
@@ -201,6 +190,7 @@
 - **Notes**: La plantilla del informe se rellena con hechos reales durante y después del deploy producción. NO se rellena en esta task.
 - **Completion Evidence**:
   - Commit: `143d9b7` sec(step-6): checklist aprobacion produccion 5 gates + plantilla informe final 9 secciones; actualiza tasks.md T3-T5 completed.
+  - Commit posterior (tras decisión usuario eliminar Android): `6f2dd8a` revert(Task-4): elimina hardening Android por no ser productivo para APP WEB (no toca nada web).
   - TR-6.1: **PASS** — `checklist-aprobacion-produccion-seguridad.md` (5336 bytes) e `INFORME_IMPLEMENTACION_SEGURIDAD_template.md` (6867 bytes).
   - TR-6.2: **PASS** — Grep `[- [ ]]` count=23 checkboxes (minimo exigido 10).
   - Estructura checklist aprobada: Metadatos + BLOQUE1 Staging 10 items ACs + BLOQUE2 Gates (GATE1 Staging Sano, GATE2 Firmas Aprobador, GATE3 Ventana+OnCall, GATE4 Deploy, GATE5 Monitoreo4h/Tabla 5 checkpoints 30min).

@@ -28,8 +28,7 @@ _(marcar con `[x]` y adjuntar evidencia en columna)._
 | AC-6 | Build Vite exit 0 + 0 secretos hardcodeados en `dist/` | `[ ]` | `logs/05-preflight-build.log` + secrets-scan.log |
 | AC-7 | CURL evil.com contra 5 Edge Functions en STAGING rechaza ACAO (403/sin header) | `[ ]` | `logs/07-curl-cors-evil-staging.log` |
 | AC-8 | Scripts rollback staging y produccion existen + dry-run ejecutados | `[ ]` | `rollback-staging -DryRun` exit 0 |
-| SM-1 | Hardening Android Gradle: GradleException sin firma | `[x]` | diff commit 1bfbfef |
-| SM-2 | Android Manifest sin requestLegacyExternalStorage | `[x]` | diff commit 1bfbfef |
+| NR-1 | Task-4 Hardening Android revertido explicitamente (no aplica a WEB prod segun OQ5 + decision 03/09) | `[x]` | `git show 6f2dd8a` (revert commit 1bfbfef). build.gradle sin GradleException, Manifest con requestLegacyExternalStorage=true restaurado. |
 
 > **Resultado Staging (marcar):** `[ ] LISTO PARA GATE PRODUCCION` | `[ ] BLOQUEADO (motivo: _______)`
 

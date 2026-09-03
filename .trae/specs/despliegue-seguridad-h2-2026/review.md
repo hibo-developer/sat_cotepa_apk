@@ -10,11 +10,11 @@ _Fase Review Spec Mode. Revision Independiente - Reconciliacion ACs/TRs_
 | Alcance aprobado por OQ | **SOLO APP WEB en producción**; hardenings Android/desktop aplicados solo a código fuente, sin desplegar. No changes RLS. No migraciones. No nuevas features. |
 
 ## 2. RESUMEN EJECUTIVO
-**Status general implementacion hasta la fecha (Tasks 1-6 completados):** `LISTO PARA PASAR A TASK 7 (DEPLOY STAGING SUPABASE)`.
+**Status general implementacion hasta la fecha (Tasks 1-6 completados, Task 4 skip por decision usuario):** `LISTO PARA PASAR A TASK 7 (DEPLOY STAGING SUPABASE)`.
   - **T1 Bootstrap**: Baseline 6 vulnerabilidades (2 mod / 3 high / 1 critical). Vitest 25/25, Build Vite exit 0.
   - **T2 Dependencias**: npm audit fix 2 pasadas + react-router-dom bump 7.14.2 → 7.18.3. Post audit 0 vulnerabilidades. Vitest 25/25. 0 secrets en dist/.
   - **T3 CORS Edge Functions**: 5/5 funciones unificadas ALLOWED_ORIGINS=Set(4 dominios), 0 patrones `origin || '*'`. Mock evil.com bloqueado. Backups pre-cors-fix.bak incluidos.
-  - **T4 Hardening Android**: Bloqueo builds release sin firma valida (GradleException). Eliminado `requestLegacyExternalStorage=true` obsoleto en targetSdk 36.
+  - **T4 Hardening Android**: REVERTIDO / SKIPPED por decision usuario 2026-09-03 ("solo cambios necesarios para APP WEB"). Se restaura `build.gradle` original sin GradleException y `AndroidManifest.xml` vuelve a contener `requestLegacyExternalStorage=true` (tal como estaba en baseline T-1).
   - **T5 Scripts**: `preflight-staging.ps1` (6 checks, exit 0 en ejecución real), `rollback-staging.ps1` dryrun exit 0 (6 pasos), `rollback-production.ps1` dryrun exit 0 (8 pasos), `validate-edge-functions-syntax.ps1` PASS 5/5.
   - **T6 Gobernanza**: `docs/checklist-aprobacion-produccion-seguridad.md` (23 checkboxes, 5 Gates firmables + tabla monitoreo 4h), plantilla informe final 9 secciones.
 
@@ -53,7 +53,7 @@ _Fase Review Spec Mode. Revision Independiente - Reconciliacion ACs/TRs_
 | T-1 | Bootstrap staging + baseline | ✅ completed | `014a5fe` | TR-1.1/TR-1.2/TR-1.3: 3/3 PASS |
 | T-2 | Actualizar dependencias npm audit fix + router | ✅ completed | `16d3716` | TR-2.1..2.5: 5/5 PASS |
 | T-3 | Unificar CORS whitelist 5 Edge Fn | ✅ completed | `e274f51` | TR-3.1..3.4: 4/4 PASS + mock evil 5/5 escenarios |
-| T-4 | Hardening Android release | ✅ completed | `1bfbfef` | TR-4.1/TR-4.2: 2/2 PASS |
+| T-4 | Hardening Android release | ⚪ skipped (revert) | `1bfbfef` revertido en `6f2dd8a` | No aplica a target WEB. Confirmado usuario 2026-09-03. |
 | T-5 | Scripts rollback + preflight | ✅ completed | `b16c7a8` | TR-5.1/5.2/5.3 +5.4 extra: 4/4 PASS TR-5.2 rubric score 5/5 |
 | T-6 | Checklist + informe plantilla | ✅ completed | `143d9b7` | TR-6.1/TR-6.2: 2/2 PASS (23 checkbox >= 10) |
 | T-7 | Deploy Supabase Edge Staging + Smoke | ⏳ pending | — | Bloqueado: falta usuario crear proyecto Staging Supabase + credenciales CLI |
@@ -85,10 +85,11 @@ _Fase Review Spec Mode. Revision Independiente - Reconciliacion ACs/TRs_
 | R4 | CORS evil.com en PROD desplegado devuelve ACAO en T-9 | CRITICAL | Activar rollback-production.ps1 inmediatamente en <10min |
 
 ## 6. CONCLUSIONES DE LA REVISIÓN
-1. **Implementación Tasks 1-6 EXITOSA**: Los 6 primeros tasks (preparación y cambios en código fuente) cumplen 100% sus TRs. La postura de seguridad del código fuente mejora de 6 vulnerabilidades (1 critical) a 0 vulnerabilidades npm; CORS whitelist pasa de 3 funciones permissivas a 5 funciones estrictas; Android endurecido; sistema rollback/preflight/gobernanza creado y verificado.
+1. **Implementación Tasks 1-3 + 5-6 EXITOSA, Task 4 SKIP por decision usuario**: Los cambios productivos para APP WEB (dependencias + CORS Edge Fn + scripts rollback/gobernanza) cumplen 100% sus TRs. Task 4 Android revertido explicitamente para mantener el alcance 100% web.
 2. **ACs ya verificados (6/11)** son suficientes para pasar a deploy Staging (T-7).
 3. **5 ACs pendientes requieren acción manual usuario**: Supabase Staging creation, T7 smoke 3 roles, firma checklist, deploy en ventana sáb02-04h, y monitoreo 4h.
 4. **Hasta la fecha NO se ha tocado entorno de producción**. Rama staging aislada. Único aprobador requerido según OQ-3.
+5. **Cambios residuales NO PRODUCTIVOS en staging**: Ninguno tras revert T-4. El árbol `dist/` y dependencias web son 100% reproducibles desde `package-lock.json` sin rastro de cambios Android.
 
 ## 7. RECOMENDACIONES FINALES
 1. **INICIAR YA**: Usuario debe crear proyecto Supabase STAGING lo antes posible (https://supabase.com/dashboard — new project). Copiar project_ref y rellenar Metadatos del checklist.

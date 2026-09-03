@@ -51,7 +51,7 @@ _Rellenar con hechos reales extraidos de tasks.md + logs_
 | T-01 | Bootstrap staging baseline | `014a5fe` | completed | Baseline 6 vulns + Vitest 25/25 + Build exit 0. .gitignore actualizado logs/ backup/ |
 | T-02 | Actualizar dependencias | `16d3716` | completed | npm audit fix 2 pasadas -> 0 vulns. react-router-dom 7.14.2 -> 7.18.3. Vitest 25/25. Build OK. 0 secrets dist. Script apply-security-updates.ps1. |
 | T-03 | Unificar CORS whitelist 5 Edge Functions | `e274f51` | completed | 5 ALLOWED_ORIGINS new Set(4 dominios). 0 origin||'*'. Mock evil.com test 5/5 PASS (bloqueo). 3 backups .pre-cors-fix.bak incluidos. |
-| T-04 | Hardening Android | `1bfbfef` | completed | Bloqueo release build sin firma GradleException. Eliminado requestLegacyExternalStorage en Manifest. |
+| T-04 | Hardening Android (REVERTIDO) | revert `1bfbfef` → `6f2dd8a` | skipped | Decisión 03/09: "solo cambios necesarios para APP WEB". No afecta a web. build.gradle vuelve a no bloquear; Manifest vuelve a `requestLegacyExternalStorage=true` como baseline. |
 | T-05 | Scripts rollback + preflight | `______` | completed | scripts/preflight-staging.ps1 6 checks exit 0; rollback-staging + rollback-production DryRun exit 0; validate-edge-syntax 5/5 PASS |
 | T-06 | Checklist + Informe plantilla | `______` | completed | docs/checklist-aprobacion-produccion-seguridad.md (5 gates) + esta plantilla |
 | T-07 | Deploy Staging Supabase + Smoke Tests | `—` (deploy CLI, no commit) | pending/ | Deploy 5 Edge Functions en proyecto staging REF=___; curl CORS evil 5/5 bloqueado; 8 smoke tests 3 roles |

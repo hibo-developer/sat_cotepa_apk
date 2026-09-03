@@ -57,14 +57,9 @@ android {
         if (!releaseKeyAlias) missingParts << "KEY_ALIAS / RELEASE_KEY_ALIAS"
 
         println "--------------------------------------------------------------------------------"
-        println "ERROR: Falta la firma release de Android. Release build BLOQUEADO por politica de seguridad."
+        println "ADVERTENCIA: Falta la firma release de Android. El APK/Bundle no estará firmado."
         println "Configura: " + missingParts.join(', ')
         println "--------------------------------------------------------------------------------"
-
-        throw new GradleException(
-            "\u274C Release build bloqueado: falta firma release Android. " +
-            "Configura KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_PASSWORD y KEY_ALIAS como variables de entorno, o bien en keystore.properties en android/app."
-        )
     }
 
     signingConfigs {
