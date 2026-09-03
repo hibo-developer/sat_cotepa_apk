@@ -182,7 +182,7 @@
 ---
 
 ## Task 6: Crear checklist aprobación producción + estructura informe final
-- **Status**: `pending`
+- **Status**: `completed`
 - **Priority**: medium
 - **Depends On**: Task 5
 - **Description**:
@@ -199,6 +199,11 @@
   - `rule` TR-6.2: Checklist contiene al menos 10 items binarios (checkboxes - [ ]).
     - **Evidence**: Grep count.
 - **Notes**: La plantilla del informe se rellena con hechos reales durante y después del deploy producción. NO se rellena en esta task.
+- **Completion Evidence**:
+  - Commit: `143d9b7` sec(step-6): checklist aprobacion produccion 5 gates + plantilla informe final 9 secciones; actualiza tasks.md T3-T5 completed.
+  - TR-6.1: **PASS** — `checklist-aprobacion-produccion-seguridad.md` (5336 bytes) e `INFORME_IMPLEMENTACION_SEGURIDAD_template.md` (6867 bytes).
+  - TR-6.2: **PASS** — Grep `[- [ ]]` count=23 checkboxes (minimo exigido 10).
+  - Estructura checklist aprobada: Metadatos + BLOQUE1 Staging 10 items ACs + BLOQUE2 Gates (GATE1 Staging Sano, GATE2 Firmas Aprobador, GATE3 Ventana+OnCall, GATE4 Deploy, GATE5 Monitoreo4h/Tabla 5 checkpoints 30min).
 
 ---
 
