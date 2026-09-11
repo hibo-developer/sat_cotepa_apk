@@ -15,6 +15,7 @@ release-desktop-verify3
 .env.*
 !.env.example
 supabase/.temp
+supabase/supabase/
 
 # Archivos locales de desarrollo
 .vscode/settings.json
