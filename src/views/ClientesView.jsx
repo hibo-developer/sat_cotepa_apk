@@ -17,6 +17,7 @@ const FORM_CLIENTE_INICIAL = {
   nombre: '',
   direccion: '',
   telefono: '',
+  telefono_2: '',
   contacto: '',
   cargo: '',
   email: '',
@@ -79,6 +80,7 @@ export function ClientesView({ rolUsuario }) {
       const dir = (cliente.direccion || '').toLowerCase();
       const dirFisc = (cliente.direccion_fiscal || '').toLowerCase();
       const tel = (cliente.telefono || '').toLowerCase();
+      const tel2 = (cliente.telefono_2 || '').toLowerCase();
       const cnt = (cliente.contacto || '').toLowerCase();
       const crg = (cliente.cargo || '').toLowerCase();
       const em = (cliente.email || '').toLowerCase();
@@ -92,6 +94,7 @@ export function ClientesView({ rolUsuario }) {
         dir.includes(termino) ||
         dirFisc.includes(termino) ||
         tel.includes(termino) ||
+        tel2.includes(termino) ||
         cnt.includes(termino) ||
         crg.includes(termino) ||
         em.includes(termino) ||
@@ -209,6 +212,7 @@ export function ClientesView({ rolUsuario }) {
         nombre: clienteForm.nombre,
         direccion: clienteForm.direccion,
         telefono: clienteForm.telefono,
+        telefono_2: clienteForm.telefono_2,
         contacto: clienteForm.contacto,
         cargo: clienteForm.cargo,
         email: clienteForm.email,
@@ -402,24 +406,33 @@ export function ClientesView({ rolUsuario }) {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="label-base text-xs">Teléfono</label>
+                    <label className="label-base text-xs">Teléfono 1 (Principal)</label>
                     <input
                       value={clienteForm.telefono}
                       onChange={(e) => setClienteForm((p) => ({ ...p, telefono: e.target.value }))}
                       className="input-base"
-                      placeholder="Teléfono"
+                      placeholder="Teléfono principal"
                     />
                   </div>
                   <div>
-                    <label className="label-base text-xs">Email</label>
+                    <label className="label-base text-xs">Teléfono 2 (Secundario)</label>
                     <input
-                      type="email"
-                      value={clienteForm.email}
-                      onChange={(e) => setClienteForm((p) => ({ ...p, email: e.target.value }))}
+                      value={clienteForm.telefono_2}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, telefono_2: e.target.value }))}
                       className="input-base"
-                      placeholder="Email"
+                      placeholder="Teléfono 2"
                     />
                   </div>
+                </div>
+                <div>
+                  <label className="label-base text-xs">Email</label>
+                  <input
+                    type="email"
+                    value={clienteForm.email}
+                    onChange={(e) => setClienteForm((p) => ({ ...p, email: e.target.value }))}
+                    className="input-base"
+                    placeholder="Email"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -636,16 +649,21 @@ export function ClientesView({ rolUsuario }) {
                   </div>
 
                   <div className="grid gap-1 text-xs text-sat-muted sm:grid-cols-2">
-                    <p><span className="font-semibold text-sat-text">Teléfono:</span> {cliente.telefono || 'Sin teléfono'}</p>
+                    <p>
+                      <span className="font-semibold text-sat-text">Teléfono 1:</span> {cliente.telefono || 'Sin teléfono'}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-sat-text">Teléfono 2:</span> {cliente.telefono_2 || 'Sin teléfono'}
+                    </p>
                     <p><span className="font-semibold text-sat-text">Email:</span> {cliente.email || 'Sin email'}</p>
+                    <p><span className="font-semibold text-sat-text">Dir. Trabajo:</span> {cliente.direccion || 'Sin dirección'}</p>
                     {(cliente.contacto || cliente.cargo) && (
                       <p className="sm:col-span-2">
                         <span className="font-semibold text-sat-text">Contacto:</span> {cliente.contacto || 'Sin contacto'} {cliente.cargo ? `(${cliente.cargo})` : ''}
                       </p>
                     )}
-                    <p><span className="font-semibold text-sat-text">Dir. Trabajo:</span> {cliente.direccion || 'Sin dirección'}</p>
                     {cliente.direccion_fiscal && (
-                      <p><span className="font-semibold text-sat-text">Dir. Fiscal:</span> {cliente.direccion_fiscal}</p>
+                      <p className="sm:col-span-2"><span className="font-semibold text-sat-text">Dir. Fiscal:</span> {cliente.direccion_fiscal}</p>
                     )}
                   </div>
 
@@ -681,6 +699,7 @@ export function ClientesView({ rolUsuario }) {
                             nombre: cliente.nombre || '',
                             direccion: cliente.direccion || '',
                             telefono: cliente.telefono || '',
+                            telefono_2: cliente.telefono_2 || '',
                             contacto: cliente.contacto || '',
                             cargo: cliente.cargo || '',
                             email: cliente.email || '',

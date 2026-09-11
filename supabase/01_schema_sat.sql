@@ -8,6 +8,7 @@ create table if not exists clientes (
   nombre text not null,
   direccion text,
   telefono text,
+  telefono_2 text,
   email text,
   contacto text,
   cargo text,
