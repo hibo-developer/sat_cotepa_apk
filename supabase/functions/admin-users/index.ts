@@ -27,7 +27,7 @@ function buildCorsHeaders(req: Request): { headers: Record<string, string>; orig
   };
 }
 
-type RolSat = 'admin' | 'oficina' | 'tecnico';
+type RolSat = 'admin' | 'oficina' | 'tecnico' | 'comercial';
 
 function jsonResponse(
   body: Record<string, unknown>,
@@ -50,8 +50,8 @@ function normalizarTexto(valor: unknown) {
 function validarRol(valor: unknown): RolSat {
   const rol = normalizarTexto(valor).toLowerCase();
 
-  if (rol !== 'admin' && rol !== 'oficina' && rol !== 'tecnico') {
-    throw new Error('Rol invalido. Usa admin, oficina o tecnico.');
+  if (rol !== 'admin' && rol !== 'oficina' && rol !== 'tecnico' && rol !== 'comercial') {
+    throw new Error('Rol invalido. Usa admin, oficina, tecnico o comercial.');
   }
 
   return rol;
@@ -106,12 +106,17 @@ async function verificarAdmin(
 }
 
 async function listarUsuarios(supabaseAdmin: ReturnType<typeof createClient>) {
-  const [{ data: authUsers, error: authError }, { data: usuariosSat, error: satError }, { data: tecnicos, error: tecnicosError }] =
-    await Promise.all([
-      supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-      supabaseAdmin.from('usuarios_sat').select('user_id, rol, nombre_visible'),
-      supabaseAdmin.from('tecnicos').select('id, nombre, especialidad, user_id, activo').order('nombre', { ascending: true }),
-    ]);
+  const [
+    { data: authUsers, error: authError },
+    { data: usuariosSat, error: satError },
+    { data: tecnicos, error: tecnicosError },
+    { data: comerciales, error: comercialesError },
+  ] = await Promise.all([
+    supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    supabaseAdmin.from('usuarios_sat').select('user_id, rol, nombre_visible'),
+    supabaseAdmin.from('tecnicos').select('id, nombre, especialidad, user_id, activo').order('nombre', { ascending: true }),
+    supabaseAdmin.from('comerciales').select('id, nombre, user_id, activo').order('nombre', { ascending: true }),
+  ]);
 
   if (authError) {
     throw new Error(`No se pudo listar Auth Users: ${authError.message}`);
@@ -125,12 +130,18 @@ async function listarUsuarios(supabaseAdmin: ReturnType<typeof createClient>) {
     throw new Error(`No se pudo leer tecnicos: ${tecnicosError.message}`);
   }
 
+  if (comercialesError) {
+    throw new Error(`No se pudo leer comerciales: ${comercialesError.message}`);
+  }
+
   const satPorUserId = new Map((usuariosSat || []).map((fila) => [fila.user_id, fila]));
   const tecnicoPorUserId = new Map((tecnicos || []).filter((t) => t.user_id).map((t) => [t.user_id, t]));
+  const comercialPorUserId = new Map((comerciales || []).filter((c) => c.user_id).map((c) => [c.user_id, c]));
 
   const users = (authUsers?.users || []).map((user) => {
     const sat = satPorUserId.get(user.id);
     const tecnico = tecnicoPorUserId.get(user.id);
+    const comercial = comercialPorUserId.get(user.id);
 
     return {
       user_id: user.id,
@@ -141,6 +152,9 @@ async function listarUsuarios(supabaseAdmin: ReturnType<typeof createClient>) {
       tecnico_nombre: tecnico?.nombre || null,
       tecnico_especialidad: tecnico?.especialidad || null,
       tecnico_activo: tecnico?.activo ?? null,
+      comercial_id: comercial?.id || null,
+      comercial_nombre: comercial?.nombre || null,
+      comercial_activo: comercial?.activo ?? null,
       last_sign_in_at: user.last_sign_in_at || null,
       creado_en: user.created_at || null,
     };
@@ -156,6 +170,7 @@ async function crearUsuario(supabaseAdmin: ReturnType<typeof createClient>, payl
   const nombreVisible = normalizarTexto(payload.nombre_visible) || null;
   const tecnicoNombre = rol === 'tecnico' ? normalizarTexto(payload.tecnico_nombre) || nombreVisible || email.split('@')[0] : null;
   const tecnicoEspecialidad = rol === 'tecnico' ? normalizarTexto(payload.tecnico_especialidad) || null : null;
+  const comercialNombre = rol === 'comercial' ? normalizarTexto(payload.comercial_nombre) || nombreVisible || email.split('@')[0] : null;
 
   if (!email) {
     throw new Error('El email es obligatorio.');
@@ -205,6 +220,17 @@ async function crearUsuario(supabaseAdmin: ReturnType<typeof createClient>, payl
     }
   }
 
+  if (rol === 'comercial') {
+    const { error: comercialError } = await supabaseAdmin.from('comerciales').upsert(
+      { nombre: comercialNombre, activo: true, user_id: userId },
+      { onConflict: 'user_id' },
+    );
+
+    if (comercialError) {
+      throw new Error(`No se pudo crear el registro de comercial: ${comercialError.message}`);
+    }
+  }
+
   return { user_id: userId, email, rol, nombre_visible: nombreVisible };
 }
 
@@ -216,6 +242,7 @@ async function actualizarUsuario(supabaseAdmin: ReturnType<typeof createClient>,
   const nombreVisible = normalizarTexto(payload.nombre_visible) || null;
   const tecnicoNombre = rol === 'tecnico' ? normalizarTexto(payload.tecnico_nombre) || nombreVisible : null;
   const tecnicoEspecialidad = rol === 'tecnico' ? normalizarTexto(payload.tecnico_especialidad) || null : null;
+  const comercialNombre = rol === 'comercial' ? normalizarTexto(payload.comercial_nombre) || nombreVisible : null;
 
   if (!userId) {
     throw new Error('El user_id es obligatorio.');
@@ -266,6 +293,23 @@ async function actualizarUsuario(supabaseAdmin: ReturnType<typeof createClient>,
       .eq('user_id', userId);
   }
 
+  if (rol === 'comercial') {
+    const { error: comercialError } = await supabaseAdmin.from('comerciales').upsert(
+      { nombre: comercialNombre, activo: true, user_id: userId },
+      { onConflict: 'user_id' },
+    );
+
+    if (comercialError) {
+      throw new Error(`No se pudo actualizar el registro de comercial: ${comercialError.message}`);
+    }
+  } else {
+    // Si cambio de rol a no-comercial, desvincular (sin borrar historial de clientes asignados)
+    await supabaseAdmin
+      .from('comerciales')
+      .update({ activo: false, user_id: null })
+      .eq('user_id', userId);
+  }
+
   return { user_id: userId, email, rol, nombre_visible: nombreVisible };
 }
 
@@ -290,6 +334,16 @@ async function eliminarUsuario(
 
   if (desvincularTecnicoError) {
     throw new Error(`No se pudo desactivar el tecnico vinculado: ${desvincularTecnicoError.message}`);
+  }
+
+  // Desactivar el comercial y desvincularlo: no se borra para preservar historial de clientes asignados
+  const { error: desvincularComercialError } = await supabaseAdmin
+    .from('comerciales')
+    .update({ activo: false, user_id: null })
+    .eq('user_id', userId);
+
+  if (desvincularComercialError) {
+    throw new Error(`No se pudo desactivar el comercial vinculado: ${desvincularComercialError.message}`);
   }
 
   const { error: perfilError } = await supabaseAdmin.from('usuarios_sat').delete().eq('user_id', userId);

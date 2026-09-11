@@ -1,5 +1,6 @@
 import { obtenerClienteSupabase } from './supabaseClient';
 import { traducirErrorSupabase } from './erroresSupabase';
+import { sincronizarComercialesDeCliente } from './comercialesService';
 
 /**
  * Valida y sanitiza los datos del cliente, incluyendo los nuevos campos fiscales.
@@ -122,14 +123,20 @@ export async function listarClientes() {
 
   const { data, error } = await supabase
     .from('clientes')
-    .select('id, nombre, direccion, telefono, telefono_2, contacto, cargo, contacto_2, cargo_2, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal, created_at')
+    .select('id, nombre, direccion, telefono, telefono_2, contacto, cargo, contacto_2, cargo_2, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal, created_at, clientes_comerciales(comercial_id, comerciales(id, nombre))')
     .order('created_at', { ascending: false });
 
   if (error) {
     throw new Error(traducirErrorSupabase(error, 'No se pudieron obtener los clientes'));
   }
 
-  return data || [];
+  return (data || []).map((cliente) => {
+    const { clientes_comerciales: asignaciones, ...resto } = cliente;
+    return {
+      ...resto,
+      comerciales: (asignaciones || []).map((fila) => fila.comerciales).filter(Boolean),
+    };
+  });
 }
 
 export async function crearCliente(payload) {
@@ -153,6 +160,10 @@ export async function crearCliente(payload) {
       );
     }
     throw new Error(traducirErrorSupabase(error, 'No se pudo crear el cliente'));
+  }
+
+  if (Array.isArray(payload.comerciales_ids)) {
+    await sincronizarComercialesDeCliente(data.id, payload.comerciales_ids);
   }
 
   return data;
@@ -180,6 +191,10 @@ export async function actualizarCliente(idCliente, payload) {
       );
     }
     throw new Error(traducirErrorSupabase(error, 'No se pudo actualizar el cliente'));
+  }
+
+  if (Array.isArray(payload.comerciales_ids)) {
+    await sincronizarComercialesDeCliente(idCliente, payload.comerciales_ids);
   }
 
   return data;

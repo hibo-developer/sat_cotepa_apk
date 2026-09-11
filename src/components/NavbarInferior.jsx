@@ -14,6 +14,7 @@ export function NavbarInferior({
   mostrarAdmin = false,
   mostrarClientes = true,
   mostrarInventario = true,
+  mostrarOrdenesYParte = true,
 }) {
   const itemsVisibles = ITEMS.filter((item) => {
     if (item.key === 'admin') {
@@ -26,6 +27,10 @@ export function NavbarInferior({
 
     if (item.key === 'inventario') {
       return mostrarInventario;
+    }
+
+    if (item.key === 'ordenes' || item.key === 'parte') {
+      return mostrarOrdenesYParte;
     }
 
     return true;

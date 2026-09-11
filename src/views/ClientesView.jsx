@@ -11,6 +11,7 @@ import {
   eliminarEquipo,
   listarEquipos,
 } from '../services/equiposService';
+import { listarComerciales } from '../services/comercialesService';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
 
 const FORM_CLIENTE_INICIAL = {
@@ -31,6 +32,7 @@ const FORM_CLIENTE_INICIAL = {
   regimen_tributario: '',
   situacion_fiscal: '',
   telefono_fiscal: '',
+  comerciales_ids: [],
 };
 
 const FORM_EQUIPO_INICIAL = {
@@ -55,6 +57,7 @@ export function ClientesView({ rolUsuario }) {
   const [clienteForm, setClienteForm] = useState(FORM_CLIENTE_INICIAL);
   const [clienteEditandoId, setClienteEditandoId] = useState('');
   const [busquedaCliente, setBusquedaCliente] = useState('');
+  const [comerciales, setComerciales] = useState([]);
 
   const [equipoForm, setEquipoForm] = useState(FORM_EQUIPO_INICIAL);
   const [equipoEditandoId, setEquipoEditandoId] = useState('');
@@ -67,7 +70,9 @@ export function ClientesView({ rolUsuario }) {
 
   const sinConfiguracion = useMemo(() => !tieneConfiguracionSupabase(), []);
   const puedeEditarCatalogos = rolUsuario === 'admin' || rolUsuario === 'oficina';
-  const modoSoloLectura = !puedeEditarCatalogos;
+  const esComercial = rolUsuario === 'comercial';
+  const modoSoloLectura = !puedeEditarCatalogos && !esComercial;
+  const mostrarFormularioCliente = puedeEditarCatalogos || (esComercial && Boolean(clienteEditandoId));
   const telefono1Habilitado = Boolean(clienteForm.contacto.trim() && clienteForm.cargo.trim());
   const telefono2Habilitado = Boolean(clienteForm.contacto_2.trim() && clienteForm.cargo_2.trim());
 
@@ -201,6 +206,14 @@ export function ClientesView({ rolUsuario }) {
       ]);
       setClientes(datosClientes);
       setEquipos(datosEquipos);
+
+      if (puedeEditarCatalogos) {
+        try {
+          setComerciales(await listarComerciales());
+        } catch {
+          // El listado de comerciales es solo para el selector; si falla no bloquea el resto.
+        }
+      }
     } catch (err) {
       setError(err.message || 'No se pudieron cargar clientes y equipos.');
     } finally {
@@ -246,6 +259,10 @@ export function ClientesView({ rolUsuario }) {
         regimen_tributario: clienteForm.regimen_tributario,
         situacion_fiscal: clienteForm.situacion_fiscal,
         telefono_fiscal: clienteForm.telefono_fiscal,
+        // La reasignación de comerciales de referencia queda reservada a
+        // admin/oficina: un comercial puede editar el resto de datos del
+        // cliente pero no puede reasignarse a sí mismo ni a otros.
+        ...(puedeEditarCatalogos ? { comerciales_ids: clienteForm.comerciales_ids } : {}),
       };
 
       if (clienteEditandoId) {
@@ -364,6 +381,12 @@ export function ClientesView({ rolUsuario }) {
         </p>
       )}
 
+      {esComercial && (
+        <p className="status-banner-warning">
+          Tu rol comercial solo permite ver y editar los clientes que tienes asociados. No puedes crear ni eliminar clientes.
+        </p>
+      )}
+
       <div className="segmented-control grid-cols-2">
         <button
           type="button"
@@ -394,7 +417,7 @@ export function ClientesView({ rolUsuario }) {
 
       {tabActiva === 'clientes' && (
         <div className="lg:grid lg:grid-cols-12 lg:gap-4">
-          {puedeEditarCatalogos && (
+          {mostrarFormularioCliente && (
             <form onSubmit={guardarCliente} className="surface-card space-y-4 p-4 lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
               <div>
                 <p className="metric-label">{clienteEditandoId ? 'Edición activa' : 'Alta rápida'}</p>
@@ -510,6 +533,47 @@ export function ClientesView({ rolUsuario }) {
                 </div>
               </div>
 
+              {/* Seccion: Comercial de referencia (solo admin/oficina puede reasignar) */}
+              {puedeEditarCatalogos && (
+                <div className="space-y-2.5 rounded-xl border border-emerald-200/80 bg-emerald-50/40 p-3">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800">
+                    Comercial de referencia
+                  </p>
+                  <p className="text-[11px] text-emerald-700">
+                    Selecciona uno o varios comerciales responsables de este cliente. Si no seleccionas ninguno, se
+                    asignará automáticamente el comercial predeterminado.
+                  </p>
+                  <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-emerald-200 bg-white p-2">
+                    {comerciales.length === 0 && (
+                      <p className="text-xs text-slate-400">No hay comerciales registrados.</p>
+                    )}
+                    {comerciales.map((comercial) => (
+                      <label key={comercial.id} className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={clienteForm.comerciales_ids.includes(comercial.id)}
+                          onChange={(e) => {
+                            setClienteForm((p) => {
+                              const marcado = e.target.checked;
+                              const yaIncluido = p.comerciales_ids.includes(comercial.id);
+                              const nuevos = marcado
+                                ? (yaIncluido ? p.comerciales_ids : [...p.comerciales_ids, comercial.id])
+                                : p.comerciales_ids.filter((id) => id !== comercial.id);
+                              return { ...p, comerciales_ids: nuevos };
+                            });
+                          }}
+                        />
+                        <span>
+                          {comercial.nombre}
+                          {comercial.es_predeterminado ? ' (predeterminado)' : ''}
+                          {!comercial.activo ? ' — inactivo' : ''}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Seccion: Datos Fiscales */}
               <div className="space-y-2.5 rounded-xl border border-sky-200/80 bg-sky-50/40 p-3">
                 <p className="text-[11px] font-extrabold uppercase tracking-wider text-sky-800 flex items-center justify-between">
@@ -573,7 +637,7 @@ export function ClientesView({ rolUsuario }) {
             </form>
           )}
 
-          <div className={`space-y-3 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
+          <div className={`space-y-3 ${mostrarFormularioCliente ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
             {/* Buscador de Clientes */}
             <div className="surface-card p-3">
               <input
@@ -672,6 +736,12 @@ export function ClientesView({ rolUsuario }) {
                     {cliente.telefono_fiscal && (
                       <p className="sm:col-span-2"><span className="font-semibold text-sat-text">Tel. Fiscal:</span> {cliente.telefono_fiscal}</p>
                     )}
+                    {cliente.comerciales && cliente.comerciales.length > 0 && (
+                      <p className="sm:col-span-2">
+                        <span className="font-semibold text-sat-text">Comercial:</span>{' '}
+                        {cliente.comerciales.map((c) => c.nombre).join(', ')}
+                      </p>
+                    )}
                   </div>
 
                   {cliente.lat != null && cliente.lng != null && (
@@ -680,8 +750,8 @@ export function ClientesView({ rolUsuario }) {
                     </p>
                   )}
 
-                  {puedeEditarCatalogos && (
-                    <div className="mt-3 grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+                  {(puedeEditarCatalogos || esComercial) && (
+                    <div className={`mt-3 grid gap-2 pt-1 border-t border-slate-100 ${puedeEditarCatalogos ? 'grid-cols-2' : 'grid-cols-1'}`}>
                       <button
                         type="button"
                         className="btn-secondary px-3 py-2 text-xs"
@@ -705,18 +775,21 @@ export function ClientesView({ rolUsuario }) {
                             regimen_tributario: cliente.regimen_tributario || '',
                             situacion_fiscal: cliente.situacion_fiscal || '',
                             telefono_fiscal: cliente.telefono_fiscal || '',
+                            comerciales_ids: (cliente.comerciales || []).map((c) => c.id),
                           });
                         }}
                       >
                         Editar
                       </button>
-                      <button
-                        type="button"
-                        className="inline-flex items-center justify-center rounded-2xl bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-200"
-                        onClick={() => borrarCliente(cliente.id)}
-                      >
-                        Eliminar
-                      </button>
+                      {puedeEditarCatalogos && (
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center rounded-2xl bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-200"
+                          onClick={() => borrarCliente(cliente.id)}
+                        >
+                          Eliminar
+                        </button>
+                      )}
                     </div>
                   )}
                 </article>

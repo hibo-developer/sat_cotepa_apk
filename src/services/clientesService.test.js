@@ -222,6 +222,9 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
             nombre: 'Cliente Uno',
             identificador_fiscal: '20-11111111-1',
             razon_social: 'Cliente Uno S.A.',
+            clientes_comerciales: [
+              { comercial_id: 'com-1', comerciales: { id: 'com-1', nombre: 'Victor Garcia' } },
+            ],
           },
         ],
         error: null,
@@ -236,10 +239,12 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
 
       expect(mockFrom).toHaveBeenCalledWith('clientes');
       expect(selectMock).toHaveBeenCalledWith(
-        'id, nombre, direccion, telefono, telefono_2, contacto, cargo, contacto_2, cargo_2, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal, created_at'
+        'id, nombre, direccion, telefono, telefono_2, contacto, cargo, contacto_2, cargo_2, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal, created_at, clientes_comerciales(comercial_id, comerciales(id, nombre))'
       );
       expect(clientes).toHaveLength(1);
       expect(clientes[0].identificador_fiscal).toBe('20-11111111-1');
+      expect(clientes[0].comerciales).toEqual([{ id: 'com-1', nombre: 'Victor Garcia' }]);
+      expect(clientes[0].clientes_comerciales).toBeUndefined();
     });
 
     it('crearCliente inserta datos fiscalmente validados', async () => {
@@ -304,6 +309,102 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
           identificador_fiscal: '20-12345678-9',
         })
       ).rejects.toThrow('Ya existe un cliente registrado con el identificador fiscal "20-12345678-9".');
+    });
+
+    it('crearCliente no toca las asignaciones de comerciales si no se envía comerciales_ids', async () => {
+      const singleInsert = vi.fn().mockResolvedValue({
+        data: { id: 'cli-nuevo', nombre: 'Cliente Nuevo' },
+        error: null,
+      });
+
+      mockFrom.mockImplementation((tabla) => {
+        if (tabla === 'clientes') {
+          return {
+            select: () => ({
+              eq: () => ({ is: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+            }),
+            insert: () => ({ select: () => ({ single: singleInsert }) }),
+          };
+        }
+        throw new Error(`Tabla inesperada: ${tabla}`);
+      });
+
+      await crearCliente({ nombre: 'Cliente Nuevo' });
+
+      expect(mockFrom).not.toHaveBeenCalledWith('clientes_comerciales');
+      expect(mockFrom).not.toHaveBeenCalledWith('comerciales');
+    });
+
+    it('crearCliente sincroniza los comerciales asignados cuando se envía comerciales_ids', async () => {
+      const singleInsert = vi.fn().mockResolvedValue({
+        data: { id: 'cli-nuevo', nombre: 'Cliente Nuevo' },
+        error: null,
+      });
+      const deleteEqMock = vi.fn().mockResolvedValue({ error: null });
+      const insertComercialesMock = vi.fn().mockResolvedValue({ error: null });
+
+      mockFrom.mockImplementation((tabla) => {
+        if (tabla === 'clientes') {
+          return {
+            select: () => ({
+              eq: () => ({ is: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+            }),
+            insert: () => ({ select: () => ({ single: singleInsert }) }),
+          };
+        }
+        if (tabla === 'clientes_comerciales') {
+          return {
+            delete: () => ({ eq: deleteEqMock }),
+            insert: insertComercialesMock,
+          };
+        }
+        throw new Error(`Tabla inesperada: ${tabla}`);
+      });
+
+      await crearCliente({ nombre: 'Cliente Nuevo', comerciales_ids: ['com-a'] });
+
+      expect(deleteEqMock).toHaveBeenCalledWith('cliente_id', 'cli-nuevo');
+      expect(insertComercialesMock).toHaveBeenCalledWith([{ cliente_id: 'cli-nuevo', comercial_id: 'com-a' }]);
+    });
+
+    it('actualizarCliente asigna el comercial predeterminado si comerciales_ids llega vacío', async () => {
+      const singleUpdate = vi.fn().mockResolvedValue({
+        data: { id: 'cli-existente', nombre: 'Cliente Existente' },
+        error: null,
+      });
+      const deleteEqMock = vi.fn().mockResolvedValue({ error: null });
+      const insertComercialesMock = vi.fn().mockResolvedValue({ error: null });
+
+      mockFrom.mockImplementation((tabla) => {
+        if (tabla === 'clientes') {
+          return {
+            select: () => ({
+              eq: () => ({ is: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+            }),
+            update: () => ({ eq: () => ({ select: () => ({ single: singleUpdate }) }) }),
+          };
+        }
+        if (tabla === 'clientes_comerciales') {
+          return {
+            delete: () => ({ eq: deleteEqMock }),
+            insert: insertComercialesMock,
+          };
+        }
+        if (tabla === 'comerciales') {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({ data: { id: 'com-victor', nombre: 'Victor Garcia' }, error: null }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`Tabla inesperada: ${tabla}`);
+      });
+
+      await actualizarCliente('cli-existente', { nombre: 'Cliente Existente', comerciales_ids: [] });
+
+      expect(insertComercialesMock).toHaveBeenCalledWith([{ cliente_id: 'cli-existente', comercial_id: 'com-victor' }]);
     });
   });
 });

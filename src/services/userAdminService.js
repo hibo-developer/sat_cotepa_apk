@@ -1,7 +1,7 @@
 import { obtenerClienteSupabase } from './supabaseClient';
 import { asegurarPasswordSegura } from './passwordSecurity';
 
-const ROLES_PERMITIDOS = new Set(['admin', 'oficina', 'tecnico']);
+const ROLES_PERMITIDOS = new Set(['admin', 'oficina', 'tecnico', 'comercial']);
 
 function limpiarTexto(valor) {
   return typeof valor === 'string' ? valor.trim() : '';
@@ -82,6 +82,7 @@ export async function crearUsuarioSat(payload) {
   const nombreVisible = limpiarTexto(payload.nombre_visible) || null;
   const tecnicoNombre = rol === 'tecnico' ? limpiarTexto(payload.tecnico_nombre) || null : null;
   const tecnicoEspecialidad = rol === 'tecnico' ? limpiarTexto(payload.tecnico_especialidad) || null : null;
+  const comercialNombre = rol === 'comercial' ? limpiarTexto(payload.comercial_nombre) || null : null;
 
   if (!email) {
     throw new Error('El email del usuario es obligatorio.');
@@ -100,6 +101,7 @@ export async function crearUsuarioSat(payload) {
     nombre_visible: nombreVisible,
     tecnico_nombre: tecnicoNombre,
     tecnico_especialidad: tecnicoEspecialidad,
+    comercial_nombre: comercialNombre,
   });
 
   return respuesta?.user || null;
@@ -113,6 +115,7 @@ export async function actualizarUsuarioSat(userId, payload) {
   const nombreVisible = limpiarTexto(payload.nombre_visible) || null;
   const tecnicoNombre = rol === 'tecnico' ? limpiarTexto(payload.tecnico_nombre) || null : null;
   const tecnicoEspecialidad = rol === 'tecnico' ? limpiarTexto(payload.tecnico_especialidad) || null : null;
+  const comercialNombre = rol === 'comercial' ? limpiarTexto(payload.comercial_nombre) || null : null;
 
   if (!id) {
     throw new Error('El usuario que intentas actualizar no es valido.');
@@ -130,6 +133,7 @@ export async function actualizarUsuarioSat(userId, payload) {
     nombre_visible: nombreVisible,
     tecnico_nombre: tecnicoNombre,
     tecnico_especialidad: tecnicoEspecialidad,
+    comercial_nombre: comercialNombre,
   });
 
   return respuesta?.user || null;

@@ -15,6 +15,7 @@ const FORM_USUARIO_INICIAL = {
   nombre_visible: '',
   tecnico_nombre: '',
   tecnico_especialidad: '',
+  comercial_nombre: '',
 };
 
 const USUARIOS_POR_PAGINA = 10;
@@ -33,6 +34,7 @@ export function AdminView() {
   const totalPaginasUsuarios = Math.max(1, Math.ceil(usuarios.length / USUARIOS_POR_PAGINA));
   const totalAdmins = usuarios.filter((usuario) => usuario.rol === 'admin').length;
   const totalTecnicos = usuarios.filter((usuario) => usuario.rol === 'tecnico').length;
+  const totalComerciales = usuarios.filter((usuario) => usuario.rol === 'comercial').length;
   const usuariosPaginados = usuarios.slice(
     (paginaUsuarios - 1) * USUARIOS_POR_PAGINA,
     (paginaUsuarios - 1) * USUARIOS_POR_PAGINA + USUARIOS_POR_PAGINA,
@@ -129,6 +131,7 @@ export function AdminView() {
       nombre_visible: usuario.nombre_visible || '',
       tecnico_nombre: usuario.tecnico_nombre || '',
       tecnico_especialidad: usuario.tecnico_especialidad || '',
+      comercial_nombre: usuario.comercial_nombre || '',
     });
   }
 
@@ -228,6 +231,10 @@ export function AdminView() {
             <p className="metric-label text-white/65">Tecnicos</p>
             <p className="mt-2 text-2xl font-black text-white">{totalTecnicos}</p>
           </div>
+          <div className="metric-card bg-white/10 text-white">
+            <p className="metric-label text-white/65">Comerciales</p>
+            <p className="mt-2 text-2xl font-black text-white">{totalComerciales}</p>
+          </div>
         </div>
       </header>
 
@@ -238,8 +245,8 @@ export function AdminView() {
         </header>
 
         <p className="text-sm text-sat-muted">
-          CRUD de usuarios autenticados y asignacion de rol SAT (admin, oficina, tecnico). Para rol tecnico se crea
-          automaticamente el registro de tecnico.
+          CRUD de usuarios autenticados y asignacion de rol SAT (admin, oficina, tecnico, comercial). Para rol tecnico
+          se crea automaticamente el registro de tecnico, y para rol comercial el registro de comercial.
         </p>
 
         {errorUsuarios && (
@@ -328,6 +335,7 @@ export function AdminView() {
                 <option value="admin">Admin</option>
                 <option value="oficina">Oficina</option>
                 <option value="tecnico">Tecnico</option>
+                <option value="comercial">Comercial</option>
               </select>
             </label>
 
@@ -361,6 +369,22 @@ export function AdminView() {
                   />
                 </label>
               </>
+            )}
+
+            {formUsuario.rol === 'comercial' && (
+              <label className="block">
+                <span className="label-base">Nombre del comercial</span>
+                <input
+                  type="text"
+                  value={formUsuario.comercial_nombre}
+                  onChange={(evento) =>
+                    setFormUsuario((previo) => ({ ...previo, comercial_nombre: evento.target.value }))
+                  }
+                  className="input-base"
+                  disabled={guardandoUsuario || !puedeAdministrar}
+                  placeholder="Si se deja vacio se usa el nombre visible"
+                />
+              </label>
             )}
 
             <div className="grid grid-cols-2 gap-2">
@@ -437,6 +461,11 @@ export function AdminView() {
                       <p className="text-xs text-sat-muted">
                         Tecnico: {usuario.tecnico_nombre || 'Sin nombre'}
                         {usuario.tecnico_especialidad ? ` · ${usuario.tecnico_especialidad}` : ''}
+                      </p>
+                    )}
+                    {usuario.rol === 'comercial' && (
+                      <p className="text-xs text-sat-muted">
+                        Comercial: {usuario.comercial_nombre || 'Sin nombre'}
                       </p>
                     )}
 

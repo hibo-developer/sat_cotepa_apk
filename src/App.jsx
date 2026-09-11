@@ -114,8 +114,10 @@ export default function App() {
   const accesoBloqueado = requiereLogin && !sesion;
   const esAdmin = rolUsuario === 'admin';
   const esTecnico = rolUsuario === 'tecnico';
+  const esComercial = rolUsuario === 'comercial';
   const puedeVerClientes = rolUsuario !== 'tecnico';
-  const puedeVerInventario = rolUsuario !== 'tecnico';
+  const puedeVerInventario = rolUsuario !== 'tecnico' && !esComercial;
+  const puedeVerOrdenesYParte = !esComercial;
   const vistaActiva = obtenerVistaDesdeRuta(location.pathname);
   const tituloActual = accesoBloqueado
     ? 'Acceso'
@@ -206,6 +208,17 @@ export default function App() {
   }, [accesoBloqueado, navigate, puedeVerInventario, verificandoRol, vistaActiva]);
 
   useEffect(() => {
+    if (
+      !accesoBloqueado &&
+      !verificandoRol &&
+      !puedeVerOrdenesYParte &&
+      (vistaActiva === 'ordenes' || vistaActiva === 'parte')
+    ) {
+      navigate('/clientes', { replace: true });
+    }
+  }, [accesoBloqueado, navigate, puedeVerOrdenesYParte, verificandoRol, vistaActiva]);
+
+  useEffect(() => {
     if (!requiereLogin || !sesion?.user?.id) {
       return undefined;
     }
@@ -245,6 +258,10 @@ export default function App() {
       return;
     }
 
+    if ((siguienteVista === 'ordenes' || siguienteVista === 'parte') && !puedeVerOrdenesYParte) {
+      return;
+    }
+
     navigate(RUTA_POR_VISTA[siguienteVista] || '/ordenes');
   }
 
@@ -263,6 +280,10 @@ export default function App() {
 
     if (item.key === 'inventario') {
       return puedeVerInventario;
+    }
+
+    if (item.key === 'ordenes' || item.key === 'parte') {
+      return puedeVerOrdenesYParte;
     }
 
     return true;
@@ -412,6 +433,7 @@ export default function App() {
           mostrarAdmin={esAdmin}
           mostrarClientes={puedeVerClientes}
           mostrarInventario={puedeVerInventario}
+          mostrarOrdenesYParte={puedeVerOrdenesYParte}
         />
       )}
 
