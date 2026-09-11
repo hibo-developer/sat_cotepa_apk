@@ -17,6 +17,8 @@ const FORM_CLIENTE_INICIAL = {
   nombre: '',
   direccion: '',
   telefono: '',
+  contacto: '',
+  cargo: '',
   email: '',
   lat: '',
   lng: '',
@@ -77,6 +79,8 @@ export function ClientesView({ rolUsuario }) {
       const dir = (cliente.direccion || '').toLowerCase();
       const dirFisc = (cliente.direccion_fiscal || '').toLowerCase();
       const tel = (cliente.telefono || '').toLowerCase();
+      const cnt = (cliente.contacto || '').toLowerCase();
+      const crg = (cliente.cargo || '').toLowerCase();
       const em = (cliente.email || '').toLowerCase();
       const reg = (cliente.regimen_tributario || '').toLowerCase();
       const sit = (cliente.situacion_fiscal || '').toLowerCase();
@@ -88,6 +92,8 @@ export function ClientesView({ rolUsuario }) {
         dir.includes(termino) ||
         dirFisc.includes(termino) ||
         tel.includes(termino) ||
+        cnt.includes(termino) ||
+        crg.includes(termino) ||
         em.includes(termino) ||
         reg.includes(termino) ||
         sit.includes(termino)
@@ -203,6 +209,8 @@ export function ClientesView({ rolUsuario }) {
         nombre: clienteForm.nombre,
         direccion: clienteForm.direccion,
         telefono: clienteForm.telefono,
+        contacto: clienteForm.contacto,
+        cargo: clienteForm.cargo,
         email: clienteForm.email,
         lat: clienteForm.lat,
         lng: clienteForm.lng,
@@ -415,6 +423,26 @@ export function ClientesView({ rolUsuario }) {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
+                    <label className="label-base text-xs">Persona de contacto</label>
+                    <input
+                      value={clienteForm.contacto}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, contacto: e.target.value }))}
+                      className="input-base"
+                      placeholder="Nombre de contacto"
+                    />
+                  </div>
+                  <div>
+                    <label className="label-base text-xs">Cargo / Puesto</label>
+                    <input
+                      value={clienteForm.cargo}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, cargo: e.target.value }))}
+                      className="input-base"
+                      placeholder="Ej. Jefe Mantenimiento"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
                     <label className="label-base text-xs">Latitud</label>
                     <input
                       inputMode="decimal"
@@ -610,6 +638,11 @@ export function ClientesView({ rolUsuario }) {
                   <div className="grid gap-1 text-xs text-sat-muted sm:grid-cols-2">
                     <p><span className="font-semibold text-sat-text">Teléfono:</span> {cliente.telefono || 'Sin teléfono'}</p>
                     <p><span className="font-semibold text-sat-text">Email:</span> {cliente.email || 'Sin email'}</p>
+                    {(cliente.contacto || cliente.cargo) && (
+                      <p className="sm:col-span-2">
+                        <span className="font-semibold text-sat-text">Contacto:</span> {cliente.contacto || 'Sin contacto'} {cliente.cargo ? `(${cliente.cargo})` : ''}
+                      </p>
+                    )}
                     <p><span className="font-semibold text-sat-text">Dir. Trabajo:</span> {cliente.direccion || 'Sin dirección'}</p>
                     {cliente.direccion_fiscal && (
                       <p><span className="font-semibold text-sat-text">Dir. Fiscal:</span> {cliente.direccion_fiscal}</p>
@@ -648,6 +681,8 @@ export function ClientesView({ rolUsuario }) {
                             nombre: cliente.nombre || '',
                             direccion: cliente.direccion || '',
                             telefono: cliente.telefono || '',
+                            contacto: cliente.contacto || '',
+                            cargo: cliente.cargo || '',
                             email: cliente.email || '',
                             lat: cliente.lat != null ? String(cliente.lat) : '',
                             lng: cliente.lng != null ? String(cliente.lng) : '',

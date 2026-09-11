@@ -36,6 +36,8 @@ export function validarYSanearPayloadCliente(payload) {
 
   const direccion = String(payload.direccion || '').trim() || null;
   const telefono = String(payload.telefono || '').trim() || null;
+  const contacto = String(payload.contacto || '').trim() || null;
+  const cargo = String(payload.cargo || '').trim() || null;
   const emailRaw = String(payload.email || '').trim();
 
   if (emailRaw && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) {
@@ -54,6 +56,8 @@ export function validarYSanearPayloadCliente(payload) {
     nombre,
     direccion,
     telefono,
+    contacto,
+    cargo,
     email,
     lat: Number.isFinite(latNum) ? latNum : null,
     lng: Number.isFinite(lngNum) ? lngNum : null,
@@ -97,7 +101,7 @@ export async function listarClientes() {
 
   const { data, error } = await supabase
     .from('clientes')
-    .select('id, nombre, direccion, telefono, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, created_at')
+    .select('id, nombre, direccion, telefono, contacto, cargo, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, created_at')
     .order('created_at', { ascending: false });
 
   if (error) {

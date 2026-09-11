@@ -27,6 +27,8 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
         nombre: '  Cotepa Servicios S.L. ',
         direccion: ' Calle Principal 123 ',
         telefono: ' +34 912 345 678 ',
+        contacto: ' Juan Pérez ',
+        cargo: ' Director Técnico ',
         email: ' contacto@cotepa.com ',
         lat: '40.4167',
         lng: '-3.7037',
@@ -43,6 +45,8 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
         nombre: 'Cotepa Servicios S.L.',
         direccion: 'Calle Principal 123',
         telefono: '+34 912 345 678',
+        contacto: 'Juan Pérez',
+        cargo: 'Director Técnico',
         email: 'contacto@cotepa.com',
         lat: 40.4167,
         lng: -3.7037,
@@ -65,6 +69,8 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
         nombre: 'Cliente Antiguo',
         direccion: null,
         telefono: null,
+        contacto: null,
+        cargo: null,
         email: null,
         lat: null,
         lng: null,
@@ -165,7 +171,7 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
 
       expect(mockFrom).toHaveBeenCalledWith('clientes');
       expect(selectMock).toHaveBeenCalledWith(
-        'id, nombre, direccion, telefono, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, created_at'
+        'id, nombre, direccion, telefono, contacto, cargo, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, created_at'
       );
       expect(clientes).toHaveLength(1);
       expect(clientes[0].identificador_fiscal).toBe('20-11111111-1');

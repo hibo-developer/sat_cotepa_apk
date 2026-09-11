@@ -9,6 +9,8 @@ create table if not exists clientes (
   direccion text,
   telefono text,
   email text,
+  contacto text,
+  cargo text,
   identificador_fiscal text,
   razon_social text,
   direccion_fiscal text,
