@@ -117,6 +117,44 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
         })
       ).toThrow('El identificador fiscal solo puede contener caracteres alfanuméricos, guiones o puntos.');
     });
+
+    it('lanza error si se ingresa teléfono principal sin persona de contacto ni cargo', () => {
+      expect(() =>
+        validarYSanearPayloadCliente({
+          nombre: 'Cliente Test',
+          telefono: '+34 912 345 678',
+        })
+      ).toThrow('Para registrar un teléfono debes indicar primero la persona de contacto y su cargo/puesto.');
+    });
+
+    it('lanza error si se ingresa teléfono secundario sin cargo (aunque haya contacto)', () => {
+      expect(() =>
+        validarYSanearPayloadCliente({
+          nombre: 'Cliente Test',
+          telefono_2: '+34 912 345 679',
+          contacto: 'Juan Pérez',
+        })
+      ).toThrow('Para registrar un teléfono debes indicar primero la persona de contacto y su cargo/puesto.');
+    });
+
+    it('permite guardar teléfonos cuando contacto y cargo están presentes', () => {
+      const resultado = validarYSanearPayloadCliente({
+        nombre: 'Cliente Test',
+        telefono: '+34 912 345 678',
+        telefono_2: '+34 912 345 679',
+        contacto: 'Juan Pérez',
+        cargo: 'Director Técnico',
+      });
+
+      expect(resultado.telefono).toBe('+34 912 345 678');
+      expect(resultado.telefono_2).toBe('+34 912 345 679');
+    });
+
+    it('permite guardar el cliente sin teléfonos aunque falten contacto y cargo', () => {
+      expect(() =>
+        validarYSanearPayloadCliente({ nombre: 'Cliente Sin Contacto' })
+      ).not.toThrow();
+    });
   });
 
   describe('verificarUnicidadIdentificadorFiscal', () => {

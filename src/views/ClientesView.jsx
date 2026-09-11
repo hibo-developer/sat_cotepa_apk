@@ -65,6 +65,7 @@ export function ClientesView({ rolUsuario }) {
   const sinConfiguracion = useMemo(() => !tieneConfiguracionSupabase(), []);
   const puedeEditarCatalogos = rolUsuario === 'admin' || rolUsuario === 'oficina';
   const modoSoloLectura = !puedeEditarCatalogos;
+  const telefonosHabilitados = Boolean(clienteForm.contacto.trim() && clienteForm.cargo.trim());
 
   const clientesFiltrados = useMemo(() => {
     const termino = busquedaCliente.trim().toLowerCase();
@@ -84,8 +85,6 @@ export function ClientesView({ rolUsuario }) {
       const cnt = (cliente.contacto || '').toLowerCase();
       const crg = (cliente.cargo || '').toLowerCase();
       const em = (cliente.email || '').toLowerCase();
-      const reg = (cliente.regimen_tributario || '').toLowerCase();
-      const sit = (cliente.situacion_fiscal || '').toLowerCase();
 
       return (
         nom.includes(termino) ||
@@ -97,9 +96,7 @@ export function ClientesView({ rolUsuario }) {
         tel2.includes(termino) ||
         cnt.includes(termino) ||
         crg.includes(termino) ||
-        em.includes(termino) ||
-        reg.includes(termino) ||
-        sit.includes(termino)
+        em.includes(termino)
       );
     });
   }, [clientes, busquedaCliente]);
@@ -164,6 +161,13 @@ export function ClientesView({ rolUsuario }) {
   useEffect(() => {
     setPaginaEquipos(1);
   }, [busquedaEquipo]);
+
+  // Si se borra el contacto o cargo, los telefonos dependientes ya no son validos.
+  useEffect(() => {
+    if (!telefonosHabilitados) {
+      setClienteForm((p) => (p.telefono || p.telefono_2 ? { ...p, telefono: '', telefono_2: '' } : p));
+    }
+  }, [telefonosHabilitados]);
 
   async function recargarDatos() {
     if (sinConfiguracion) {
@@ -404,26 +408,6 @@ export function ClientesView({ rolUsuario }) {
                     placeholder="Ej. Av. Industrial 1234"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="label-base text-xs">Teléfono 1 (Principal)</label>
-                    <input
-                      value={clienteForm.telefono}
-                      onChange={(e) => setClienteForm((p) => ({ ...p, telefono: e.target.value }))}
-                      className="input-base"
-                      placeholder="Teléfono principal"
-                    />
-                  </div>
-                  <div>
-                    <label className="label-base text-xs">Teléfono 2 (Secundario)</label>
-                    <input
-                      value={clienteForm.telefono_2}
-                      onChange={(e) => setClienteForm((p) => ({ ...p, telefono_2: e.target.value }))}
-                      className="input-base"
-                      placeholder="Teléfono 2"
-                    />
-                  </div>
-                </div>
                 <div>
                   <label className="label-base text-xs">Email</label>
                   <input
@@ -436,7 +420,7 @@ export function ClientesView({ rolUsuario }) {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="label-base text-xs">Persona de contacto</label>
+                    <label className="label-base text-xs">Persona de contacto *</label>
                     <input
                       value={clienteForm.contacto}
                       onChange={(e) => setClienteForm((p) => ({ ...p, contacto: e.target.value }))}
@@ -445,7 +429,7 @@ export function ClientesView({ rolUsuario }) {
                     />
                   </div>
                   <div>
-                    <label className="label-base text-xs">Cargo / Puesto</label>
+                    <label className="label-base text-xs">Cargo / Puesto *</label>
                     <input
                       value={clienteForm.cargo}
                       onChange={(e) => setClienteForm((p) => ({ ...p, cargo: e.target.value }))}
@@ -453,6 +437,33 @@ export function ClientesView({ rolUsuario }) {
                       placeholder="Ej. Jefe Mantenimiento"
                     />
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="label-base text-xs">Teléfono 1 (Principal)</label>
+                    <input
+                      value={clienteForm.telefono}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, telefono: e.target.value }))}
+                      className="input-base disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                      placeholder="Teléfono principal"
+                      disabled={!telefonosHabilitados}
+                    />
+                  </div>
+                  <div>
+                    <label className="label-base text-xs">Teléfono 2 (Secundario)</label>
+                    <input
+                      value={clienteForm.telefono_2}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, telefono_2: e.target.value }))}
+                      className="input-base disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                      placeholder="Teléfono 2"
+                      disabled={!telefonosHabilitados}
+                    />
+                  </div>
+                  {!telefonosHabilitados && (
+                    <p className="col-span-2 text-[11px] font-medium text-amber-600">
+                      Completa "Persona de contacto" y "Cargo / Puesto" para poder registrar teléfonos.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -491,43 +502,6 @@ export function ClientesView({ rolUsuario }) {
                     className="input-base bg-white"
                     placeholder="Ej. Calle Fiscal 456, Piso 2"
                   />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="label-base text-xs">Régimen Tributario</label>
-                    <input
-                      list="list-regimenes-tributarios"
-                      value={clienteForm.regimen_tributario}
-                      onChange={(e) => setClienteForm((p) => ({ ...p, regimen_tributario: e.target.value }))}
-                      className="input-base bg-white text-xs"
-                      placeholder="Ej. General"
-                    />
-                    <datalist id="list-regimenes-tributarios">
-                      <option value="Régimen General" />
-                      <option value="Monotributo / Simplificado" />
-                      <option value="Exento / Sin fines de lucro" />
-                      <option value="Persona Física con Actividad Empresarial" />
-                    </datalist>
-                  </div>
-
-                  <div>
-                    <label className="label-base text-xs">Situación Fiscal / IVA</label>
-                    <input
-                      list="list-situaciones-fiscales"
-                      value={clienteForm.situacion_fiscal}
-                      onChange={(e) => setClienteForm((p) => ({ ...p, situacion_fiscal: e.target.value }))}
-                      className="input-base bg-white text-xs"
-                      placeholder="Ej. Responsable Inscripto"
-                    />
-                    <datalist id="list-situaciones-fiscales">
-                      <option value="Responsable Inscripto" />
-                      <option value="Consumidor Final" />
-                      <option value="Monotributista" />
-                      <option value="Exento" />
-                      <option value="Sujeto No Categorizado" />
-                    </datalist>
-                  </div>
                 </div>
               </div>
 
@@ -644,21 +618,6 @@ export function ClientesView({ rolUsuario }) {
                       <p className="sm:col-span-2"><span className="font-semibold text-sat-text">Dir. Fiscal:</span> {cliente.direccion_fiscal}</p>
                     )}
                   </div>
-
-                  {(cliente.regimen_tributario || cliente.situacion_fiscal) && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {cliente.regimen_tributario && (
-                        <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
-                          Régimen: {cliente.regimen_tributario}
-                        </span>
-                      )}
-                      {cliente.situacion_fiscal && (
-                        <span className="inline-block rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200">
-                          Situación IVA/Fiscal: {cliente.situacion_fiscal}
-                        </span>
-                      )}
-                    </div>
-                  )}
 
                   {cliente.lat != null && cliente.lng != null && (
                     <p className="text-[11px] text-sat-subtle">

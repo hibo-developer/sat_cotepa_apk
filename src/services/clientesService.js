@@ -39,6 +39,14 @@ export function validarYSanearPayloadCliente(payload) {
   const telefono2 = String(payload.telefono_2 || payload.telefono2 || '').trim() || null;
   const contacto = String(payload.contacto || '').trim() || null;
   const cargo = String(payload.cargo || '').trim() || null;
+
+  // Los telefonos solo son validos si estan asociados a una persona de contacto y su cargo.
+  if ((telefono || telefono2) && (!contacto || !cargo)) {
+    throw new Error(
+      'Para registrar un teléfono debes indicar primero la persona de contacto y su cargo/puesto.'
+    );
+  }
+
   const emailRaw = String(payload.email || '').trim();
 
   if (emailRaw && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) {
