@@ -454,28 +454,6 @@ export function ClientesView({ rolUsuario }) {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="label-base text-xs">Latitud</label>
-                    <input
-                      inputMode="decimal"
-                      value={clienteForm.lat}
-                      onChange={(e) => setClienteForm((p) => ({ ...p, lat: e.target.value }))}
-                      className="input-base"
-                      placeholder="Latitud"
-                    />
-                  </div>
-                  <div>
-                    <label className="label-base text-xs">Longitud</label>
-                    <input
-                      inputMode="decimal"
-                      value={clienteForm.lng}
-                      onChange={(e) => setClienteForm((p) => ({ ...p, lng: e.target.value }))}
-                      className="input-base"
-                      placeholder="Longitud"
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* Seccion: Datos Fiscales */}
