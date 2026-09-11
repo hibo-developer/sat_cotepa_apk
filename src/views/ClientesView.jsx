@@ -28,6 +28,7 @@ const FORM_CLIENTE_INICIAL = {
   direccion_fiscal: '',
   regimen_tributario: '',
   situacion_fiscal: '',
+  telefono_fiscal: '',
 };
 
 const FORM_EQUIPO_INICIAL = {
@@ -82,6 +83,7 @@ export function ClientesView({ rolUsuario }) {
       const dirFisc = (cliente.direccion_fiscal || '').toLowerCase();
       const tel = (cliente.telefono || '').toLowerCase();
       const tel2 = (cliente.telefono_2 || '').toLowerCase();
+      const telFisc = (cliente.telefono_fiscal || '').toLowerCase();
       const cnt = (cliente.contacto || '').toLowerCase();
       const crg = (cliente.cargo || '').toLowerCase();
       const em = (cliente.email || '').toLowerCase();
@@ -94,6 +96,7 @@ export function ClientesView({ rolUsuario }) {
         dirFisc.includes(termino) ||
         tel.includes(termino) ||
         tel2.includes(termino) ||
+        telFisc.includes(termino) ||
         cnt.includes(termino) ||
         crg.includes(termino) ||
         em.includes(termino)
@@ -227,6 +230,7 @@ export function ClientesView({ rolUsuario }) {
         direccion_fiscal: clienteForm.direccion_fiscal,
         regimen_tributario: clienteForm.regimen_tributario,
         situacion_fiscal: clienteForm.situacion_fiscal,
+        telefono_fiscal: clienteForm.telefono_fiscal,
       };
 
       if (clienteEditandoId) {
@@ -503,6 +507,16 @@ export function ClientesView({ rolUsuario }) {
                     placeholder="Ej. Calle Fiscal 456, Piso 2"
                   />
                 </div>
+
+                <div>
+                  <label className="label-base text-xs">Teléfono Fiscal / Facturación</label>
+                  <input
+                    value={clienteForm.telefono_fiscal}
+                    onChange={(e) => setClienteForm((p) => ({ ...p, telefono_fiscal: e.target.value }))}
+                    className="input-base bg-white"
+                    placeholder="Teléfono para facturación"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2 pt-1">
@@ -617,6 +631,9 @@ export function ClientesView({ rolUsuario }) {
                     {cliente.direccion_fiscal && (
                       <p className="sm:col-span-2"><span className="font-semibold text-sat-text">Dir. Fiscal:</span> {cliente.direccion_fiscal}</p>
                     )}
+                    {cliente.telefono_fiscal && (
+                      <p className="sm:col-span-2"><span className="font-semibold text-sat-text">Tel. Fiscal:</span> {cliente.telefono_fiscal}</p>
+                    )}
                   </div>
 
                   {cliente.lat != null && cliente.lng != null && (
@@ -647,6 +664,7 @@ export function ClientesView({ rolUsuario }) {
                             direccion_fiscal: cliente.direccion_fiscal || '',
                             regimen_tributario: cliente.regimen_tributario || '',
                             situacion_fiscal: cliente.situacion_fiscal || '',
+                            telefono_fiscal: cliente.telefono_fiscal || '',
                           });
                         }}
                       >

@@ -33,6 +33,7 @@ export function validarYSanearPayloadCliente(payload) {
   const direccionFiscal = String(payload.direccion_fiscal || '').trim() || null;
   const regimenTributario = String(payload.regimen_tributario || '').trim() || null;
   const situacionFiscal = String(payload.situacion_fiscal || '').trim() || null;
+  const telefonoFiscal = String(payload.telefono_fiscal || '').trim() || null;
 
   const direccion = String(payload.direccion || '').trim() || null;
   const telefono = String(payload.telefono || '').trim() || null;
@@ -76,6 +77,7 @@ export function validarYSanearPayloadCliente(payload) {
     direccion_fiscal: direccionFiscal,
     regimen_tributario: regimenTributario,
     situacion_fiscal: situacionFiscal,
+    telefono_fiscal: telefonoFiscal,
   };
 }
 
@@ -111,7 +113,7 @@ export async function listarClientes() {
 
   const { data, error } = await supabase
     .from('clientes')
-    .select('id, nombre, direccion, telefono, telefono_2, contacto, cargo, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, created_at')
+    .select('id, nombre, direccion, telefono, telefono_2, contacto, cargo, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal, created_at')
     .order('created_at', { ascending: false });
 
   if (error) {

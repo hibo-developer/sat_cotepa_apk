@@ -17,6 +17,7 @@ create table if not exists clientes (
   direccion_fiscal text,
   regimen_tributario text,
   situacion_fiscal text,
+  telefono_fiscal text,
   deleted_at timestamptz,
   created_at timestamp with time zone default now()
 );

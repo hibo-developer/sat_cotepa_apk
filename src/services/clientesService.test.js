@@ -38,6 +38,7 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
         direccion_fiscal: ' Av. Central 456 ',
         regimen_tributario: ' General ',
         situacion_fiscal: ' Responsable Inscripto ',
+        telefono_fiscal: ' +34 911 000 111 ',
       };
 
       const resultado = validarYSanearPayloadCliente(entrada);
@@ -57,6 +58,7 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
         direccion_fiscal: 'Av. Central 456',
         regimen_tributario: 'General',
         situacion_fiscal: 'Responsable Inscripto',
+        telefono_fiscal: '+34 911 000 111',
       });
     });
 
@@ -82,6 +84,7 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
         direccion_fiscal: null,
         regimen_tributario: null,
         situacion_fiscal: null,
+        telefono_fiscal: null,
       });
     });
 
@@ -212,7 +215,7 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
 
       expect(mockFrom).toHaveBeenCalledWith('clientes');
       expect(selectMock).toHaveBeenCalledWith(
-        'id, nombre, direccion, telefono, telefono_2, contacto, cargo, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, created_at'
+        'id, nombre, direccion, telefono, telefono_2, contacto, cargo, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal, created_at'
       );
       expect(clientes).toHaveLength(1);
       expect(clientes[0].identificador_fiscal).toBe('20-11111111-1');
