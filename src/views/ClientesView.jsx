@@ -20,6 +20,8 @@ const FORM_CLIENTE_INICIAL = {
   telefono_2: '',
   contacto: '',
   cargo: '',
+  contacto_2: '',
+  cargo_2: '',
   email: '',
   lat: '',
   lng: '',
@@ -66,7 +68,8 @@ export function ClientesView({ rolUsuario }) {
   const sinConfiguracion = useMemo(() => !tieneConfiguracionSupabase(), []);
   const puedeEditarCatalogos = rolUsuario === 'admin' || rolUsuario === 'oficina';
   const modoSoloLectura = !puedeEditarCatalogos;
-  const telefonosHabilitados = Boolean(clienteForm.contacto.trim() && clienteForm.cargo.trim());
+  const telefono1Habilitado = Boolean(clienteForm.contacto.trim() && clienteForm.cargo.trim());
+  const telefono2Habilitado = Boolean(clienteForm.contacto_2.trim() && clienteForm.cargo_2.trim());
 
   const clientesFiltrados = useMemo(() => {
     const termino = busquedaCliente.trim().toLowerCase();
@@ -86,6 +89,8 @@ export function ClientesView({ rolUsuario }) {
       const telFisc = (cliente.telefono_fiscal || '').toLowerCase();
       const cnt = (cliente.contacto || '').toLowerCase();
       const crg = (cliente.cargo || '').toLowerCase();
+      const cnt2 = (cliente.contacto_2 || '').toLowerCase();
+      const crg2 = (cliente.cargo_2 || '').toLowerCase();
       const em = (cliente.email || '').toLowerCase();
 
       return (
@@ -99,6 +104,8 @@ export function ClientesView({ rolUsuario }) {
         telFisc.includes(termino) ||
         cnt.includes(termino) ||
         crg.includes(termino) ||
+        cnt2.includes(termino) ||
+        crg2.includes(termino) ||
         em.includes(termino)
       );
     });
@@ -165,12 +172,18 @@ export function ClientesView({ rolUsuario }) {
     setPaginaEquipos(1);
   }, [busquedaEquipo]);
 
-  // Si se borra el contacto o cargo, los telefonos dependientes ya no son validos.
+  // Si se borra el contacto o cargo de un contacto, su telefono dependiente ya no es valido.
   useEffect(() => {
-    if (!telefonosHabilitados) {
-      setClienteForm((p) => (p.telefono || p.telefono_2 ? { ...p, telefono: '', telefono_2: '' } : p));
+    if (!telefono1Habilitado) {
+      setClienteForm((p) => (p.telefono ? { ...p, telefono: '' } : p));
     }
-  }, [telefonosHabilitados]);
+  }, [telefono1Habilitado]);
+
+  useEffect(() => {
+    if (!telefono2Habilitado) {
+      setClienteForm((p) => (p.telefono_2 ? { ...p, telefono_2: '' } : p));
+    }
+  }, [telefono2Habilitado]);
 
   async function recargarDatos() {
     if (sinConfiguracion) {
@@ -222,6 +235,8 @@ export function ClientesView({ rolUsuario }) {
         telefono_2: clienteForm.telefono_2,
         contacto: clienteForm.contacto,
         cargo: clienteForm.cargo,
+        contacto_2: clienteForm.contacto_2,
+        cargo_2: clienteForm.cargo_2,
         email: clienteForm.email,
         lat: clienteForm.lat,
         lng: clienteForm.lng,
@@ -424,7 +439,7 @@ export function ClientesView({ rolUsuario }) {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="label-base text-xs">Persona de contacto *</label>
+                    <label className="label-base text-xs">Persona de contacto 1 *</label>
                     <input
                       value={clienteForm.contacto}
                       onChange={(e) => setClienteForm((p) => ({ ...p, contacto: e.target.value }))}
@@ -441,31 +456,55 @@ export function ClientesView({ rolUsuario }) {
                       placeholder="Ej. Jefe Mantenimiento"
                     />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="label-base text-xs">Teléfono 1 (Principal)</label>
+                  <div className="col-span-2">
+                    <label className="label-base text-xs">Teléfono del contacto 1</label>
                     <input
                       value={clienteForm.telefono}
                       onChange={(e) => setClienteForm((p) => ({ ...p, telefono: e.target.value }))}
                       className="input-base disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                      placeholder="Teléfono principal"
-                      disabled={!telefonosHabilitados}
+                      placeholder="Teléfono del contacto 1"
+                      disabled={!telefono1Habilitado}
+                    />
+                  </div>
+                  {!telefono1Habilitado && (
+                    <p className="col-span-2 text-[11px] font-medium text-amber-600">
+                      Completa "Persona de contacto 1" y "Cargo / Puesto" para poder registrar su teléfono.
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 border-t border-slate-200/70 pt-2.5">
+                  <div>
+                    <label className="label-base text-xs">Persona de contacto 2</label>
+                    <input
+                      value={clienteForm.contacto_2}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, contacto_2: e.target.value }))}
+                      className="input-base"
+                      placeholder="Nombre de contacto 2 (opcional)"
                     />
                   </div>
                   <div>
-                    <label className="label-base text-xs">Teléfono 2 (Secundario)</label>
+                    <label className="label-base text-xs">Cargo / Puesto</label>
+                    <input
+                      value={clienteForm.cargo_2}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, cargo_2: e.target.value }))}
+                      className="input-base"
+                      placeholder="Ej. Administración"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="label-base text-xs">Teléfono del contacto 2</label>
                     <input
                       value={clienteForm.telefono_2}
                       onChange={(e) => setClienteForm((p) => ({ ...p, telefono_2: e.target.value }))}
                       className="input-base disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                      placeholder="Teléfono 2"
-                      disabled={!telefonosHabilitados}
+                      placeholder="Teléfono del contacto 2"
+                      disabled={!telefono2Habilitado}
                     />
                   </div>
-                  {!telefonosHabilitados && (
+                  {!telefono2Habilitado && (
                     <p className="col-span-2 text-[11px] font-medium text-amber-600">
-                      Completa "Persona de contacto" y "Cargo / Puesto" para poder registrar teléfonos.
+                      Completa "Persona de contacto 2" y "Cargo / Puesto" para poder registrar su teléfono.
                     </p>
                   )}
                 </div>
@@ -615,17 +654,16 @@ export function ClientesView({ rolUsuario }) {
                   </div>
 
                   <div className="grid gap-1 text-xs text-sat-muted sm:grid-cols-2">
-                    <p>
-                      <span className="font-semibold text-sat-text">Teléfono 1:</span> {cliente.telefono || 'Sin teléfono'}
-                    </p>
-                    <p>
-                      <span className="font-semibold text-sat-text">Teléfono 2:</span> {cliente.telefono_2 || 'Sin teléfono'}
-                    </p>
                     <p><span className="font-semibold text-sat-text">Email:</span> {cliente.email || 'Sin email'}</p>
                     <p><span className="font-semibold text-sat-text">Dir. Trabajo:</span> {cliente.direccion || 'Sin dirección'}</p>
-                    {(cliente.contacto || cliente.cargo) && (
+                    {(cliente.contacto || cliente.cargo || cliente.telefono) && (
                       <p className="sm:col-span-2">
-                        <span className="font-semibold text-sat-text">Contacto:</span> {cliente.contacto || 'Sin contacto'} {cliente.cargo ? `(${cliente.cargo})` : ''}
+                        <span className="font-semibold text-sat-text">Contacto 1:</span> {cliente.contacto || 'Sin contacto'} {cliente.cargo ? `(${cliente.cargo})` : ''} — {cliente.telefono || 'Sin teléfono'}
+                      </p>
+                    )}
+                    {(cliente.contacto_2 || cliente.cargo_2 || cliente.telefono_2) && (
+                      <p className="sm:col-span-2">
+                        <span className="font-semibold text-sat-text">Contacto 2:</span> {cliente.contacto_2 || 'Sin contacto'} {cliente.cargo_2 ? `(${cliente.cargo_2})` : ''} — {cliente.telefono_2 || 'Sin teléfono'}
                       </p>
                     )}
                     {cliente.direccion_fiscal && (
@@ -656,6 +694,8 @@ export function ClientesView({ rolUsuario }) {
                             telefono_2: cliente.telefono_2 || '',
                             contacto: cliente.contacto || '',
                             cargo: cliente.cargo || '',
+                            contacto_2: cliente.contacto_2 || '',
+                            cargo_2: cliente.cargo_2 || '',
                             email: cliente.email || '',
                             lat: cliente.lat != null ? String(cliente.lat) : '',
                             lng: cliente.lng != null ? String(cliente.lng) : '',

@@ -39,6 +39,8 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
         regimen_tributario: ' General ',
         situacion_fiscal: ' Responsable Inscripto ',
         telefono_fiscal: ' +34 911 000 111 ',
+        contacto_2: ' María López ',
+        cargo_2: ' Administración ',
       };
 
       const resultado = validarYSanearPayloadCliente(entrada);
@@ -59,6 +61,8 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
         regimen_tributario: 'General',
         situacion_fiscal: 'Responsable Inscripto',
         telefono_fiscal: '+34 911 000 111',
+        contacto_2: 'María López',
+        cargo_2: 'Administración',
       });
     });
 
@@ -85,6 +89,8 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
         regimen_tributario: null,
         situacion_fiscal: null,
         telefono_fiscal: null,
+        contacto_2: null,
+        cargo_2: null,
       });
     });
 
@@ -121,36 +127,51 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
       ).toThrow('El identificador fiscal solo puede contener caracteres alfanuméricos, guiones o puntos.');
     });
 
-    it('lanza error si se ingresa teléfono principal sin persona de contacto ni cargo', () => {
+    it('lanza error si se ingresa teléfono del contacto 1 sin persona de contacto ni cargo', () => {
       expect(() =>
         validarYSanearPayloadCliente({
           nombre: 'Cliente Test',
           telefono: '+34 912 345 678',
         })
-      ).toThrow('Para registrar un teléfono debes indicar primero la persona de contacto y su cargo/puesto.');
+      ).toThrow('Para registrar el teléfono del contacto 1 debes indicar primero su nombre y cargo/puesto.');
     });
 
-    it('lanza error si se ingresa teléfono secundario sin cargo (aunque haya contacto)', () => {
+    it('lanza error si se ingresa teléfono del contacto 2 sin cargo (aunque haya nombre de contacto 2)', () => {
       expect(() =>
         validarYSanearPayloadCliente({
           nombre: 'Cliente Test',
           telefono_2: '+34 912 345 679',
-          contacto: 'Juan Pérez',
+          contacto_2: 'María López',
         })
-      ).toThrow('Para registrar un teléfono debes indicar primero la persona de contacto y su cargo/puesto.');
+      ).toThrow('Para registrar el teléfono del contacto 2 debes indicar primero su nombre y cargo/puesto.');
     });
 
-    it('permite guardar teléfonos cuando contacto y cargo están presentes', () => {
+    it('permite guardar el teléfono del contacto 1 sin afectar al contacto 2 incompleto', () => {
+      expect(() =>
+        validarYSanearPayloadCliente({
+          nombre: 'Cliente Test',
+          telefono: '+34 912 345 678',
+          contacto: 'Juan Pérez',
+          cargo: 'Director Técnico',
+        })
+      ).not.toThrow();
+    });
+
+    it('permite guardar teléfonos cuando cada contacto tiene su nombre y cargo', () => {
       const resultado = validarYSanearPayloadCliente({
         nombre: 'Cliente Test',
         telefono: '+34 912 345 678',
         telefono_2: '+34 912 345 679',
         contacto: 'Juan Pérez',
         cargo: 'Director Técnico',
+        contacto_2: 'María López',
+        cargo_2: 'Administración',
       });
 
       expect(resultado.telefono).toBe('+34 912 345 678');
       expect(resultado.telefono_2).toBe('+34 912 345 679');
+      expect(resultado.contacto_2).toBe('María López');
+      expect(resultado.cargo_2).toBe('Administración');
     });
 
     it('permite guardar el cliente sin teléfonos aunque falten contacto y cargo', () => {
@@ -215,7 +236,7 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
 
       expect(mockFrom).toHaveBeenCalledWith('clientes');
       expect(selectMock).toHaveBeenCalledWith(
-        'id, nombre, direccion, telefono, telefono_2, contacto, cargo, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal, created_at'
+        'id, nombre, direccion, telefono, telefono_2, contacto, cargo, contacto_2, cargo_2, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal, created_at'
       );
       expect(clientes).toHaveLength(1);
       expect(clientes[0].identificador_fiscal).toBe('20-11111111-1');

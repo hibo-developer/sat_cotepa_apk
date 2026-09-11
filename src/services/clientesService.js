@@ -40,11 +40,18 @@ export function validarYSanearPayloadCliente(payload) {
   const telefono2 = String(payload.telefono_2 || payload.telefono2 || '').trim() || null;
   const contacto = String(payload.contacto || '').trim() || null;
   const cargo = String(payload.cargo || '').trim() || null;
+  const contacto2 = String(payload.contacto_2 || '').trim() || null;
+  const cargo2 = String(payload.cargo_2 || '').trim() || null;
 
-  // Los telefonos solo son validos si estan asociados a una persona de contacto y su cargo.
-  if ((telefono || telefono2) && (!contacto || !cargo)) {
+  // Cada telefono solo es valido si esta asociado a su propia persona de contacto y cargo.
+  if (telefono && (!contacto || !cargo)) {
     throw new Error(
-      'Para registrar un teléfono debes indicar primero la persona de contacto y su cargo/puesto.'
+      'Para registrar el teléfono del contacto 1 debes indicar primero su nombre y cargo/puesto.'
+    );
+  }
+  if (telefono2 && (!contacto2 || !cargo2)) {
+    throw new Error(
+      'Para registrar el teléfono del contacto 2 debes indicar primero su nombre y cargo/puesto.'
     );
   }
 
@@ -69,6 +76,8 @@ export function validarYSanearPayloadCliente(payload) {
     telefono_2: telefono2,
     contacto,
     cargo,
+    contacto_2: contacto2,
+    cargo_2: cargo2,
     email,
     lat: Number.isFinite(latNum) ? latNum : null,
     lng: Number.isFinite(lngNum) ? lngNum : null,
@@ -113,7 +122,7 @@ export async function listarClientes() {
 
   const { data, error } = await supabase
     .from('clientes')
-    .select('id, nombre, direccion, telefono, telefono_2, contacto, cargo, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal, created_at')
+    .select('id, nombre, direccion, telefono, telefono_2, contacto, cargo, contacto_2, cargo_2, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal, created_at')
     .order('created_at', { ascending: false });
 
   if (error) {

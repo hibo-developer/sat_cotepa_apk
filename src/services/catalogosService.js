@@ -154,7 +154,7 @@ async function precargarClientesEnBackground(supabase) {
     precargaClientesEnCurso = cargarCatalogoCompleto({
       supabase,
       tabla: 'clientes',
-      columnas: 'id, nombre, direccion, telefono, telefono_2, contacto, cargo, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal',
+      columnas: 'id, nombre, direccion, telefono, telefono_2, contacto, cargo, contacto_2, cargo_2, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal',
       cacheKey: crearClaveCache(CACHE_KEY_CLIENTES, contexto.userId),
       orderBy: 'nombre',
     }).finally(() => {
@@ -267,14 +267,14 @@ export async function obtenerClientes(opciones = {}) {
 
   let consulta = supabase
     .from('clientes')
-    .select('id, nombre, direccion, telefono, telefono_2, contacto, cargo, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal', { count: 'exact' })
+    .select('id, nombre, direccion, telefono, telefono_2, contacto, cargo, contacto_2, cargo_2, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal', { count: 'exact' })
     .order('nombre', { ascending: true })
     .range(desde, hasta);
 
   const busquedaNormalizada = normalizarBusquedaParaOr(busqueda);
   if (busquedaNormalizada) {
     consulta = consulta.or(
-      `nombre.ilike.%${busquedaNormalizada}%,razon_social.ilike.%${busquedaNormalizada}%,identificador_fiscal.ilike.%${busquedaNormalizada}%,contacto.ilike.%${busquedaNormalizada}%,telefono.ilike.%${busquedaNormalizada}%,telefono_2.ilike.%${busquedaNormalizada}%,telefono_fiscal.ilike.%${busquedaNormalizada}%`
+      `nombre.ilike.%${busquedaNormalizada}%,razon_social.ilike.%${busquedaNormalizada}%,identificador_fiscal.ilike.%${busquedaNormalizada}%,contacto.ilike.%${busquedaNormalizada}%,contacto_2.ilike.%${busquedaNormalizada}%,telefono.ilike.%${busquedaNormalizada}%,telefono_2.ilike.%${busquedaNormalizada}%,telefono_fiscal.ilike.%${busquedaNormalizada}%`
     );
   }
 
