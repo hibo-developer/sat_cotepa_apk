@@ -6,7 +6,7 @@ import { obtenerClienteSupabase } from './supabaseClient';
 // Se precalienta en background para disponer de la lista completa offline.
 // ---------------------------------------------------------------------------
 const CACHE_KEY_TECNICOS = 'sat_cache_tecnicos_v2';
-const CACHE_KEY_CLIENTES = 'sat_cache_clientes_v2';
+const CACHE_KEY_CLIENTES = 'sat_cache_clientes_v3';
 const CACHE_KEY_EQUIPOS = 'sat_cache_equipos_v2';
 const TAMANO_LOTE_CACHE = 500;
 
@@ -154,7 +154,7 @@ async function precargarClientesEnBackground(supabase) {
     precargaClientesEnCurso = cargarCatalogoCompleto({
       supabase,
       tabla: 'clientes',
-      columnas: 'id, nombre',
+      columnas: 'id, nombre, direccion, telefono, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal',
       cacheKey: crearClaveCache(CACHE_KEY_CLIENTES, contexto.userId),
       orderBy: 'nombre',
     }).finally(() => {
@@ -267,12 +267,15 @@ export async function obtenerClientes(opciones = {}) {
 
   let consulta = supabase
     .from('clientes')
-    .select('id, nombre, direccion, telefono, lat, lng', { count: 'exact' })
+    .select('id, nombre, direccion, telefono, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal', { count: 'exact' })
     .order('nombre', { ascending: true })
     .range(desde, hasta);
 
-  if (busqueda.trim()) {
-    consulta = consulta.ilike('nombre', `%${busqueda.trim()}%`);
+  const busquedaNormalizada = normalizarBusquedaParaOr(busqueda);
+  if (busquedaNormalizada) {
+    consulta = consulta.or(
+      `nombre.ilike.%${busquedaNormalizada}%,razon_social.ilike.%${busquedaNormalizada}%,identificador_fiscal.ilike.%${busquedaNormalizada}%`
+    );
   }
 
   const { data, error, count } = await consulta;

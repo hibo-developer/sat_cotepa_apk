@@ -791,7 +791,7 @@ export function PartePemView({ rolUsuario, sesion }) {
             <option value="">Selecciona cliente</option>
             {clientes.map((cliente) => (
               <option key={cliente.id} value={cliente.id}>
-                {cliente.nombre}
+                {cliente.nombre}{cliente.identificador_fiscal ? ` (${cliente.identificador_fiscal})` : ''}
               </option>
             ))}
           </select>

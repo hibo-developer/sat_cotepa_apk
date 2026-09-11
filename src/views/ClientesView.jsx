@@ -20,6 +20,11 @@ const FORM_CLIENTE_INICIAL = {
   email: '',
   lat: '',
   lng: '',
+  identificador_fiscal: '',
+  razon_social: '',
+  direccion_fiscal: '',
+  regimen_tributario: '',
+  situacion_fiscal: '',
 };
 
 const FORM_EQUIPO_INICIAL = {
@@ -43,6 +48,7 @@ export function ClientesView({ rolUsuario }) {
 
   const [clienteForm, setClienteForm] = useState(FORM_CLIENTE_INICIAL);
   const [clienteEditandoId, setClienteEditandoId] = useState('');
+  const [busquedaCliente, setBusquedaCliente] = useState('');
 
   const [equipoForm, setEquipoForm] = useState(FORM_EQUIPO_INICIAL);
   const [equipoEditandoId, setEquipoEditandoId] = useState('');
@@ -56,6 +62,38 @@ export function ClientesView({ rolUsuario }) {
   const sinConfiguracion = useMemo(() => !tieneConfiguracionSupabase(), []);
   const puedeEditarCatalogos = rolUsuario === 'admin' || rolUsuario === 'oficina';
   const modoSoloLectura = !puedeEditarCatalogos;
+
+  const clientesFiltrados = useMemo(() => {
+    const termino = busquedaCliente.trim().toLowerCase();
+
+    if (!termino) {
+      return clientes;
+    }
+
+    return clientes.filter((cliente) => {
+      const nom = (cliente.nombre || '').toLowerCase();
+      const rs = (cliente.razon_social || '').toLowerCase();
+      const idf = (cliente.identificador_fiscal || '').toLowerCase();
+      const dir = (cliente.direccion || '').toLowerCase();
+      const dirFisc = (cliente.direccion_fiscal || '').toLowerCase();
+      const tel = (cliente.telefono || '').toLowerCase();
+      const em = (cliente.email || '').toLowerCase();
+      const reg = (cliente.regimen_tributario || '').toLowerCase();
+      const sit = (cliente.situacion_fiscal || '').toLowerCase();
+
+      return (
+        nom.includes(termino) ||
+        rs.includes(termino) ||
+        idf.includes(termino) ||
+        dir.includes(termino) ||
+        dirFisc.includes(termino) ||
+        tel.includes(termino) ||
+        em.includes(termino) ||
+        reg.includes(termino) ||
+        sit.includes(termino)
+      );
+    });
+  }, [clientes, busquedaCliente]);
 
   const equiposFiltrados = useMemo(() => {
     const termino = busquedaEquipo.trim().toLowerCase();
@@ -81,11 +119,11 @@ export function ClientesView({ rolUsuario }) {
     });
   }, [equipos, busquedaEquipo]);
 
-  const totalPaginasClientes = Math.max(1, Math.ceil(clientes.length / itemsPaginaClientes));
+  const totalPaginasClientes = Math.max(1, Math.ceil(clientesFiltrados.length / itemsPaginaClientes));
   const clientesPaginados = useMemo(() => {
     const inicio = (paginaClientes - 1) * itemsPaginaClientes;
-    return clientes.slice(inicio, inicio + itemsPaginaClientes);
-  }, [clientes, paginaClientes, itemsPaginaClientes]);
+    return clientesFiltrados.slice(inicio, inicio + itemsPaginaClientes);
+  }, [clientesFiltrados, paginaClientes, itemsPaginaClientes]);
 
   const totalPaginasEquipos = Math.max(1, Math.ceil(equiposFiltrados.length / itemsPaginaEquipos));
   const equiposPaginados = useMemo(() => {
@@ -109,6 +147,10 @@ export function ClientesView({ rolUsuario }) {
     setPaginaClientes(1);
     setPaginaEquipos(1);
   }, [tabActiva]);
+
+  useEffect(() => {
+    setPaginaClientes(1);
+  }, [busquedaCliente]);
 
   useEffect(() => {
     setPaginaEquipos(1);
@@ -157,20 +199,20 @@ export function ClientesView({ rolUsuario }) {
     setError('');
 
     try {
-      const latNum = clienteForm.lat !== '' && clienteForm.lat !== null && clienteForm.lat !== undefined
-        ? Number.parseFloat(String(clienteForm.lat).replace(',', '.'))
-        : null;
-      const lngNum = clienteForm.lng !== '' && clienteForm.lng !== null && clienteForm.lng !== undefined
-        ? Number.parseFloat(String(clienteForm.lng).replace(',', '.'))
-        : null;
       const payload = {
         nombre: clienteForm.nombre,
-        direccion: clienteForm.direccion || null,
-        telefono: clienteForm.telefono || null,
-        email: clienteForm.email || null,
-        lat: Number.isFinite(latNum) ? latNum : null,
-        lng: Number.isFinite(lngNum) ? lngNum : null,
+        direccion: clienteForm.direccion,
+        telefono: clienteForm.telefono,
+        email: clienteForm.email,
+        lat: clienteForm.lat,
+        lng: clienteForm.lng,
+        identificador_fiscal: clienteForm.identificador_fiscal,
+        razon_social: clienteForm.razon_social,
+        direccion_fiscal: clienteForm.direccion_fiscal,
+        regimen_tributario: clienteForm.regimen_tributario,
+        situacion_fiscal: clienteForm.situacion_fiscal,
       };
+
       if (clienteEditandoId) {
         await actualizarCliente(clienteEditandoId, payload);
         setMensaje('Cliente actualizado correctamente.');
@@ -318,58 +360,159 @@ export function ClientesView({ rolUsuario }) {
       {tabActiva === 'clientes' && (
         <div className="lg:grid lg:grid-cols-12 lg:gap-4">
           {puedeEditarCatalogos && (
-            <form onSubmit={guardarCliente} className="surface-card space-y-3 p-4 lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
+            <form onSubmit={guardarCliente} className="surface-card space-y-4 p-4 lg:col-span-4 lg:sticky lg:top-5 lg:self-start">
               <div>
                 <p className="metric-label">{clienteEditandoId ? 'Edición activa' : 'Alta rápida'}</p>
                 <h3 className="mt-2 text-lg font-black tracking-tight text-sat-text">
-                {clienteEditandoId ? 'Editar cliente' : 'Nuevo cliente'}
+                  {clienteEditandoId ? 'Editar cliente' : 'Nuevo cliente'}
                 </h3>
               </div>
 
-              <input
-                required
-                value={clienteForm.nombre}
-                onChange={(e) => setClienteForm((p) => ({ ...p, nombre: e.target.value }))}
-                className="input-base"
-                placeholder="Nombre del cliente"
-              />
-              <input
-                value={clienteForm.direccion}
-                onChange={(e) => setClienteForm((p) => ({ ...p, direccion: e.target.value }))}
-                className="input-base"
-                placeholder="Dirección"
-              />
-              <input
-                value={clienteForm.telefono}
-                onChange={(e) => setClienteForm((p) => ({ ...p, telefono: e.target.value }))}
-                className="input-base"
-                placeholder="Teléfono"
-              />
-              <input
-                type="email"
-                value={clienteForm.email}
-                onChange={(e) => setClienteForm((p) => ({ ...p, email: e.target.value }))}
-                className="input-base"
-                placeholder="Email"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  inputMode="decimal"
-                  value={clienteForm.lat}
-                  onChange={(e) => setClienteForm((p) => ({ ...p, lat: e.target.value }))}
-                  className="input-base"
-                  placeholder="Latitud"
-                />
-                <input
-                  inputMode="decimal"
-                  value={clienteForm.lng}
-                  onChange={(e) => setClienteForm((p) => ({ ...p, lng: e.target.value }))}
-                  className="input-base"
-                  placeholder="Longitud"
-                />
+              {/* Seccion: Datos Operativos / Instalacion */}
+              <div className="space-y-2.5 rounded-xl border border-slate-200/80 bg-slate-50/50 p-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                  Ubicación e Instalación
+                </p>
+                <div>
+                  <label className="label-base text-xs">Nombre comercial / Lugar *</label>
+                  <input
+                    required
+                    value={clienteForm.nombre}
+                    onChange={(e) => setClienteForm((p) => ({ ...p, nombre: e.target.value }))}
+                    className="input-base"
+                    placeholder="Ej. Taller Central / Empresa S.A."
+                  />
+                </div>
+                <div>
+                  <label className="label-base text-xs">Dirección de trabajo / instalación</label>
+                  <input
+                    value={clienteForm.direccion}
+                    onChange={(e) => setClienteForm((p) => ({ ...p, direccion: e.target.value }))}
+                    className="input-base"
+                    placeholder="Ej. Av. Industrial 1234"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="label-base text-xs">Teléfono</label>
+                    <input
+                      value={clienteForm.telefono}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, telefono: e.target.value }))}
+                      className="input-base"
+                      placeholder="Teléfono"
+                    />
+                  </div>
+                  <div>
+                    <label className="label-base text-xs">Email</label>
+                    <input
+                      type="email"
+                      value={clienteForm.email}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, email: e.target.value }))}
+                      className="input-base"
+                      placeholder="Email"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="label-base text-xs">Latitud</label>
+                    <input
+                      inputMode="decimal"
+                      value={clienteForm.lat}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, lat: e.target.value }))}
+                      className="input-base"
+                      placeholder="Latitud"
+                    />
+                  </div>
+                  <div>
+                    <label className="label-base text-xs">Longitud</label>
+                    <input
+                      inputMode="decimal"
+                      value={clienteForm.lng}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, lng: e.target.value }))}
+                      className="input-base"
+                      placeholder="Longitud"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              {/* Seccion: Datos Fiscales */}
+              <div className="space-y-2.5 rounded-xl border border-sky-200/80 bg-sky-50/40 p-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-wider text-sky-800 flex items-center justify-between">
+                  <span>Datos Fiscales</span>
+                  <span className="text-[10px] font-normal normal-case text-sky-600">(Para facturación)</span>
+                </p>
+
+                <div>
+                  <label className="label-base text-xs">ID Fiscal (CUIT / RFC / NIF / CIF)</label>
+                  <input
+                    value={clienteForm.identificador_fiscal}
+                    onChange={(e) => setClienteForm((p) => ({ ...p, identificador_fiscal: e.target.value }))}
+                    className="input-base bg-white"
+                    placeholder="Ej. 20-12345678-9 o ABC123456T12"
+                  />
+                </div>
+
+                <div>
+                  <label className="label-base text-xs">Razón Social</label>
+                  <input
+                    value={clienteForm.razon_social}
+                    onChange={(e) => setClienteForm((p) => ({ ...p, razon_social: e.target.value }))}
+                    className="input-base bg-white"
+                    placeholder="Ej. Comercializadora Cotepa S.R.L."
+                  />
+                </div>
+
+                <div>
+                  <label className="label-base text-xs">Dirección Fiscal</label>
+                  <input
+                    value={clienteForm.direccion_fiscal}
+                    onChange={(e) => setClienteForm((p) => ({ ...p, direccion_fiscal: e.target.value }))}
+                    className="input-base bg-white"
+                    placeholder="Ej. Calle Fiscal 456, Piso 2"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="label-base text-xs">Régimen Tributario</label>
+                    <input
+                      list="list-regimenes-tributarios"
+                      value={clienteForm.regimen_tributario}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, regimen_tributario: e.target.value }))}
+                      className="input-base bg-white text-xs"
+                      placeholder="Ej. General"
+                    />
+                    <datalist id="list-regimenes-tributarios">
+                      <option value="Régimen General" />
+                      <option value="Monotributo / Simplificado" />
+                      <option value="Exento / Sin fines de lucro" />
+                      <option value="Persona Física con Actividad Empresarial" />
+                    </datalist>
+                  </div>
+
+                  <div>
+                    <label className="label-base text-xs">Situación Fiscal / IVA</label>
+                    <input
+                      list="list-situaciones-fiscales"
+                      value={clienteForm.situacion_fiscal}
+                      onChange={(e) => setClienteForm((p) => ({ ...p, situacion_fiscal: e.target.value }))}
+                      className="input-base bg-white text-xs"
+                      placeholder="Ej. Responsable Inscripto"
+                    />
+                    <datalist id="list-situaciones-fiscales">
+                      <option value="Responsable Inscripto" />
+                      <option value="Consumidor Final" />
+                      <option value="Monotributista" />
+                      <option value="Exento" />
+                      <option value="Sujeto No Categorizado" />
+                    </datalist>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <button className="btn-primary w-full" type="submit">
                   {clienteEditandoId ? 'Actualizar' : 'Crear'}
                 </button>
@@ -384,12 +527,30 @@ export function ClientesView({ rolUsuario }) {
             </form>
           )}
 
-          <div className={`space-y-2 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
+          <div className={`space-y-3 ${puedeEditarCatalogos ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
+            {/* Buscador de Clientes */}
+            <div className="surface-card p-3">
+              <input
+                type="text"
+                value={busquedaCliente}
+                onChange={(e) => setBusquedaCliente(e.target.value)}
+                className="input-base text-sm"
+                placeholder="🔍 Buscar por nombre, razón social, CUIT/RFC/NIF, dirección o teléfono..."
+              />
+            </div>
+
             {cargando && <p className="text-sm font-semibold text-sat-muted">Cargando clientes...</p>}
-            {!cargando && clientes.length > 0 && (
+
+            {!cargando && clientesFiltrados.length === 0 && (
+              <div className="surface-card p-6 text-center text-sat-muted">
+                <p className="text-sm font-medium">No se encontraron clientes con los criterios de búsqueda.</p>
+              </div>
+            )}
+
+            {!cargando && clientesFiltrados.length > 0 && (
               <div className="toolbar-panel">
                 <div className="flex items-center gap-3">
-                  <span>Pagina {paginaClientes} de {totalPaginasClientes}</span>
+                  <span>Página {paginaClientes} de {totalPaginasClientes} ({clientesFiltrados.length} clientes)</span>
                   <label className="flex items-center gap-1">
                     <span>Mostrar</span>
                     <select
@@ -429,16 +590,55 @@ export function ClientesView({ rolUsuario }) {
 
             {!cargando &&
               clientesPaginados.map((cliente) => (
-                <article key={cliente.id} className="list-card">
-                  <p className="text-sm font-bold text-sat-text">{cliente.nombre}</p>
-                  <p className="text-xs text-sat-muted">{cliente.telefono || 'Sin teléfono'} · {cliente.email || 'Sin email'}</p>
-                  <p className="mt-1 text-xs text-sat-subtle">{cliente.direccion || 'Sin dirección'}</p>
-                  {(cliente.lat != null && cliente.lng != null) && (
-                    <p className="mt-1 text-xs text-sat-subtle">GPS: {Number(cliente.lat).toFixed(5)}, {Number(cliente.lng).toFixed(5)}</p>
+                <article key={cliente.id} className="list-card space-y-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <h4 className="text-base font-black text-sat-text">{cliente.nombre}</h4>
+                      {cliente.razon_social && cliente.razon_social !== cliente.nombre && (
+                        <p className="text-xs font-semibold text-slate-600">
+                          Razón Social: <span className="font-normal">{cliente.razon_social}</span>
+                        </p>
+                      )}
+                    </div>
+                    {cliente.identificador_fiscal && (
+                      <span className="inline-flex items-center rounded-lg bg-sky-100 px-2.5 py-1 text-xs font-black text-sky-800 border border-sky-200">
+                        ID Fiscal: {cliente.identificador_fiscal}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid gap-1 text-xs text-sat-muted sm:grid-cols-2">
+                    <p><span className="font-semibold text-sat-text">Teléfono:</span> {cliente.telefono || 'Sin teléfono'}</p>
+                    <p><span className="font-semibold text-sat-text">Email:</span> {cliente.email || 'Sin email'}</p>
+                    <p><span className="font-semibold text-sat-text">Dir. Trabajo:</span> {cliente.direccion || 'Sin dirección'}</p>
+                    {cliente.direccion_fiscal && (
+                      <p><span className="font-semibold text-sat-text">Dir. Fiscal:</span> {cliente.direccion_fiscal}</p>
+                    )}
+                  </div>
+
+                  {(cliente.regimen_tributario || cliente.situacion_fiscal) && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {cliente.regimen_tributario && (
+                        <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                          Régimen: {cliente.regimen_tributario}
+                        </span>
+                      )}
+                      {cliente.situacion_fiscal && (
+                        <span className="inline-block rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200">
+                          Situación IVA/Fiscal: {cliente.situacion_fiscal}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {cliente.lat != null && cliente.lng != null && (
+                    <p className="text-[11px] text-sat-subtle">
+                      GPS: {Number(cliente.lat).toFixed(5)}, {Number(cliente.lng).toFixed(5)}
+                    </p>
                   )}
 
                   {puedeEditarCatalogos && (
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="mt-3 grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
                       <button
                         type="button"
                         className="btn-secondary px-3 py-2 text-xs"
@@ -451,6 +651,11 @@ export function ClientesView({ rolUsuario }) {
                             email: cliente.email || '',
                             lat: cliente.lat != null ? String(cliente.lat) : '',
                             lng: cliente.lng != null ? String(cliente.lng) : '',
+                            identificador_fiscal: cliente.identificador_fiscal || '',
+                            razon_social: cliente.razon_social || '',
+                            direccion_fiscal: cliente.direccion_fiscal || '',
+                            regimen_tributario: cliente.regimen_tributario || '',
+                            situacion_fiscal: cliente.situacion_fiscal || '',
                           });
                         }}
                       >
