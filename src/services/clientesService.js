@@ -225,9 +225,9 @@ export async function obtenerClienteCompleto(idCliente) {
 
   const equiposPromise = supabase
     .from('equipos')
-    .select('id, nombre, marca, modelo, numero_serie, ultima_revision, created_at, cliente_id')
+    .select('id, cliente_id, nombre, marca, modelo, numero_serie, ultima_revision')
     .eq('cliente_id', idCliente)
-    .order('created_at', { ascending: false });
+    .order('nombre', { ascending: true });
 
   const ordenesPromise = supabase
     .from('ordenes_trabajo')
