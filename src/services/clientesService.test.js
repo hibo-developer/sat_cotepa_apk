@@ -4,21 +4,28 @@ import {
   crearCliente,
   eliminarCliente,
   listarClientes,
+  obtenerClienteCompleto,
+  registrarAuditoriaDescargaCliente,
   validarYSanearPayloadCliente,
   verificarUnicidadIdentificadorFiscal,
 } from './clientesService';
 
 const mockFrom = vi.fn();
+const mockAuthGetUser = vi.fn().mockResolvedValue({
+  data: { user: { id: 'usr-test-1', email: 'test@cotepa.es' } },
+});
 
 vi.mock('./supabaseClient', () => ({
   obtenerClienteSupabase: () => ({
     from: mockFrom,
+    auth: { getUser: () => mockAuthGetUser() },
   }),
 }));
 
 describe('clientesService - Módulo de clientes y datos fiscales', () => {
   beforeEach(() => {
     mockFrom.mockReset();
+    mockAuthGetUser.mockClear();
   });
 
   describe('validarYSanearPayloadCliente', () => {
@@ -405,6 +412,148 @@ describe('clientesService - Módulo de clientes y datos fiscales', () => {
       await actualizarCliente('cli-existente', { nombre: 'Cliente Existente', comerciales_ids: [] });
 
       expect(insertComercialesMock).toHaveBeenCalledWith([{ cliente_id: 'cli-existente', comercial_id: 'com-victor' }]);
+    });
+  });
+
+  describe('obtenerClienteCompleto', () => {
+    it('lanza consultas en paralelo y agrupa cliente, equipos y ordenes', async () => {
+      const clienteData = {
+        id: 'cli-abc',
+        nombre: 'Panadería El Horno',
+        identificador_fiscal: '20-11111111-1',
+        clientes_comerciales: [
+          { comercial_id: 'com-x', comerciales: { id: 'com-x', nombre: 'Victor Garcia' } },
+        ],
+      };
+      const equiposData = [
+        { id: 'eq-1', cliente_id: 'cli-abc', nombre: 'Horno nº1', marca: 'Zanolli' },
+      ];
+      const ordenesData = [
+        {
+          id: 'ot-1',
+          numero_ticket: 'T-0001',
+          estado: 'finalizado',
+          tiempo_empleado_minutos: 75,
+          coste_total: 120.5,
+          fecha_inicio: '2026-01-15T10:00:00Z',
+          materiales_orden: [{ id: 'm1', nombre_material: 'Resistencia', cantidad: 1, precio_unitario: 30 }],
+          tecnicos: [{ id: 't1', nombre: 'Tecnico A' }],
+        },
+      ];
+
+      const selectCliente = vi.fn().mockReturnThis();
+      const eqCliente = vi.fn().mockReturnThis();
+      const maybeSingleCliente = vi.fn().mockResolvedValue({ data: clienteData, error: null });
+
+      const selectEquipos = vi.fn().mockReturnThis();
+      const eqEquipos = vi.fn().mockReturnThis();
+      const orderEquipos = vi.fn().mockResolvedValue({ data: equiposData, error: null });
+
+      const selectOrdenes = vi.fn().mockReturnThis();
+      const eqOrdenes = vi.fn().mockReturnThis();
+      const limitOrdenes = vi.fn().mockResolvedValue({ data: ordenesData, error: null });
+      const orderOrdenes = vi.fn(() => ({ limit: limitOrdenes }));
+
+      mockFrom.mockImplementation((tabla) => {
+        if (tabla === 'clientes') {
+          return { select: selectCliente, eq: eqCliente, maybeSingle: maybeSingleCliente };
+        }
+        if (tabla === 'equipos') {
+          return { select: selectEquipos, eq: eqEquipos, order: orderEquipos };
+        }
+        if (tabla === 'ordenes_trabajo') {
+          return { select: selectOrdenes, eq: eqOrdenes, order: orderOrdenes };
+        }
+        throw new Error(`Tabla inesperada en obtenerClienteCompleto: ${tabla}`);
+      });
+
+      const resultado = await obtenerClienteCompleto('cli-abc');
+
+      expect(resultado.cliente.id).toBe('cli-abc');
+      expect(resultado.cliente.nombre).toBe('Panadería El Horno');
+      expect(resultado.equipos).toHaveLength(1);
+      expect(resultado.equipos[0].marca).toBe('Zanolli');
+      expect(resultado.ordenes).toHaveLength(1);
+      expect(resultado.ordenes[0].materiales_orden).toHaveLength(1);
+      expect(resultado.cliente.comerciales).toEqual([
+        { id: 'com-x', nombre: 'Victor Garcia', es_predeterminado: false, activo: false },
+      ]);
+      expect(resultado.resumen.total_ordenes).toBe(1);
+      expect(resultado.resumen.ordenes_finalizadas).toBe(1);
+      expect(resultado.resumen.importe_total_facturado).toBe(120.5);
+      expect(resultado.resumen.horas_totales_servicio).toBeGreaterThan(0);
+      expect(limitOrdenes).toHaveBeenCalledWith(200);
+    });
+
+    it('lanza error claro si el cliente no existe en la tabla', async () => {
+      const maybeSingleCliente = vi.fn().mockResolvedValue({ data: null, error: null });
+      const orderEquiposEmpty = vi.fn().mockResolvedValue({ data: [], error: null });
+      const limitOrdenesEmpty = vi.fn().mockResolvedValue({ data: [], error: null });
+      const orderOrdenesEmpty = vi.fn(() => ({ limit: limitOrdenesEmpty }));
+      mockFrom.mockImplementation((tabla) => {
+        if (tabla === 'clientes') {
+          return {
+            select: () => ({ eq: () => ({ maybeSingle: maybeSingleCliente }) }),
+          };
+        }
+        if (tabla === 'equipos') {
+          return { select: () => ({ eq: () => ({ order: orderEquiposEmpty }) }) };
+        }
+        if (tabla === 'ordenes_trabajo') {
+          return { select: () => ({ eq: () => ({ order: orderOrdenesEmpty }) }) };
+        }
+        throw new Error(`Tabla inesperada: ${tabla}`);
+      });
+
+      await expect(obtenerClienteCompleto('cli-inexistente')).rejects.toThrow(
+        'El cliente indicado no existe o no tienes permiso para acceder a él.'
+      );
+    });
+  });
+
+  describe('registrarAuditoriaDescargaCliente', () => {
+    it('intenta insertar en auditoria_descargas_clientes y no lanza error aunque la tabla no exista (degradación graciosa)', async () => {
+      const maybeSingleAudit = vi.fn().mockRejectedValue(new Error('relation does not exist'));
+      const insertAudit = vi.fn(() => ({ maybeSingle: maybeSingleAudit }));
+      mockFrom.mockImplementation((tabla) => {
+        if (tabla === 'auditoria_descargas_clientes') {
+          return { insert: insertAudit };
+        }
+        throw new Error(`Tabla inesperada en auditoria: ${tabla}`);
+      });
+      const infoStub = vi.fn();
+      vi.stubGlobal('console', { ...console, info: infoStub, error: vi.fn() });
+      await expect(
+        registrarAuditoriaDescargaCliente({
+          clienteIds: ['cli-1', 'cli-2'],
+          tipoDescarga: 'masiva',
+          opciones: { anonimizar: true },
+        })
+      ).resolves.not.toThrow();
+      expect(insertAudit).toHaveBeenCalled();
+    });
+
+    it('incluye clienteIds, tipoDescarga y opciones en el payload de inserción', async () => {
+      const maybeSingleAudit = vi.fn().mockResolvedValue({ error: null, data: null });
+      const insertAudit = vi.fn(() => ({ maybeSingle: maybeSingleAudit }));
+      mockFrom.mockImplementation((tabla) => {
+        if (tabla === 'auditoria_descargas_clientes') {
+          return { insert: insertAudit };
+        }
+        throw new Error(`Tabla inesperada: ${tabla}`);
+      });
+      await registrarAuditoriaDescargaCliente({
+        clienteIds: ['cli-1'],
+        tipoDescarga: 'individual',
+        opciones: { anonimizar: false },
+      });
+      expect(insertAudit).toHaveBeenCalledTimes(1);
+      const payloadLlamada = insertAudit.mock.calls[0][0];
+      expect(Array.isArray(payloadLlamada.cliente_ids)).toBe(true);
+      expect(payloadLlamada.cliente_ids).toEqual(['cli-1']);
+      expect(payloadLlamada.tipo_descarga).toBe('individual');
+      expect(payloadLlamada.anonimizado).toBe(false);
+      expect(typeof payloadLlamada.fecha_hora).toBe('string');
     });
   });
 });

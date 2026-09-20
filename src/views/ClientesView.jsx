@@ -4,6 +4,8 @@ import {
   crearCliente,
   eliminarCliente,
   listarClientes,
+  obtenerClienteCompleto,
+  registrarAuditoriaDescargaCliente,
 } from '../services/clientesService';
 import {
   actualizarEquipo,
@@ -13,6 +15,15 @@ import {
 } from '../services/equiposService';
 import { listarComerciales } from '../services/comercialesService';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
+import {
+  autorizadoParaDescargarPdfCliente,
+  construirMensajeErrorUsuario,
+  descargarBlobEnNavegador,
+  generarPdfClienteIndividual,
+  generarPdfClientesMasivo,
+  obtenerMaxClientesDescargaMasiva,
+  obtenerLongitudMinContrasenaPdf,
+} from '../services/clientesPdfService';
 
 const FORM_CLIENTE_INICIAL = {
   nombre: '',
@@ -67,6 +78,27 @@ export function ClientesView({ rolUsuario }) {
   const [paginaEquipos, setPaginaEquipos] = useState(1);
   const [itemsPaginaClientes, setItemsPaginaClientes] = useState(5);
   const [itemsPaginaEquipos, setItemsPaginaEquipos] = useState(5);
+
+  const [seleccionClientesIds, setSeleccionClientesIds] = useState([]);
+  const [descargaEnCurso, setDescargaEnCurso] = useState(false);
+  const [progresoDescarga, setProgresoDescarga] = useState({ actual: 0, total: 0 });
+  const [clienteDescargandoId, setClienteDescargandoId] = useState(null);
+  const [mostrarAvisoGdpr, setMostrarAvisoGdpr] = useState(false);
+  const [gdprAccionPendiente, setGdprAccionPendiente] = useState(null);
+  const [opcionesDescarga, setOpcionesDescarga] = useState({
+    anonimizar: false,
+    advertenciaMostrada: false,
+    protegerConContrasena: false,
+  });
+  const [avisoResponsabilidadAbierto, setAvisoResponsabilidadAbierto] = useState(false);
+  const [mostrarModalContrasena, setMostrarModalContrasena] = useState(false);
+  const [contrasenaPdf, setContrasenaPdf] = useState('');
+  const [confirmacionContrasenaPdf, setConfirmacionContrasenaPdf] = useState('');
+  const [errorContrasenaModal, setErrorContrasenaModal] = useState('');
+  const [accionPendienteContrasena, setAccionPendienteContrasena] = useState(null);
+
+  const puedeDescargarPdf = autorizadoParaDescargarPdfCliente(rolUsuario);
+  const maxDescargaMasiva = obtenerMaxClientesDescargaMasiva();
 
   const sinConfiguracion = useMemo(() => !tieneConfiguracionSupabase(), []);
   const puedeEditarCatalogos = rolUsuario === 'admin' || rolUsuario === 'oficina';
@@ -176,6 +208,12 @@ export function ClientesView({ rolUsuario }) {
   useEffect(() => {
     setPaginaEquipos(1);
   }, [busquedaEquipo]);
+
+  useEffect(() => {
+    if (tabActiva !== 'clientes') {
+      limpiarSeleccionClientes();
+    }
+  }, [tabActiva]);
 
   // Si se borra el contacto o cargo de un contacto, su telefono dependiente ya no es valido.
   useEffect(() => {
@@ -339,6 +377,238 @@ export function ClientesView({ rolUsuario }) {
     } catch (err) {
       setError(err.message || 'No se pudo eliminar el equipo.');
     }
+  }
+
+  function alternarSeleccionCliente(idCliente) {
+    if (descargaEnCurso) return;
+    setSeleccionClientesIds((previo) => {
+      const yaIncluido = previo.includes(idCliente);
+      if (yaIncluido) {
+        return previo.filter((id) => id !== idCliente);
+      }
+      return [...previo, idCliente];
+    });
+  }
+
+  function limpiarSeleccionClientes() {
+    if (descargaEnCurso) return;
+    setSeleccionClientesIds([]);
+  }
+
+  function seleccionarTodosLosFiltrados() {
+    if (descargaEnCurso) return;
+    const ids = clientesFiltrados.map((c) => c.id).slice(0, maxDescargaMasiva);
+    setSeleccionClientesIds(ids);
+  }
+
+  async function confirmarAvisoGdprYContinuar(accion) {
+    if (!opcionesDescarga.advertenciaMostrada) {
+      setGdprAccionPendiente(() => accion);
+      setMostrarAvisoGdpr(true);
+      return;
+    }
+    if (opcionesDescarga.protegerConContrasena) {
+      setAccionPendienteContrasena(() => accion);
+      setContrasenaPdf('');
+      setConfirmacionContrasenaPdf('');
+      setErrorContrasenaModal('');
+      setMostrarModalContrasena(true);
+      return;
+    }
+    await accion({ contrasena: '' });
+  }
+
+  async function aceptarGdprYEjecutar() {
+    setOpcionesDescarga((prev) => ({ ...prev, advertenciaMostrada: true }));
+    setMostrarAvisoGdpr(false);
+    const accion = gdprAccionPendiente;
+    setGdprAccionPendiente(null);
+    if (typeof accion === 'function') {
+      try {
+        if (opcionesDescarga.protegerConContrasena) {
+          setAccionPendienteContrasena(() => accion);
+          setContrasenaPdf('');
+          setConfirmacionContrasenaPdf('');
+          setErrorContrasenaModal('');
+          setMostrarModalContrasena(true);
+          return;
+        }
+        await accion({ contrasena: '' });
+      } catch (err) {
+        setError(construirMensajeErrorUsuario(err));
+      }
+    }
+  }
+
+  function cancelarModalContrasena() {
+    setMostrarModalContrasena(false);
+    setAccionPendienteContrasena(null);
+    setContrasenaPdf('');
+    setConfirmacionContrasenaPdf('');
+    setErrorContrasenaModal('');
+  }
+
+  function confirmarContrasenaYEjecutar() {
+    const min = obtenerLongitudMinContrasenaPdf();
+    const p1 = String(contrasenaPdf || '');
+    const p2 = String(confirmacionContrasenaPdf || '');
+    if (p1.length < min) {
+      setErrorContrasenaModal(`La contrase\u00F1a debe tener al menos ${min} caracteres.`);
+      return;
+    }
+    if (p1 !== p2) {
+      setErrorContrasenaModal('Las contrase\u00F1as introducidas no coinciden.');
+      return;
+    }
+    setErrorContrasenaModal('');
+    const accion = accionPendienteContrasena;
+    setAccionPendienteContrasena(null);
+    setMostrarModalContrasena(false);
+    const contrasenaConfirmada = p1;
+    setContrasenaPdf('');
+    setConfirmacionContrasenaPdf('');
+    if (typeof accion === 'function') {
+      (async () => {
+        try {
+          await accion({ contrasena: contrasenaConfirmada });
+        } catch (err) {
+          setError(construirMensajeErrorUsuario(err));
+        }
+      })();
+    }
+  }
+
+  async function descargarPdfClienteIndividual(idCliente) {
+    if (!puedeDescargarPdf) {
+      setError('Tu usuario no tiene permisos para descargar fichas de clientes.');
+      return;
+    }
+    if (descargaEnCurso) return;
+    confirmarAvisoGdprYContinuar(async ({ contrasena }) => {
+      setMensaje('');
+      setError('');
+      setDescargaEnCurso(true);
+      setClienteDescargandoId(idCliente);
+      try {
+        const datosCompletos = await obtenerClienteCompleto(idCliente);
+        const nombreUsuario =
+          (window.__APP_CONFIG__ && window.__APP_CONFIG__.usuario_nombre)
+            ? window.__APP_CONFIG__.usuario_nombre
+            : '';
+        const resultado = await generarPdfClienteIndividual({
+          datosCompletos,
+          opciones: {
+            anonimizar: Boolean(opcionesDescarga.anonimizar),
+            nombreUsuario,
+            contrasena: String(contrasena || ''),
+          },
+        });
+        await registrarAuditoriaDescargaCliente({
+          clienteIds: [idCliente],
+          tipoDescarga: 'individual',
+          opciones: {
+            anonimizar: Boolean(opcionesDescarga.anonimizar),
+            protegidoConContrasena: Boolean(resultado.protegidoConContrasena),
+          },
+        });
+        descargarBlobEnNavegador({ blob: resultado.pdfBlob, nombreArchivo: resultado.nombreArchivo });
+        const detalles = [`Ficha PDF generada correctamente: ${resultado.nombreArchivo}`];
+        if (resultado.protegidoConContrasena) detalles.push('Protegido con contrase\u00F1a');
+        setMensaje(detalles.join(' \u2014 '));
+      } catch (err) {
+        if (typeof console !== 'undefined' && console.error) {
+          console.error('[ClientesView] Error descarga individual:', err);
+        }
+        setError(construirMensajeErrorUsuario(err));
+      } finally {
+        setDescargaEnCurso(false);
+        setClienteDescargandoId(null);
+      }
+    });
+  }
+
+  async function descargarPdfClientesSeleccionados() {
+    if (!puedeDescargarPdf) {
+      setError('Tu usuario no tiene permisos para descargar fichas de clientes.');
+      return;
+    }
+    const ids = Array.isArray(seleccionClientesIds) ? seleccionClientesIds : [];
+    if (ids.length === 0) {
+      setError('Selecciona al menos un cliente para generar el PDF masivo.');
+      return;
+    }
+    if (ids.length > maxDescargaMasiva) {
+      setError(`Se han seleccionado ${ids.length} clientes. El l\u00EDmite es ${maxDescargaMasiva}.`);
+      return;
+    }
+    if (descargaEnCurso) return;
+    confirmarAvisoGdprYContinuar(async ({ contrasena }) => {
+      setMensaje('');
+      setError('');
+      setDescargaEnCurso(true);
+      setProgresoDescarga({ actual: 0, total: ids.length });
+      try {
+        const resultadosDatos = [];
+        const erroresCarga = [];
+        for (let i = 0; i < ids.length; i += 1) {
+          const id = ids[i];
+          try {
+            const datos = await obtenerClienteCompleto(id);
+            resultadosDatos.push(datos);
+          } catch (err) {
+            erroresCarga.push({ idCliente: id, detalle: err?.message || String(err) });
+          }
+          setProgresoDescarga({ actual: i + 1, total: ids.length, fase: 'carga' });
+        }
+        if (resultadosDatos.length === 0) {
+          throw new Error('No se pudieron obtener los datos de ning\u00FAn cliente seleccionado.');
+        }
+        const nombreUsuario =
+          (window.__APP_CONFIG__ && window.__APP_CONFIG__.usuario_nombre)
+            ? window.__APP_CONFIG__.usuario_nombre
+            : '';
+        const resultado = await generarPdfClientesMasivo({
+          listaDatosCompletos: resultadosDatos,
+          opciones: {
+            anonimizar: Boolean(opcionesDescarga.anonimizar),
+            nombreUsuario,
+            contrasena: String(contrasena || ''),
+            onProgreso: (prog) => setProgresoDescarga({
+              actual: prog.actual,
+              total: prog.total,
+              fase: 'pdf',
+              errores: prog.errores,
+            }),
+          },
+        });
+        await registrarAuditoriaDescargaCliente({
+          clienteIds: ids,
+          tipoDescarga: 'masiva',
+          opciones: {
+            anonimizar: Boolean(opcionesDescarga.anonimizar),
+            protegidoConContrasena: Boolean(resultado.protegidoConContrasena),
+          },
+        });
+        descargarBlobEnNavegador({ blob: resultado.pdfBlob, nombreArchivo: resultado.nombreArchivo });
+        const partes = [
+          `PDF masivo generado: ${resultado.nombreArchivo}`,
+          `Clientes con \u00E9xito: ${resultado.numeroClientesExito}`,
+        ];
+        if (resultado.protegidoConContrasena) partes.push('Protegido con contrase\u00F1a');
+        if (resultado.numeroClientesError > 0 || erroresCarga.length > 0) {
+          partes.push(`Clientes con errores: ${resultado.numeroClientesError + erroresCarga.length}`);
+        }
+        setMensaje(partes.join(' \u2014 '));
+      } catch (err) {
+        if (typeof console !== 'undefined' && console.error) {
+          console.error('[ClientesView] Error descarga masiva:', err);
+        }
+        setError(construirMensajeErrorUsuario(err));
+      } finally {
+        setDescargaEnCurso(false);
+        setProgresoDescarga({ actual: 0, total: 0 });
+      }
+    });
   }
 
   if (sinConfiguracion) {
@@ -649,6 +919,108 @@ export function ClientesView({ rolUsuario }) {
               />
             </div>
 
+            {/* Toolbar de selección y descarga PDF masiva */}
+            {puedeDescargarPdf && !cargando && clientesFiltrados.length > 0 && (
+              <div className="surface-card space-y-3 p-3 border-t-0 rounded-t-none -mt-3" role="toolbar" aria-label="Herramientas de descarga masiva de clientes">
+                <div className="flex flex-wrap items-center gap-3 justify-between">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700" htmlFor="chk-anonimizar">
+                      <input
+                        id="chk-anonimizar"
+                        type="checkbox"
+                        checked={Boolean(opcionesDescarga.anonimizar)}
+                        disabled={descargaEnCurso}
+                        onChange={(e) =>
+                          setOpcionesDescarga((prev) => ({ ...prev, anonimizar: e.target.checked }))
+                        }
+                        aria-describedby="desc-anonimizar"
+                      />
+                      <span>Anonimizar datos sensibles (ID fiscal, teléfonos, email)</span>
+                    </label>
+                    <span id="desc-anonimizar" className="sr-only">
+                      Al activar esta opción, los datos de contacto e identificación fiscal se mostrarán enmascarados en el PDF.
+                    </span>
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700" htmlFor="chk-contrasena">
+                      <input
+                        id="chk-contrasena"
+                        type="checkbox"
+                        checked={Boolean(opcionesDescarga.protegerConContrasena)}
+                        disabled={descargaEnCurso}
+                        onChange={(e) =>
+                          setOpcionesDescarga((prev) => ({ ...prev, protegerConContrasena: e.target.checked }))
+                        }
+                        aria-describedby="desc-contrasena"
+                      />
+                      <span>Proteger PDF con contraseña</span>
+                    </label>
+                    <span id="desc-contrasena" className="sr-only">
+                      Al activar esta opción, se solicitará una contraseña que será necesaria para abrir el archivo PDF descargado.
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={seleccionarTodosLosFiltrados}
+                      disabled={descargaEnCurso || clientesFiltrados.length === 0}
+                      className="btn-secondary px-3 py-1.5 text-xs"
+                      aria-label={`Seleccionar los primeros ${maxDescargaMasiva} clientes filtrados para descarga masiva`}
+                    >
+                      Seleccionar todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={limpiarSeleccionClientes}
+                      disabled={descargaEnCurso || seleccionClientesIds.length === 0}
+                      className="btn-secondary px-3 py-1.5 text-xs"
+                      aria-label="Deseleccionar todos los clientes marcados"
+                    >
+                      Limpiar selección
+                    </button>
+                    <button
+                      type="button"
+                      onClick={descargarPdfClientesSeleccionados}
+                      disabled={descargaEnCurso || seleccionClientesIds.length === 0}
+                      className="btn-primary px-3 py-1.5 text-xs inline-flex items-center gap-2"
+                      aria-label={`Descargar ficha PDF de los ${seleccionClientesIds.length} clientes seleccionados`}
+                      aria-busy={descargaEnCurso}
+                    >
+                      {descargaEnCurso && (
+                        <span className="inline-block h-3 w-3 border-2 border-white/60 border-t-white rounded-full animate-spin" aria-hidden="true" />
+                      )}
+                      Descargar PDF ({seleccionClientesIds.length}/{maxDescargaMasiva})
+                    </button>
+                  </div>
+                </div>
+                {descargaEnCurso && progresoDescarga.total > 0 && (
+                  <div role="status" aria-live="polite" className="space-y-1">
+                    <div className="flex justify-between text-[11px] font-semibold text-slate-600">
+                      <span>
+                        {progresoDescarga.fase === 'pdf' ? 'Generando fichas PDF' : 'Cargando datos de clientes'}
+                        {' : '}
+                        {progresoDescarga.actual} de {progresoDescarga.total}
+                      </span>
+                      <span>
+                        {Math.round((progresoDescarga.actual / progresoDescarga.total) * 100)}%
+                      </span>
+                    </div>
+                    <div
+                      className="h-2 w-full overflow-hidden rounded-full bg-slate-200"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Math.round((progresoDescarga.actual / progresoDescarga.total) * 100)}
+                      aria-label="Progreso de generación del PDF masivo"
+                    >
+                      <div
+                        className="h-full bg-indigo-600 transition-all duration-200"
+                        style={{ width: `${Math.round((progresoDescarga.actual / progresoDescarga.total) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {cargando && <p className="text-sm font-semibold text-sat-muted">Cargando clientes...</p>}
 
             {!cargando && clientesFiltrados.length === 0 && (
@@ -699,23 +1071,81 @@ export function ClientesView({ rolUsuario }) {
             )}
 
             {!cargando &&
-              clientesPaginados.map((cliente) => (
-                <article key={cliente.id} className="list-card space-y-2">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <h4 className="text-base font-black text-sat-text">{cliente.nombre}</h4>
-                      {cliente.razon_social && cliente.razon_social !== cliente.nombre && (
-                        <p className="text-xs font-semibold text-slate-600">
-                          Razón Social: <span className="font-normal">{cliente.razon_social}</span>
-                        </p>
-                      )}
+              clientesPaginados.map((cliente) => {
+                const estaSeleccionado = seleccionClientesIds.includes(cliente.id);
+                const estaDescargando = clienteDescargandoId === cliente.id;
+                return (
+                  <article
+                    key={cliente.id}
+                    className={`list-card space-y-2 ${estaSeleccionado ? 'ring-2 ring-indigo-500 ring-offset-1' : ''}`}
+                    aria-label={`Cliente ${cliente.nombre}`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="flex items-start gap-2">
+                        {puedeDescargarPdf && (
+                          <label className="sr-only" htmlFor={`sel-cli-${cliente.id}`}>
+                            Seleccionar cliente {cliente.nombre} para descarga masiva
+                          </label>
+                        )}
+                        {puedeDescargarPdf && (
+                          <input
+                            id={`sel-cli-${cliente.id}`}
+                            type="checkbox"
+                            checked={estaSeleccionado}
+                            disabled={descargaEnCurso}
+                            onChange={() => alternarSeleccionCliente(cliente.id)}
+                            className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            aria-label={`Seleccionar cliente ${cliente.nombre}`}
+                          />
+                        )}
+                        <div>
+                          <h4 className="text-base font-black text-sat-text">{cliente.nombre}</h4>
+                          {cliente.razon_social && cliente.razon_social !== cliente.nombre && (
+                            <p className="text-xs font-semibold text-slate-600">
+                              Razón Social: <span className="font-normal">{cliente.razon_social}</span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        {cliente.identificador_fiscal && (
+                          <span className="inline-flex items-center rounded-lg bg-sky-100 px-2.5 py-1 text-xs font-black text-sky-800 border border-sky-200">
+                            ID Fiscal: {cliente.identificador_fiscal}
+                          </span>
+                        )}
+                        {puedeDescargarPdf && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              confirmarAvisoGdprYContinuar(() =>
+                                descargarPdfClienteIndividual(cliente.id)
+                              )
+                            }
+                            disabled={descargaEnCurso && !estaDescargando}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700 border border-indigo-200 transition hover:-translate-y-0.5 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label={`Descargar ficha PDF del cliente ${cliente.nombre}`}
+                            aria-busy={estaDescargando}
+                            title="Descargar ficha PDF individual"
+                          >
+                            {estaDescargando ? (
+                              <>
+                                <span className="inline-block h-3 w-3 border-2 border-indigo-500/60 border-t-indigo-700 rounded-full animate-spin" aria-hidden="true" />
+                                Generando…
+                              </>
+                            ) : (
+                              <>
+                                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                  <polyline points="7 10 12 15 17 10" />
+                                  <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                                Ficha PDF
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    {cliente.identificador_fiscal && (
-                      <span className="inline-flex items-center rounded-lg bg-sky-100 px-2.5 py-1 text-xs font-black text-sky-800 border border-sky-200">
-                        ID Fiscal: {cliente.identificador_fiscal}
-                      </span>
-                    )}
-                  </div>
 
                   <div className="grid gap-1 text-xs text-sat-muted sm:grid-cols-2">
                     <p><span className="font-semibold text-sat-text">Email:</span> {cliente.email || 'Sin email'}</p>
@@ -793,7 +1223,8 @@ export function ClientesView({ rolUsuario }) {
                     </div>
                   )}
                 </article>
-              ))}
+                );
+              })}
           </div>
         </div>
       )}
@@ -977,6 +1408,177 @@ export function ClientesView({ rolUsuario }) {
             )}
           </div>
         </div>
+      )}
+
+      {/* Modal GDPR / Aviso de responsabilidad local */}
+      {mostrarAvisoGdpr && (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="gdpr-titulo"
+          aria-describedby="gdpr-descripcion"
+        >
+          <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-slate-200 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 ring-1 ring-amber-200" aria-hidden="true">
+                <svg viewBox="0 0 24 24" className="h-5 w-5 text-amber-700" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <div className="space-y-1 flex-1">
+                <h3 id="gdpr-titulo" className="text-lg font-black tracking-tight text-slate-900">
+                  Aviso de protección de datos
+                </h3>
+                <p id="gdpr-descripcion" className="text-xs leading-5 text-slate-600">
+                  Este módulo genera un fichero PDF que se descargará directamente en tu equipo local. Antes de continuar, confirma que entiendes y aceptas las siguientes responsabilidades de custodia conforme al RGPD, LOPD y CCPA:
+                </p>
+              </div>
+            </div>
+            <ul className="space-y-2 rounded-xl bg-slate-50 p-3 text-[12px] leading-5 text-slate-700 ring-1 ring-slate-200" aria-label="Lista de responsabilidades del usuario">
+              <li className="flex gap-2">
+                <span className="mt-0.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" aria-hidden="true" />
+                <span>
+                  <strong>Confidencialidad:</strong> el archivo contiene datos personales de clientes (identificación fiscal, contactos, historial de servicios) y no debe compartirse con terceros sin base legal.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-0.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" aria-hidden="true" />
+                <span>
+                  <strong>Custodia local:</strong> eres responsable de guardar el PDF en un lugar seguro (carpeta encriptada, disco con acceso por contraseña) y borrarlo cuando ya no sea necesario para el fin para el que fue descargado.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-0.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" aria-hidden="true" />
+                <span>
+                  <strong>Registro de auditoría:</strong> cada descarga queda registrada en el sistema con tu usuario, fecha/hora y el cliente o clientes incluidos, de acuerdo al artículo 30 RGPD.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-0.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" aria-hidden="true" />
+                <span>
+                  <strong>Derechos de los titulares:</strong> si un cliente ejerce su derecho de acceso, rectificación o supresión, deberás localizar y actualizar o eliminar cualquier copia local que hayas generado.
+                </span>
+              </li>
+            </ul>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                className="btn-secondary px-4 py-2 text-sm"
+                onClick={() => {
+                  setMostrarAvisoGdpr(false);
+                  setGdprAccionPendiente(null);
+                }}
+                aria-label="Cancelar y no generar la descarga"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn-primary px-4 py-2 text-sm inline-flex items-center justify-center gap-2"
+                onClick={aceptarGdprYEjecutar}
+                aria-label="Aceptar el aviso de responsabilidad y continuar con la descarga"
+              >
+                Aceptar y continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal introducir contraseña para proteger PDF */}
+      {mostrarModalContrasena && (
+        <div
+          className="fixed inset-0 z-[91] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-contrasena-titulo"
+          aria-describedby="modal-contrasena-descripcion"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-slate-200 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 ring-1 ring-indigo-200" aria-hidden="true">
+                <svg viewBox="0 0 24 24" className="h-5 w-5 text-indigo-700" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+              <div className="space-y-1 flex-1">
+                <h3 id="modal-contrasena-titulo" className="text-lg font-black tracking-tight text-slate-900">
+                  Proteger PDF con contraseña
+                </h3>
+                <p id="modal-contrasena-descripcion" className="text-xs leading-5 text-slate-600">
+                  Introduce una contraseña de al menos <strong>{obtenerLongitudMinContrasenaPdf()} caracteres</strong>. Se te pedirá esta misma clave cada vez que quieras abrir el fichero descargado.
+                </p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <label className="block space-y-1" htmlFor="pdf-pass-1">
+                <span className="text-xs font-bold text-slate-700">Contraseña</span>
+                <input
+                  id="pdf-pass-1"
+                  type="password"
+                  autoComplete="new-password"
+                  className="input-base text-sm"
+                  value={contrasenaPdf}
+                  onChange={(e) => setContrasenaPdf(e.target.value)}
+                  aria-invalid={Boolean(errorContrasenaModal)}
+                />
+              </label>
+              <label className="block space-y-1" htmlFor="pdf-pass-2">
+                <span className="text-xs font-bold text-slate-700">Confirmar contraseña</span>
+                <input
+                  id="pdf-pass-2"
+                  type="password"
+                  autoComplete="new-password"
+                  className="input-base text-sm"
+                  value={confirmacionContrasenaPdf}
+                  onChange={(e) => setConfirmacionContrasenaPdf(e.target.value)}
+                  aria-invalid={Boolean(errorContrasenaModal)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      confirmarContrasenaYEjecutar();
+                    }
+                  }}
+                />
+              </label>
+              {errorContrasenaModal && (
+                <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 ring-1 ring-rose-200">
+                  {errorContrasenaModal}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                className="btn-secondary px-4 py-2 text-sm"
+                onClick={cancelarModalContrasena}
+                aria-label="Cancelar y no establecer contraseña"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn-primary px-4 py-2 text-sm inline-flex items-center justify-center gap-2"
+                onClick={confirmarContrasenaYEjecutar}
+                aria-label="Confirmar contraseña y generar el PDF protegido"
+              >
+                Confirmar y generar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay global de descarga en curso (para pantalla completa + bloqueo interacciones) */}
+      {descargaEnCurso && clienteDescargandoId && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 z-[85] bg-white/10"
+        />
       )}
     </section>
   );

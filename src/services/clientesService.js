@@ -209,3 +209,173 @@ export async function eliminarCliente(idCliente) {
     throw new Error(traducirErrorSupabase(error, 'No se pudo eliminar el cliente'));
   }
 }
+
+export async function obtenerClienteCompleto(idCliente) {
+  if (!idCliente) {
+    throw new Error('Se requiere el identificador del cliente para obtener su historial.');
+  }
+
+  const supabase = obtenerClienteSupabase();
+
+  const clientePromise = supabase
+    .from('clientes')
+    .select(`
+      id,
+      nombre,
+      direccion,
+      telefono,
+      telefono_2,
+      contacto,
+      cargo,
+      contacto_2,
+      cargo_2,
+      email,
+      lat,
+      lng,
+      identificador_fiscal,
+      razon_social,
+      direccion_fiscal,
+      regimen_tributario,
+      situacion_fiscal,
+      telefono_fiscal,
+      created_at,
+      updated_at,
+      clientes_comerciales (
+        comercial_id,
+        comerciales ( id, nombre, es_predeterminado, activo )
+      )
+    `)
+    .eq('id', idCliente)
+    .maybeSingle();
+
+  const equiposPromise = supabase
+    .from('equipos')
+    .select('id, nombre, marca, modelo, numero_serie, ultima_revision, created_at')
+    .eq('cliente_id', idCliente)
+    .order('created_at', { ascending: false });
+
+  const ordenesPromise = supabase
+    .from('ordenes_trabajo')
+    .select(`
+      id,
+      numero_ticket,
+      tipo_orden,
+      estado,
+      prioridad,
+      descripcion_averia,
+      tiempo_empleado_minutos,
+      coste_total,
+      fecha_inicio,
+      fecha_fin,
+      updated_at,
+      equipos ( id, nombre, marca, modelo ),
+      tecnicos ( id, nombre ),
+      materiales_orden ( id, nombre_material, cantidad, precio_unitario )
+    `)
+    .eq('cliente_id', idCliente)
+    .order('fecha_inicio', { ascending: false })
+    .limit(200);
+
+  const [clienteRsp, equiposRsp, ordenesRsp] = await Promise.all([
+    clientePromise,
+    equiposPromise,
+    ordenesPromise,
+  ]);
+
+  if (clienteRsp.error) {
+    throw new Error(traducirErrorSupabase(clienteRsp.error, 'No se pudieron obtener los datos del cliente'));
+  }
+  if (!clienteRsp.data) {
+    throw new Error('El cliente indicado no existe o no tienes permiso para acceder a él.');
+  }
+  if (equiposRsp.error) {
+    throw new Error(traducirErrorSupabase(equiposRsp.error, 'No se pudieron cargar los equipos del cliente'));
+  }
+  if (ordenesRsp.error) {
+    throw new Error(traducirErrorSupabase(ordenesRsp.error, 'No se pudieron cargar las órdenes del cliente'));
+  }
+
+  const asignaciones = clienteRsp.data.clientes_comerciales || [];
+  const { clientes_comerciales: _omitido, ...restoCliente } = clienteRsp.data;
+
+  const ordenes = (ordenesRsp.data || []).map((o) => {
+    const materiales = Array.isArray(o.materiales_orden) ? o.materiales_orden : [];
+    const costeMateriales = materiales.reduce(
+      (acc, m) => acc + (Number(m?.cantidad || 0) * Number(m?.precio_unitario || 0)),
+      0,
+    );
+    return {
+      ...o,
+      materiales_orden: materiales,
+      coste_materiales_calculado: Number(costeMateriales.toFixed(2)),
+    };
+  });
+
+  const totalOrdenes = ordenes.length;
+  const ordenesFinalizadas = ordenes.filter((o) => o.estado === 'finalizado').length;
+  const ordenesAbiertas = ordenes.filter((o) => o.estado !== 'finalizado').length;
+  const importeTotalFacturado = ordenes
+    .filter((o) => o.estado === 'finalizado')
+    .reduce((acc, o) => acc + (Number.isFinite(Number(o.coste_total)) ? Number(o.coste_total) : 0), 0);
+  const minutosTotalesServicio = ordenes
+    .filter((o) => o.estado === 'finalizado')
+    .reduce((acc, o) => acc + (Number.isFinite(Number(o.tiempo_empleado_minutos)) ? Number(o.tiempo_empleado_minutos) : 0), 0);
+
+  return {
+    cliente: {
+      ...restoCliente,
+      comerciales: asignaciones
+        .map((a) => a?.comerciales)
+        .filter(Boolean)
+        .map((c) => ({
+          id: c.id,
+          nombre: c.nombre,
+          es_predeterminado: Boolean(c.es_predeterminado),
+          activo: Boolean(c.activo),
+        })),
+    },
+    equipos: equiposRsp.data || [],
+    ordenes,
+    resumen: {
+      total_equipos: (equiposRsp.data || []).length,
+      total_ordenes: totalOrdenes,
+      ordenes_finalizadas: ordenesFinalizadas,
+      ordenes_abiertas: ordenesAbiertas,
+      importe_total_facturado: Number(importeTotalFacturado.toFixed(2)),
+      minutos_totales_servicio: Math.round(minutosTotalesServicio),
+      horas_totales_servicio: Number((minutosTotalesServicio / 60).toFixed(2)),
+    },
+  };
+}
+
+export async function registrarAuditoriaDescargaCliente({ clienteIds, tipoDescarga, opciones = {} }) {
+  try {
+    const supabase = obtenerClienteSupabase();
+    const { data: authData } = await supabase.auth.getUser();
+    const usuario = authData?.user || null;
+    const payload = {
+      tipo_accion: 'descarga_pdf_cliente',
+      tipo_descarga: tipoDescarga === 'masiva' ? 'masiva' : 'individual',
+      cliente_ids: Array.isArray(clienteIds) ? clienteIds : [clienteIds],
+      usuario_id: usuario?.id || null,
+      usuario_email: usuario?.email || null,
+      contrasena_aplicada: Boolean(opciones.aplicarContrasena),
+      anonimizado: Boolean(opciones.anonimizar),
+      fecha_hora: new Date().toISOString(),
+    };
+
+    if (typeof console !== 'undefined' && typeof console.info === 'function') {
+      console.info('[AUDITORIA] Descarga PDF clientes:', payload);
+    }
+
+    try {
+      await supabase.from('auditoria_descargas_clientes').insert(payload).maybeSingle();
+    } catch {
+      // Tabla puede no existir; no bloqueamos la descarga por auditoría.
+    }
+
+    return payload;
+  } catch {
+    return null;
+  }
+}

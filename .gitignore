@@ -35,3 +35,6 @@ debug-report-material-prices.md
 logs/
 backup/
 package-lock.json.baseline
+
+# Directorios temporales de pruebas/instalación locales
+_install_test/
