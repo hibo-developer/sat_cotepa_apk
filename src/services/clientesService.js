@@ -219,59 +219,19 @@ export async function obtenerClienteCompleto(idCliente) {
 
   const clientePromise = supabase
     .from('clientes')
-    .select(`
-      id,
-      nombre,
-      direccion,
-      telefono,
-      telefono_2,
-      contacto,
-      cargo,
-      contacto_2,
-      cargo_2,
-      email,
-      lat,
-      lng,
-      identificador_fiscal,
-      razon_social,
-      direccion_fiscal,
-      regimen_tributario,
-      situacion_fiscal,
-      telefono_fiscal,
-      created_at,
-      updated_at,
-      clientes_comerciales (
-        comercial_id,
-        comerciales ( id, nombre, es_predeterminado, activo )
-      )
-    `)
+    .select('id, nombre, direccion, telefono, telefono_2, contacto, cargo, contacto_2, cargo_2, email, lat, lng, identificador_fiscal, razon_social, direccion_fiscal, regimen_tributario, situacion_fiscal, telefono_fiscal, created_at, clientes_comerciales(comercial_id, comerciales(id, nombre, es_predeterminado, activo))')
     .eq('id', idCliente)
     .maybeSingle();
 
   const equiposPromise = supabase
     .from('equipos')
-    .select('id, nombre, marca, modelo, numero_serie, ultima_revision, created_at')
+    .select('id, nombre, marca, modelo, numero_serie, ultima_revision, created_at, cliente_id')
     .eq('cliente_id', idCliente)
     .order('created_at', { ascending: false });
 
   const ordenesPromise = supabase
     .from('ordenes_trabajo')
-    .select(`
-      id,
-      numero_ticket,
-      tipo_orden,
-      estado,
-      prioridad,
-      descripcion_averia,
-      tiempo_empleado_minutos,
-      coste_total,
-      fecha_inicio,
-      fecha_fin,
-      updated_at,
-      equipos ( id, nombre, marca, modelo ),
-      tecnicos ( id, nombre ),
-      materiales_orden ( id, nombre_material, cantidad, precio_unitario )
-    `)
+    .select('id, numero_ticket, tipo_orden, estado, prioridad, descripcion_averia, tiempo_empleado_minutos, coste_total, fecha_inicio, fecha_fin, cliente_id, equipo_id, tecnico_id')
     .eq('cliente_id', idCliente)
     .order('fecha_inicio', { ascending: false })
     .limit(200);
