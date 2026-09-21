@@ -8,7 +8,6 @@ Guia operativa para publicar la version web de SAT Movil COTEPA en Netlify con l
 
 - Esta guia aplica solo a la **version web** del proyecto.
 - Netlify sirve el frontend estatico compilado en `dist`.
-- Android (Capacitor) y desktop (Electron) no se publican en Netlify.
 
 ---
 

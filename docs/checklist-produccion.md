@@ -39,9 +39,6 @@
 ## 5. Publicacion
 
 - [ ] `npm run build:pwsh` sin errores.
-- [ ] Build desktop (`npm run build:desktop:pwsh`) generado y probado en maquina limpia.
-- [ ] APK (`npm run build:apk:pwsh`) instalada y validada.
-- [ ] APK `release` firmada con keystore de producción real; si falta keystore/secretos, el build debe fallar y no usar firma `debug`.
 - [ ] Plan de respaldo y rollback definido.
 
 ## 6. Operacion

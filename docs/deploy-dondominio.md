@@ -7,7 +7,6 @@ Guia operativa para publicar la version web de SAT Movil COTEPA en un hosting es
 ## 1. Alcance
 
 - Esta guia aplica solo a la version web servida desde `dist`.
-- No aplica a Android ni a desktop.
 - El frontend usa `HashRouter`, por lo que **no necesitas reglas de rewrite SPA** en Dondominio.
 
 ---

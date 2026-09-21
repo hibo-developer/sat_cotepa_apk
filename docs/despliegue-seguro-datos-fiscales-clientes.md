@@ -26,7 +26,7 @@ Puntos clave:
 - No bloquea lecturas ni escrituras concurrentes.
 
 ### Paso 2: Despliegue del Código de Aplicación (Deploy)
-1. Desplegar los artefactos cliente (Web / PWA / APK / Desktop).
+1. Desplegar los artefactos cliente (Web / PWA).
 2. Los clientes antiguos verán la nueva interfaz y podrán empezar a capturar datos fiscales sin interrupción.
 
 ### Paso 3: Verificación Post-Despliegue

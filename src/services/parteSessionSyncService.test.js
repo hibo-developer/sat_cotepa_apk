@@ -8,13 +8,6 @@ const onMock = vi.fn(function on() {
 });
 const channelMock = vi.fn(() => ({ on: onMock }));
 
-vi.mock('@capacitor/core', () => ({
-  Capacitor: {
-    isNativePlatform: () => false,
-    getPlatform: () => 'web',
-  },
-}));
-
 vi.mock('./supabaseClient', () => ({
   tieneConfiguracionSupabase: () => true,
   obtenerClienteSupabase: () => ({

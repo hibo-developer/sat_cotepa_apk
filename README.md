@@ -1,6 +1,6 @@
-# SAT Móvil COTEPA — Desktop + Android + Supabase
+# SAT Móvil COTEPA — Web + Supabase
 
-Aplicación de gestión de Servicio de Asistencia Técnica (SAT) orientada a **desktop (Electron)** y **móvil Android (Capacitor)**. Gestiona órdenes de trabajo, partes de trabajo, inventario de materiales, clientes y equipos, con roles diferenciados (`admin`, `oficina`, `tecnico`), firma digital del cliente, generación de informes PDF, exportaciones Excel/ZIP y **soporte offline-first** mediante Dexie (IndexedDB).
+Aplicación de gestión de Servicio de Asistencia Técnica (SAT) para **navegadores web en ordenador, móvil y tablet**. Gestiona órdenes de trabajo, partes de trabajo, inventario de materiales, clientes y equipos, con roles diferenciados (`admin`, `oficina`, `tecnico`), firma digital del cliente, generación de informes PDF, exportaciones Excel/ZIP y **soporte offline-first** mediante Dexie (IndexedDB).
 
 ---
 
@@ -22,16 +22,14 @@ Aplicación de gestión de Servicio de Asistencia Técnica (SAT) orientada a **d
 
 ## Plataformas de distribución
 
-- **Desktop**: instalador `.exe` (NSIS) y portable via Electron Builder
-- **Android**: APK / AAB via Capacitor + Gradle
+- **Web**: aplicación React compilada con Vite y publicada desde GitHub.
 
 ---
 
 ## Requisitos
 
-- Node.js 20+
+- Node.js 24 LTS
 - Proyecto Supabase operativo (PostgreSQL + Auth + Storage + Edge Functions)
-- Para Android: Android Studio + JDK 17+
 
 ---
 
@@ -55,9 +53,6 @@ npm run dev:pwsh
 | Script | Descripción |
 |---|---|
 | `npm run build:pwsh` | Compila frontend |
-| `npm run build:desktop:pwsh` | Empaqueta instalador Windows (NSIS) |
-| `npm run build:desktop:portable:pwsh` | Empaqueta versión portable |
-| `npm run build:apk:pwsh` | Build APK Android |
 | `npm run preflight:prod:pwsh` | Valida prerequisitos de salida a producción |
 | `npm run release:check:pwsh` | Build + preflight de producción |
 
@@ -122,71 +117,6 @@ Documentación de validación: `docs/checklist-validacion-roles.md` y `docs/chec
 - Requisito: aplicar la migración `20260606000000_add_updated_at_ordenes_trabajo.sql` para habilitar `updated_at`.
 - Tracking: aplicar `20260606010000_add_client_coords_and_gps_history.sql` para guardar coordenadas de clientes y el histórico GPS por OT.
 
-### Tracking en segundo plano (Android)
-
-- La app puede iniciar un **foreground service** para registrar puntos GPS cada 5 min aunque la app quede en segundo plano.
-- Los puntos se guardan localmente y se vuelcan a la cola `pending_gps` cuando la app vuelve al primer plano o hay conexión.
-
-### Android release (keystore)
-
-- El build `release` ya no usa la firma `debug` como fallback. Si falta la firma de producción, Gradle falla de forma explícita.
-- Puedes generar un keystore nuevo en Windows con `powershell -ExecutionPolicy Bypass -File .\scripts\create-android-keystore.ps1`.
-- Configura la firma release con variables de entorno o propiedades de Gradle:
-- `KEYSTORE_FILE` o `RELEASE_KEYSTORE_FILE`: ruta al keystore. Si no se define, se usa `sat-release.keystore` en la raíz del repo.
-- `KEYSTORE_PASSWORD` o `RELEASE_KEYSTORE_PASSWORD`: contraseña del keystore.
-- `KEY_PASSWORD` o `RELEASE_KEY_PASSWORD`: contraseña de la clave.
-- `KEY_ALIAS` o `RELEASE_KEY_ALIAS`: alias de la clave. Por defecto `sat-key`.
-- Ejemplo PowerShell:
-
-```powershell
-$env:KEYSTORE_FILE="C:\secure\sat-release.keystore"
-$env:KEYSTORE_PASSWORD="***"
-$env:KEY_PASSWORD="***"
-$env:KEY_ALIAS="sat-key"
-npm run build:apk:pwsh
-```
-
-### Windows desktop: firma interna gratis para uso corporativo
-
-- Si el `setup.exe` se usa solo en PCs gestionados por Cotepa, puede firmarse con un certificado interno gratuito en lugar de comprar una firma publica.
-- Esta opcion mejora la integridad y la identificacion del instalador dentro de la empresa, pero no sustituye una firma publica para equipos externos o distribucion general.
-- Flujo recomendado:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\create-windows-internal-code-signing-cert.ps1
-```
-
-- Esto genera:
-- un certificado publico `.cer` para repartir confianza en los PCs de Cotepa;
-- un `.pfx` con clave privada para firmar el instalador.
-- En cada PC corporativo, o por GPO/Intune, importa el `.cer`:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install-windows-internal-signing-trust.ps1 `
-  -CertificatePath "C:\secure\cotepa-code-signing\COTEPA-Internal-Code-Signing.cer" `
-  -Scope LocalMachine
-```
-
-- Luego compila el instalador:
-
-```powershell
-npm run build:desktop:pwsh
-```
-
-- Y firmalo:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\sign-desktop-installer.ps1 `
-  -InstallerPath "C:\app_sat - copia\release\2026-06-20_1520\SAT-Movil-COTEPA-Setup-0.1.0-x64.exe" `
-  -PfxPath "C:\secure\cotepa-code-signing\COTEPA-Internal-Code-Signing.pfx"
-```
-
-- Requisito tecnico:
-- `signtool.exe` debe estar instalado mediante Windows SDK o App Certification Kit.
-- Si no esta instalado, el script de firma lo indicara con un error claro.
-- Limitacion:
-- esta firma interna solo sera confiable en equipos que tengan importado el `.cer` en `Trusted Root` y `Trusted Publishers`.
-
 ### Checklist QA (offline/sync)
 
 - Editar OT con el móvil sin conexión → aparece “Cambios pendientes de sincronizar” y al volver internet se sincroniza solo.
@@ -223,6 +153,4 @@ src/
   components/    # NavbarInferior, ToastEstado, IndicadorSync, CambiarPasswordModal
 scripts/         # Automatizaciones PowerShell de build y verificación
 supabase/        # SQL de esquema, roles, hardening, storage y migraciones
-electron/        # Main process, preload y afterPack para la app desktop
-android/         # Proyecto Capacitor/Gradle para Android
 ```

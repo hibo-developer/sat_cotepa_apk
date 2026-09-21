@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Capacitor } from '@capacitor/core';
 import { ToastEstado } from '../components/ToastEstado';
 import { ControlesFlujoSecciones, NavegacionSecciones } from '../components/NavegacionSecciones';
 import {
@@ -10,7 +9,6 @@ import {
 } from '../services/catalogosService';
 import { crearPartePem, obtenerOrdenesAbiertasParaPartePem } from '../services/partePemService';
 import { estaOnline } from '../services/offlineSyncService';
-import { abrirGoogleMaps } from '../services/externalNavigationService';
 import { tieneConfiguracionSupabase } from '../services/supabaseClient';
 
 const soportaPointerEventos = typeof window !== 'undefined' && 'PointerEvent' in window;
@@ -68,15 +66,15 @@ function normalizarDireccion(direccion) {
     .trim();
 }
 
-function construirUrlRutaCliente({ lat, lng, direccion, modoNavegacion = false }) {
+function construirUrlRutaCliente({ lat, lng, direccion }) {
   const latNum = Number(lat);
   const lngNum = Number(lng);
   if (Number.isFinite(latNum) && Number.isFinite(lngNum) && !(latNum === 0 && lngNum === 0)) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${latNum},${lngNum}&travelmode=driving${modoNavegacion ? '&dir_action=navigate' : ''}`;
+    return `https://www.google.com/maps/dir/?api=1&destination=${latNum},${lngNum}&travelmode=driving`;
   }
   const dir = normalizarDireccion(direccion);
   if (dir) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dir)}&travelmode=driving${modoNavegacion ? '&dir_action=navigate' : ''}`;
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dir)}&travelmode=driving`;
   }
   return '';
 }
@@ -548,12 +546,10 @@ export function PartePemView({ rolUsuario, sesion }) {
       return;
     }
 
-    const modoNavegacion = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
     const url = construirUrlRutaCliente({
       lat: cliente.lat,
       lng: cliente.lng,
       direccion: cliente.direccion,
-      modoNavegacion,
     });
     if (!url) {
       setError('El cliente no tiene coordenadas ni dirección para abrir la ruta.');
@@ -562,31 +558,6 @@ export function PartePemView({ rolUsuario, sesion }) {
 
     setError('');
     setMensaje('');
-
-    if (modoNavegacion) {
-      try {
-        const rsp = await abrirGoogleMaps({ lat: cliente.lat, lng: cliente.lng, address: cliente.direccion || '' });
-        if (rsp?.opened) {
-          return;
-        }
-      } catch {
-        // noop
-      }
-      try {
-        window.location.href = url;
-        return;
-      } catch {
-        // noop
-      }
-      setTimeout(() => {
-        try {
-          window.open(url, '_blank', 'noopener,noreferrer');
-        } catch {
-          // noop
-        }
-      }, 400);
-      return;
-    }
 
     window.open(url, '_blank', 'noopener,noreferrer');
   }

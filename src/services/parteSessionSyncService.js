@@ -1,4 +1,3 @@
-import { Capacitor } from '@capacitor/core';
 import { obtenerClienteSupabase, tieneConfiguracionSupabase } from './supabaseClient';
 
 const DEVICE_INSTANCE_KEY = 'sat_device_instance_id_v1';
@@ -109,12 +108,6 @@ export function obtenerDeviceInstanceId() {
 }
 
 export function resolverPlataformaParteSync() {
-  if (typeof window !== 'undefined' && window.process?.versions?.electron) {
-    return 'desktop';
-  }
-  if (Capacitor.isNativePlatform()) {
-    return Capacitor.getPlatform() || 'native';
-  }
   return 'web';
 }
 
